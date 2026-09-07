@@ -61,6 +61,17 @@
 			'</ol>' +
 		'</div>';
 
+	function hwButton(id, label) {
+		var d = document.createElement("div");
+		d.id = id;
+		d.className = "buttonGridItem";
+		d.innerHTML =
+			'<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>' +
+			'<div class="gridHover"></div>' +
+			'<div class="btnText">' + label + '</div>';
+		return d;
+	}
+
 	function build() {
 		if (document.getElementById("fabInfo")) { return; }
 
@@ -71,17 +82,16 @@
 		info.id = "infoDrawer";
 		info.innerHTML = INFO_HTML;
 
-		var fabInfo = document.createElement("button");
-		fabInfo.id = "fabInfo";
-		fabInfo.type = "button";
-		fabInfo.innerHTML = "&#9432; INFO";
+		// two buttons built into the bottom of the unit, styled like the PO's own
+		var fabInfo = hwButton("fabInfo", "info");
+		var fabLib = hwButton("fabLib", "library");
+		var hwRow = document.createElement("div");
+		hwRow.className = "hwRow";
+		hwRow.append(fabInfo, fabLib);
 
-		var fabLib = document.createElement("button");
-		fabLib.id = "fabLib";
-		fabLib.type = "button";
-		fabLib.innerHTML = "LIBRARY &#9776;";
-
-		document.body.append(scrim, info, fabInfo, fabLib);
+		var board = document.querySelector(".circuitBoard");
+		if (board) { board.appendChild(hwRow); } else { document.body.appendChild(hwRow); }
+		document.body.append(scrim, info);
 
 		fabInfo.addEventListener("click", function () { toggle("info"); });
 		fabLib.addEventListener("click", function () { toggle("lib"); });

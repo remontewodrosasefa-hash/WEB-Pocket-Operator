@@ -1,10 +1,11 @@
-/* mobile.css — phone layout: the PO fills the screen; the guide and the library
- * are drawers behind a button in each bottom corner. Loaded after replica.css.
- * Everything here is gated to touch / narrow screens; desktop is untouched.
+/* mobile.css — phone layout.
+ * The PO fills the screen. The guide and the library are drawers, opened by two
+ * buttons built into the bottom of the unit itself (see .hwRow in replica.css
+ * and js/mobile.js). Loaded after replica.css; desktop is untouched.
  */
 
-/* the drawer chrome is built by js/mobile.js and hidden on desktop */
-#fabInfo, #fabLib, #drawerScrim, #infoDrawer { display: none; }
+/* drawer chrome is inert on desktop */
+#drawerScrim, #infoDrawer { display: none; }
 
 @media (max-width: 720px), (pointer: coarse) {
 
@@ -17,7 +18,7 @@
 		will-change: transform;
 	}
 
-	/* desktop guide is replaced by the touch drawer */
+	/* desktop guide column is replaced by the INFO drawer */
 	nav { display: none !important; }
 
 	article {
@@ -26,32 +27,11 @@
 		align-items: flex-start;
 		justify-content: center;
 		overflow-y: auto;
-		padding: 10px 6px 84px;
+		padding: 10px 6px 24px;
 	}
 
-	/* ---- bottom-corner buttons ---- */
-	#fabInfo, #fabLib {
-		display: flex;
-		position: fixed;
-		bottom: calc(12px + env(safe-area-inset-bottom, 0));
-		z-index: 900;
-		align-items: center;
-		gap: 6px;
-		height: 46px;
-		padding: 0 16px;
-		border: 1px solid #3a3d33;
-		border-radius: 23px;
-		background: linear-gradient(160deg, #24261f, #141410);
-		color: #ff9a4d;
-		font: 600 13px/1 ui-monospace, Menlo, monospace;
-		letter-spacing: 0.1em;
-		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-		-webkit-tap-highlight-color: transparent;
-		touch-action: manipulation;
-	}
-	#fabInfo { left: calc(12px + env(safe-area-inset-left, 0)); }
-	#fabLib  { right: calc(12px + env(safe-area-inset-right, 0)); }
-	#fabInfo:active, #fabLib:active { transform: translateY(1px); }
+	/* ---- the two hardware buttons at the bottom of the unit ---- */
+	.hwRow { display: flex; }
 
 	/* ---- scrim ---- */
 	#drawerScrim {
@@ -82,7 +62,10 @@
 		overflow: hidden;
 	}
 	#infoDrawer { left: 0; transform: translateX(-101%); border-right: 1px solid #2c2c30; }
-	aside#library { right: 0; left: auto; margin: 0; max-height: none; transform: translateX(101%); border-left: 1px solid #2c2c30; }
+	aside#library {
+		right: 0; left: auto; margin: 0; max-height: none;
+		transform: translateX(101%); border-left: 1px solid #2c2c30; border-top: none;
+	}
 
 	body.drawer-info #infoDrawer { transform: translateX(0); }
 	body.drawer-info main { transform: translateX(76vw); }
@@ -149,19 +132,14 @@
 		border-radius: 4px;
 	}
 
-	/* library drawer: keep its internal scroll, drop the desktop border-top */
-	aside#library { border-top: none; }
 	#libHead { padding-top: 0; }
 	#libList { -webkit-overflow-scrolling: touch; }
-
-	/* give the LCD HUD a touch, and stop iOS rubber-banding the page */
 	#lcdHud { font-size: 11px; }
 
-	/* PWA: keep clear of the notch / home indicator */
 	header { padding-top: env(safe-area-inset-top, 0); }
 }
 
-/* wider phones / small tablets: drawers a bit narrower relative to screen */
+/* wider phones / small tablets: drawers a bit narrower */
 @media (pointer: coarse) and (min-width: 560px) {
 	#infoDrawer, aside#library { width: 62vw; }
 	body.drawer-info main { transform: translateX(54vw); }
