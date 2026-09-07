@@ -169,16 +169,144 @@
 			}
 		}, true);
 
-		// FX press-and-hold detection (screen feedback now; effects later)
+		// FX press-and-hold: enters punch-in mode; a short tap still cycles the
+		// slider target as before.
 		var fx = document.getElementById("btnFX");
 		if (fx) {
-			var down = function () { window.fxHeld = true; flash("FX held · " + (FX_NAMES[g("fxMode", 0)] || "TONE"), "tip"); };
-			var up = function () { window.fxHeld = false; };
+			var downAt = 0;
+			var down = function () {
+				window.fxHeld = true;
+				window.fxWasUsed = false;
+				downAt = Date.now();
+				flash("FX held · pads 1-8 = effects", "tip");
+			};
+			var up = function () {
+				window.fxHeld = false;
+				// swallow the trailing click (so the mode doesn't cycle) if this
+				// was a real hold or a punch-in was triggered
+				if (Date.now() - downAt > 250 || window.fxWasUsed) { fx.dataset.eat = "1"; }
+			};
 			fx.addEventListener("mousedown", down);
 			fx.addEventListener("touchstart", down, { passive: true });
 			fx.addEventListener("mouseup", up);
 			fx.addEventListener("mouseleave", up);
 			fx.addEventListener("touchend", up);
+			fx.addEventListener("click", function (e) {
+				if (fx.dataset.eat) { e.stopImmediatePropagation(); e.preventDefault(); delete fx.dataset.eat; }
+			}, true);
+		}
+	}
+
+	/* ============================================================
+	 * Punch-in FX engine — a bypassed master chain spliced between the
+	 * meter and Tone.Master. Fully guarded: if the reroute fails, the
+	 * app keeps working and FX just does nothing.
+	 * ============================================================ */
+
+	var fxNodes = null;
+
+	function crushBits(n) {
+		if (!fxNodes) { return; }
+		try { fxNodes.crush.bits = n; } catch (e) {}
+		try { fxNodes.crush.bits.value = n; } catch (e) {}
+	}
+	function pitchTo(semis) {
+		if (!fxNodes) { return; }
+		try { fxNodes.pitch.pitch = semis; } catch (e) {}
+	}
+	function ramp(sig, val, t) { try { sig.rampTo(val, t); } catch (e) { try { sig.value = val; } catch (e2) {} } }
+
+	function buildFxChain() {
+		if (fxNodes || !window.Tone || !window.meter) { return; }
+		try {
+			var M = Tone.Master;
+			var hp = new Tone.Filter(20, "highpass");
+			var lp = new Tone.Filter(20000, "lowpass");
+			var crush = new Tone.BitCrusher(16);
+			var delay = new Tone.FeedbackDelay(0.19, 0.34);
+			var pitch = new Tone.PitchShift(0);
+			var trem = new Tone.Tremolo(13, 0);
+			try { trem.start(); } catch (e) {}
+
+			hp.chain(lp, crush, delay, pitch, trem, M);   // build the whole chain first
+
+			var rerouted = false;
+			try {
+				try { meter.disconnect(); } catch (e) { try { meter.disconnect(0); } catch (e2) {} }
+				meter.connect(hp);
+				rerouted = true;
+			} catch (e) {
+				// couldn't splice — put the meter straight back to Master
+				try { meter.connect(M); } catch (e2) {}
+			}
+			if (!rerouted) { return; }
+
+			fxNodes = { hp: hp, lp: lp, crush: crush, delay: delay, pitch: pitch, trem: trem };
+			ramp(delay.wet, 0, 0.01);
+			flash("FX ready — hold FX + pads 1-8", "tip");
+		} catch (e) {
+			fxNodes = null;
+		}
+	}
+
+	var FX_LABELS = ["", "CRUSH", "LO-FI", "FILTER DOWN", "FILTER UP", "DELAY", "STUTTER", "PITCH UP", "PITCH DOWN"];
+
+	function fxOn(n) {
+		window.fxWasUsed = true;
+		flash("FX " + n + " · " + (FX_LABELS[n] || ""), "warn");
+		if (!fxNodes) { return; }
+		var f = fxNodes;
+		switch (n) {
+			case 1: crushBits(4); break;
+			case 2: ramp(f.lp.frequency, 700, 0.05); crushBits(6); break;
+			case 3: ramp(f.lp.frequency, 240, 0.12); break;
+			case 4: ramp(f.hp.frequency, 1800, 0.12); break;
+			case 5: ramp(f.delay.wet, 0.55, 0.04); break;
+			case 6: ramp(f.trem.depth, 1, 0.02); break;
+			case 7: pitchTo(7); break;
+			case 8: pitchTo(-5); break;
+		}
+	}
+
+	function fxOff() {
+		if (!fxNodes) { return; }
+		var f = fxNodes;
+		ramp(f.lp.frequency, 20000, 0.12);
+		ramp(f.hp.frequency, 20, 0.12);
+		ramp(f.delay.wet, 0, 0.12);
+		ramp(f.trem.depth, 0, 0.06);
+		pitchTo(0);
+		crushBits(16);
+	}
+
+	function wireFxPads() {
+		for (var n = 1; n <= 8; n++) {
+			(function (n) {
+				var el = document.getElementById("btn" + n);
+				if (!el || el.dataset.fxWired) { return; }
+				el.dataset.fxWired = "1";
+				el.addEventListener("pointerdown", function (e) {
+					if (!window.fxHeld) { return; }
+					e.stopImmediatePropagation();
+					e.preventDefault();
+					el.dataset.fxFired = "1";
+					fxOn(n);
+					var end = function () {
+						fxOff();
+						window.removeEventListener("pointerup", end, true);
+						window.removeEventListener("pointercancel", end, true);
+						setTimeout(function () { delete el.dataset.fxFired; }, 300);
+					};
+					window.addEventListener("pointerup", end, true);
+					window.addEventListener("pointercancel", end, true);
+				}, true);
+				el.addEventListener("click", function (e) {
+					if (window.fxHeld || el.dataset.fxFired) {
+						e.stopImmediatePropagation();
+						e.preventDefault();
+					}
+				}, true);
+			})(n);
 		}
 	}
 
@@ -357,6 +485,42 @@
 		l2.textContent = pair[1];
 	}
 
+	/* ---- clear helpers (exposed on window.PO33) ---- */
+
+	function clearPattern() {
+		var p = g("currentPattern", 0);
+		try {
+			for (var c = 0; c < 16; c++) {
+				for (var b = 0; b < 16; b++) { window.newChannelArr[c][p][b].noteOn = 0; }
+			}
+			localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  "));
+			if (window.updateDisplay) { window.updateDisplay(); }
+			flash("pattern " + (p + 1) + " cleared", "warn");
+		} catch (e) { flash("could not clear pattern", "warn"); }
+	}
+
+	var clearAllClicks = 0, clearAllTimer;
+	function clearAll(btn) {
+		clearAllClicks++;
+		clearTimeout(clearAllTimer);
+		if (clearAllClicks >= 3) {
+			clearAllClicks = 0;
+			try { localStorage.clear(); } catch (e) {}
+			location.reload();
+			return;
+		}
+		var left = 3 - clearAllClicks;
+		flash("clear EVERYTHING — press " + left + " more time" + (left > 1 ? "s" : ""), "warn");
+		if (btn) { btn.textContent = "clear all · " + left + " more"; }
+		clearAllTimer = setTimeout(function () {
+			clearAllClicks = 0;
+			if (btn) { btn.textContent = "clear everything (triple-click)"; }
+		}, 1500);
+	}
+
+	window.PO33.clearPattern = clearPattern;
+	window.PO33.clearAll = clearAll;
+
 	function wireVolume() {
 		var el = document.getElementById("sliderVol");
 		if (!el || el.dataset.wired) { return; }
@@ -422,6 +586,13 @@
 		wireSlider(2);
 		wireVolume();
 		wireTouchShims();
+		wireFxPads();
+		// splice the FX chain once Tone + the engine's meter exist
+		var fxTries = 0;
+		var fxIv = setInterval(function () {
+			if (window.Tone && window.meter) { buildFxChain(); clearInterval(fxIv); }
+			else if (++fxTries > 80) { clearInterval(fxIv); }
+		}, 200);
 		var tries = 0;
 		var iv = setInterval(function () {
 			var haveRec = buildRecorder();

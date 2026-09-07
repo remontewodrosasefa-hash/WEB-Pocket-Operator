@@ -59,6 +59,19 @@
 			'<li>Start <span class="tag">PLAY</span>, then press and hold <span class="tag">WRITE</span> ' +
 				'for 3 seconds &mdash; pads you tap get written into the pattern.</li>' +
 			'</ol>' +
+
+			'<h3>Effects (hold FX)</h3><ol>' +
+			'<li>Press &amp; hold <span class="tag">FX</span>, then tap pads 1&ndash;8 for punch-in effects: ' +
+				'<b>1</b> crush · <b>2</b> lo-fi · <b>3</b> filter down · <b>4</b> filter up · ' +
+				'<b>5</b> delay · <b>6</b> stutter · <b>7</b> pitch up · <b>8</b> pitch down.</li>' +
+			'<li>The effect lasts while you hold the pad.</li>' +
+			'</ol>' +
+
+			'<h3>Clear</h3>' +
+			'<div id="clearRow">' +
+				'<button id="clearPtnBtn" type="button">clear this pattern</button>' +
+				'<button id="clearAllBtn" type="button">clear everything (triple-click)</button>' +
+			'</div>' +
 		'</div>';
 
 	function hwButton(id, label) {
@@ -105,6 +118,8 @@
 		// "‹ back" row inside the library (rendered by library.js, so delegate)
 		document.addEventListener("click", function (e) {
 			if (e.target.closest("#libBack")) { close(); }
+			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
+			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }
 		});
 		// NOTE: the library drawer never auto-closes — you close it with the ×,
 		// the scrim, the back row, or the LIBRARY button.

@@ -90,7 +90,6 @@ aside#library {
 	display: flex;
 	flex-direction: column;
 	gap: 11px;
-	overflow: hidden;
 	border-radius: 16px;
 	border: 1px solid #3a3d33;
 	background:
@@ -399,11 +398,22 @@ input[type="range"] { touch-action: none; }
 	display: none;              /* shown by mobile.css on touch / narrow screens */
 	justify-content: space-between;
 	align-items: flex-start;
-	padding: 2px 4px 0;
+	padding: 4px 6px 0;
 	margin-top: 2px;
+	min-height: 62px;           /* button + label, so it isn't clipped */
+	flex: 0 0 auto;
 }
 .hwRow .buttonGridItem { width: 44px; height: 44px; }
-.hwRow .btnText { font-size: 9px; letter-spacing: 0.04em; color: #d8d8d8; }
+.hwRow .btnText {
+	position: absolute;
+	top: 46px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 10px;
+	letter-spacing: 0.04em;
+	color: #d8d8d8;
+	white-space: nowrap;
+}
 /* lit when its drawer is open */
 body.drawer-info #fabInfo .buttonBG,
 body.drawer-lib  #fabLib  .buttonBG {

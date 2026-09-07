@@ -11,6 +11,7 @@
 @media (max-width: 720px), (pointer: coarse) {
 
 	html, body { height: 100%; overflow: hidden; }
+	body { height: 100vh; height: 100dvh; }
 
 	header { display: none !important; }
 	nav { display: none !important; }
@@ -49,8 +50,11 @@
 		max-width: none;
 		height: auto;
 		gap: 8px;
+		padding: 12px 12px 8px;
+		overflow: visible;
 		transform-origin: center center;
 	}
+	.po33 { padding: 2px; }
 
 	/* screen ~30% smaller than before, fixed within the scaled unit */
 	.lcd { height: 188px; }
@@ -70,7 +74,9 @@
 	.btnNumber > .btnText { font-size: 13px; }
 	input[type="range"] { height: 30px; }
 
-	.hwRow { display: flex; }
+	.hwRow { display: flex; min-height: 66px; padding: 4px 8px 0; }
+	.hwRow .buttonGridItem { width: 46px; height: 46px; }
+	.hwRow .btnText { top: 48px; font-size: 11px; }
 
 	/* ---- scrim ---- */
 	#drawerScrim {
@@ -197,4 +203,17 @@
 		padding: 1px 6px;
 		border-radius: 4px;
 	}
+	#clearRow { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+	#clearRow button {
+		font: inherit;
+		font-size: 13px;
+		padding: 11px 12px;
+		border-radius: 8px;
+		text-align: left;
+		background: #241d1d;
+		color: #ff8a8a;
+		border: 1px solid #5a3535;
+	}
+	#clearRow button:active { background: #2e2222; }
+	#clearAllBtn { border-color: #7a3a3a; color: #ff6b6b; }
 }

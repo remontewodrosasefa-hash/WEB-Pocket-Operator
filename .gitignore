@@ -1,0 +1,6 @@
+# Teenage Engineering factory sample source — kept locally, not redistributed.
+# The app only needs the processed copies in samples/.
+PO ALL/
+.DS_Store
+node_modules/
+*.log
