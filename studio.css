@@ -159,27 +159,30 @@
 /* ---------- PROJECT browser (drawn over the LCD) ---------- */
 
 #projBtn {
-	font: inherit;
-	font-size: 10px;
-	font-weight: 700;
+	font: 700 10px/1 ui-monospace, Menlo, monospace;
 	letter-spacing: 0.06em;
-	padding: 1px 6px;
-	margin-left: 8px;
-	background: #1b2411;
-	color: #c4cdae;
-	border: none;
+	padding: 3px 7px;
+	background: transparent;
+	color: #1b2411;
+	border: 1px solid #1b2411;
 	border-radius: 3px;
 	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
 }
+#projBtn:active,
+body.projOpen #projBtn { background: #1b2411; color: #c4cdae; }
+
+#projView { display: none; }
+body.projOpen #projView { display: flex; }
 
 #projView {
 	position: absolute;
 	inset: 0;
-	z-index: 5;
-	display: flex;
+	z-index: 6;
 	flex-direction: column;
-	gap: 5px;
-	padding: 8px 11px 10px;
+	gap: 6px;
+	padding: 9px 12px 11px;
 	background: linear-gradient(180deg, #c4cdae, #a3ad8a);
 	color: #1b2411;
 	font-family: ui-monospace, Menlo, monospace;
@@ -236,27 +239,32 @@
 .pvRow {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	border-bottom: 1px solid rgba(27,36,17,0.25);
-	padding: 3px 0;
+	gap: 8px;
+	border-bottom: 1px solid rgba(27,36,17,0.22);
+	padding: 2px 0;
 }
-.pvRow.cur { font-weight: 700; }
+.pvRow.cur > button[data-pv="open"] { font-weight: 700; text-decoration: underline; }
 .pvRow > button[data-pv="open"] {
-	flex: 1;
+	flex: 1 1 auto;
+	min-width: 0;
 	text-align: left;
 	border: none;
 	background: none;
 	font: inherit;
-	font-size: 13px;
+	font-size: 14px;
 	color: #1b2411;
-	padding: 4px 2px;
+	padding: 8px 2px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
-.pvDate { font-size: 10px; opacity: 0.6; }
+.pvDate { flex: 0 0 auto; font-size: 10px; opacity: 0.55; }
 .pvRow > button[data-pv="del"] {
+	flex: 0 0 auto;
 	border: none;
 	background: none;
 	color: #7a2a15;
-	font-size: 14px;
-	padding: 2px 6px;
+	font-size: 16px;
+	padding: 6px 8px;
 }
-.pvCur { font-size: 10px; opacity: 0.7; }
+.pvCur { flex: 0 0 auto; font-size: 10px; opacity: 0.7; padding-top: 2px; }

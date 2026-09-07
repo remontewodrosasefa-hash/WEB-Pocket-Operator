@@ -162,9 +162,10 @@
 
 	function esc(s) { return String(s).replace(/[<>&]/g, function (c) { return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]; }); }
 
-	function show() { build(); if (view) { view.hidden = false; render(); } }
-	function hide() { if (view) { view.hidden = true; } }
-	function toggle() { if (view && !view.hidden) { hide(); } else { show(); } }
+	function isOpen() { return document.body.classList.contains("projOpen"); }
+	function show() { build(); if (view) { document.body.classList.add("projOpen"); view.hidden = false; render(); } }
+	function hide() { document.body.classList.remove("projOpen"); if (view) { view.hidden = true; } }
+	function toggle() { if (isOpen()) { hide(); } else { show(); } }
 
 	window.PO33 = window.PO33 || {};
 	window.PO33.projects = { save: saveAs, saveCurrent: saveCurrent, open: open, remove: remove, list: function () { return Object.keys(load()); }, show: show, hide: hide };

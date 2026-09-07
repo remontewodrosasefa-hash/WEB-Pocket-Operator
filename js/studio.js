@@ -74,11 +74,24 @@
 			var d = document.createElement("i");
 			steps.appendChild(d);
 		}
+		E.mode = document.getElementById("hudMode");
+		E.main = document.getElementById("hudMain");
+		E.sub = document.getElementById("hudSub");
+		E.clock = document.getElementById("hudClock");
+		E.art = document.getElementById("hudArt");
+		E.steps = document.getElementById("hudSteps").children;
 		tick();
-		setInterval(tick, 90);
+		setInterval(tick, 130);
 	}
 
+	var E = {};
+
 	function tick() {
+		var modeEl = E.mode;
+		if (!modeEl) { return; }
+		// project browser covers the LCD — don't churn behind it
+		if (document.body.classList.contains("projOpen")) { updateClock(); return; }
+
 		var mode = g("mode", 0), state = g("state", 0), view = g("view", 0);
 		var play = g("play", false);
 		var sel = g("selectedChannel", 0);
@@ -88,10 +101,8 @@
 		var fxMode = g("fxMode", 0);
 
 		var effState = state || mode;
-		var modeEl = document.getElementById("hudMode");
-		var mainEl = document.getElementById("hudMain");
-		var subEl = document.getElementById("hudSub");
-		if (!modeEl) { return; }
+		var mainEl = E.main;
+		var subEl = E.sub;
 
 		modeEl.textContent = MODE_NAMES[effState] || ("MODE " + effState);
 
@@ -124,25 +135,20 @@
 		}
 
 		updateSliderLabels();
+		updateClock();
 
-		var clockEl = document.getElementById("hudClock");
-		if (clockEl) {
-			var now = new Date();
-			clockEl.textContent = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
-		}
-
-		var kids = document.getElementById("hudSteps").children;
+		var kids = E.steps;
 		for (var i = 0; i < 16; i++) {
 			var on = false, cur = play && i === beat;
 			try { on = !!(window.newChannelArr && newChannelArr[sel][pat][i].noteOn); } catch (e) {}
-			kids[i].className = (on ? "on" : "") + (cur ? " cur" : "");
+			var cls = (on ? "on" : "") + (cur ? " cur" : "");
+			if (kids[i].className !== cls) { kids[i].className = cls; }
 		}
 
-		var artEl = document.getElementById("hudArt");
 		var wantArt = ART_BY_MODE[effState] || "jebena";
-		if (artEl && artEl.dataset.art !== wantArt) {
-			artEl.dataset.art = wantArt;
-			artEl.innerHTML = ART[wantArt];
+		if (E.art && E.art.dataset.art !== wantArt) {
+			E.art.dataset.art = wantArt;
+			E.art.innerHTML = ART[wantArt];
 		}
 
 		// live hint while FX is held
@@ -157,6 +163,13 @@
 			var tip = nextHint(effState, mode, play, name, sel, pat);
 			if (tip && !flashTimer) { flash("next → " + tip, "tip"); }
 		}
+	}
+
+	function updateClock() {
+		if (!E.clock) { return; }
+		var now = new Date();
+		var t = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+		if (E.clock.textContent !== t) { E.clock.textContent = t; }
 	}
 
 	function patternHasSteps(pat) {
@@ -208,6 +221,7 @@
 				window.fxHeld = true;
 				window.fxWasUsed = false;
 				downAt = Date.now();
+				buildFxChain(); // lazy — first hold only
 				flash("FX held · pads 1-8 = effects", "tip");
 			};
 			var up = function () {
@@ -235,10 +249,10 @@
 
 	var fxNodes = null;
 
-	function crushBits(n) {
+	function distTo(amt) {
 		if (!fxNodes) { return; }
-		try { fxNodes.crush.bits = n; } catch (e) {}
-		try { fxNodes.crush.bits.value = n; } catch (e) {}
+		try { fxNodes.dist.wet.rampTo(amt > 0 ? 1 : 0, 0.03); } catch (e) {}
+		try { fxNodes.dist.distortion = amt; } catch (e) {}
 	}
 	function pitchTo(semis) {
 		if (!fxNodes) { return; }
@@ -246,19 +260,23 @@
 	}
 	function ramp(sig, val, t) { try { sig.rampTo(val, t); } catch (e) { try { sig.value = val; } catch (e2) {} } }
 
+	// Built lazily on the FIRST FX hold so users who never touch FX pay nothing.
+	// No BitCrusher (r12's is a main-thread ScriptProcessor → mobile jank).
+	var fxTried = false;
 	function buildFxChain() {
-		if (fxNodes || !window.Tone || !window.meter) { return; }
+		if (fxNodes || fxTried || !window.Tone || !window.meter) { return; }
+		fxTried = true;
 		try {
 			var M = Tone.Master;
 			var hp = new Tone.Filter(20, "highpass");
 			var lp = new Tone.Filter(20000, "lowpass");
-			var crush = new Tone.BitCrusher(16);
-			var delay = new Tone.FeedbackDelay(0.19, 0.34);
+			var dist = new Tone.Distortion(0.9); dist.wet.value = 0;
+			var delay = new Tone.FeedbackDelay(0.19, 0.34); delay.wet.value = 0;
 			var pitch = new Tone.PitchShift(0);
 			var trem = new Tone.Tremolo(13, 0);
 			try { trem.start(); } catch (e) {}
 
-			hp.chain(lp, crush, delay, pitch, trem, M);   // build the whole chain first
+			hp.chain(lp, dist, delay, pitch, trem, M);
 
 			var rerouted = false;
 			try {
@@ -266,14 +284,11 @@
 				meter.connect(hp);
 				rerouted = true;
 			} catch (e) {
-				// couldn't splice — put the meter straight back to Master
 				try { meter.connect(M); } catch (e2) {}
 			}
 			if (!rerouted) { return; }
 
-			fxNodes = { hp: hp, lp: lp, crush: crush, delay: delay, pitch: pitch, trem: trem };
-			ramp(delay.wet, 0, 0.01);
-			flash("FX ready — hold FX + pads 1-8", "tip");
+			fxNodes = { hp: hp, lp: lp, dist: dist, delay: delay, pitch: pitch, trem: trem };
 		} catch (e) {
 			fxNodes = null;
 		}
@@ -287,8 +302,8 @@
 		if (!fxNodes) { return; }
 		var f = fxNodes;
 		switch (n) {
-			case 1: crushBits(4); break;
-			case 2: ramp(f.lp.frequency, 700, 0.05); crushBits(6); break;
+			case 1: distTo(0.92); ramp(f.lp.frequency, 3500, 0.05); break;
+			case 2: ramp(f.lp.frequency, 900, 0.05); distTo(0.45); break;
 			case 3: ramp(f.lp.frequency, 240, 0.12); break;
 			case 4: ramp(f.hp.frequency, 1800, 0.12); break;
 			case 5: ramp(f.delay.wet, 0.55, 0.04); break;
@@ -306,7 +321,7 @@
 		ramp(f.delay.wet, 0, 0.12);
 		ramp(f.trem.depth, 0, 0.06);
 		pitchTo(0);
-		crushBits(16);
+		distTo(0);
 	}
 
 	function wireFxPads() {
@@ -627,7 +642,7 @@
 
 	var SLIDER_LABELS = {
 		4: ["swing", "tempo"],       // BPM mode
-		"0": ["pitch", "volume"],    // FX: tone
+		"0": ["pitch", "sample vol"],// FX: tone  (distinct from the master slider)
 		"1": ["filter", "res"],      // FX: filter
 		"2": ["start", "length"]     // FX: trim
 	};
@@ -743,12 +758,7 @@
 		wireVolume();
 		wireTouchShims();
 		wireFxPads();
-		// splice the FX chain once Tone + the engine's meter exist
-		var fxTries = 0;
-		var fxIv = setInterval(function () {
-			if (window.Tone && window.meter) { buildFxChain(); clearInterval(fxIv); }
-			else if (++fxTries > 80) { clearInterval(fxIv); }
-		}, 200);
+		// FX chain is built lazily on the first FX hold — nothing to do here
 		var tries = 0;
 		var iv = setInterval(function () {
 			var haveRec = buildRecorder();
