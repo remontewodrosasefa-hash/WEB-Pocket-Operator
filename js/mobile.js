@@ -102,13 +102,9 @@
 		document.addEventListener("keydown", function (e) {
 			if (e.key === "Escape") { close(); }
 		});
-
-		// close a drawer once you actually load a sample from the library
-		document.addEventListener("click", function (e) {
-			if (document.body.classList.contains("drawer-lib") && e.target.closest(".libRow")) {
-				setTimeout(close, 180);
-			}
-		}, true);
+		// NOTE: the library drawer never auto-closes — you close it with the ×,
+		// the scrim, or the LIBRARY button. Picking / previewing a sample keeps
+		// it open so you can choose a slot and keep browsing.
 	}
 
 	function toggle(which) {

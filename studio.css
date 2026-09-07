@@ -7,10 +7,10 @@
 #lcdHud {
 	position: absolute;
 	inset: 0;
-	padding: 7px 11px 9px;
+	padding: 9px 13px 11px;
 	display: flex;
 	flex-direction: column;
-	gap: 3px;
+	gap: 4px;
 	font-family: ui-monospace, "SF Mono", Menlo, monospace;
 	color: #1b2411;
 	background: linear-gradient(180deg, #c4cdae 0%, #b3bd9b 45%, #a3ad8a 100%);
@@ -22,7 +22,7 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: baseline;
-	font-size: 10px;
+	font-size: 11px;
 	letter-spacing: 0.08em;
 	opacity: 0.85;
 }
@@ -30,36 +30,66 @@
 	font-weight: 700;
 	background: #1b2411;
 	color: #c4cdae;
-	padding: 1px 6px;
+	padding: 2px 7px;
 	border-radius: 3px;
 }
 
 #hudMain {
-	font-size: 15px;
+	font-size: 20px;
 	font-weight: 700;
 	line-height: 1.15;
-	margin-top: 2px;
+	margin-top: 3px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 #hudSub {
-	font-size: 10px;
-	line-height: 1.2;
+	font-size: 12px;
+	line-height: 1.25;
 	opacity: 0.8;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
+/* decorative middle band — Ethiopian motif, swaps as you work */
+#hudArt {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0.30;
+	overflow: hidden;
+}
+#hudArt svg { height: 82%; max-height: 96px; width: auto; fill: none; stroke: #1b2411; stroke-width: 3; }
+
+/* transient message line (button feedback / errors / hints) */
+#hudFlash {
+	position: absolute;
+	left: 0; right: 0;
+	bottom: 26px;
+	text-align: center;
+	font-size: 12px;
+	font-weight: 700;
+	padding: 3px 8px;
+	opacity: 0;
+	transition: opacity 0.18s ease;
+	pointer-events: none;
+}
+#hudFlash.show { opacity: 1; }
+#hudFlash.info  { color: #1b2411; }
+#hudFlash.warn  { color: #7a2a15; }
+#hudFlash.tip   { color: #145016; }
+#hudFlash::before { content: ""; position: absolute; inset: 0; background: #c4cdae; opacity: 0.82; z-index: -1; border-radius: 3px; }
+
 #hudSteps {
-	margin-top: auto;
 	display: grid;
 	grid-template-columns: repeat(16, 1fr);
 	gap: 2px;
 }
 #hudSteps i {
-	height: 7px;
+	height: 9px;
 	border-radius: 1px;
 	background: rgba(27, 36, 17, 0.16);
 }

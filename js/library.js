@@ -92,6 +92,39 @@
 		rerender();
 	}
 
+	// auto-fill a run of slots. mixAllPacks=true → a random spread from every
+	// pack ("surprise"); otherwise from the pack currently shown.
+	function fillSlots(n, mixAllPacks) {
+		if (!MANIFEST) { return; }
+		var pool = [];
+		if (mixAllPacks) {
+			MANIFEST.packs.forEach(function (p) {
+				if (p.id === "recordings") { return; }
+				pool = pool.concat(p.samples);
+			});
+		} else {
+			pool = (MANIFEST.packs[+els.pack.value] || MANIFEST.packs[0]).samples.slice();
+		}
+		if (!pool.length) { return; }
+
+		// start slot: melodic run (1-8) or drum run (9-16) depending on selection
+		var base = currentSlot() <= 8 ? 1 : 9;
+		n = Math.min(n, base === 1 ? 8 : 8);
+
+		// shuffle, then spread the picks across the pool so they're not clustered
+		for (var i = pool.length - 1; i > 0; i--) {
+			var j = Math.floor(Math.random() * (i + 1));
+			var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+		}
+		var step = Math.max(1, Math.floor(pool.length / n));
+		for (var k = 0; k < n; k++) {
+			var smp = pool[(k * step) % pool.length];
+			assign(base + k, smp, true);
+		}
+		toast("filled slots " + base + "–" + (base + n - 1));
+		if (window.PO33 && PO33.flash) { PO33.flash("auto-filled " + n + " " + (base === 1 ? "melodic" : "drum") + " slots", "tip"); }
+	}
+
 	function clearSlot(slot1to16) {
 		slotSampleIds[slot1to16 - 1] = null;
 		saveSlots();
@@ -289,6 +322,9 @@
 				'<span id="libControls">' +
 					'<select id="libPack"></select>' +
 					'<input id="libSearch" type="search" placeholder="find #">' +
+					'<button class="libFill" data-n="4">fill 4</button>' +
+					'<button class="libFill" data-n="8">fill 8</button>' +
+					'<button class="libFill" id="libSurprise">surprise</button>' +
 				'</span>' +
 			'</div>' +
 			'<div id="libList" data-tab="samples"></div>';
@@ -316,6 +352,12 @@
 		els.search.oninput = renderSamples;
 		els.tabSamples.onclick = function () { setTab("samples"); };
 		els.tabSlots.onclick = function () { setTab("slots"); };
+		aside.querySelectorAll(".libFill").forEach(function (b) {
+			b.onclick = function () {
+				if (b.id === "libSurprise") { fillSlots(8, true); }
+				else { fillSlots(+b.dataset.n, false); }
+			};
+		});
 
 		// keep the "loads into SOUND n" hint live as the user changes slot
 		document.addEventListener("click", function () { setTimeout(refreshTarget, 0); }, true);

@@ -121,15 +121,15 @@ aside#library {
 
 .head {
 	height: auto;
-	min-height: 48px;
+	min-height: 34px;
 	align-items: center;
 	padding: 0 2px;
 }
-.koLabelContainer { height: auto; font-size: 18px; color: #ff7a1a; }
+.koLabelContainer { height: auto; font-size: 15px; color: #ff7a1a; }
 .koLabel, .koItalicLabel { left: 0; }
 .koItalicLabel { transform: rotate(18deg); }
-#logo { position: static; top: auto; left: auto; width: 54px; height: 54px; }
-#microphone { position: static; top: auto; left: auto; height: 44px; width: auto; }
+#logo { position: static; top: auto; left: auto; width: 40px; height: 40px; }
+#microphone { position: static; top: auto; left: auto; height: 34px; width: auto; }
 
 /* ---- LCD ---- */
 
@@ -139,9 +139,9 @@ aside#library {
 .lcd {
 	position: relative;
 	width: 100%;
-	height: 104px;
+	height: 200px;
 	margin: 0;
-	padding: 7px 11px;
+	padding: 8px 12px;
 	overflow: hidden;
 	background: linear-gradient(180deg, #c4cdae 0%, #b3bd9b 45%, #a3ad8a 100%);
 	border: 2px solid #14150f;
@@ -234,6 +234,14 @@ input[type="range"]::-moz-range-thumb {
 	background: linear-gradient(160deg, #ffb060, #ff7a1a);
 	box-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
+/* master volume: always live, silver thumb to tell it apart */
+.sliderVolWrap input[type="range"]::-webkit-slider-thumb {
+	background: linear-gradient(160deg, #f2f2f2, #b8b8b8);
+}
+.sliderVolWrap input[type="range"]::-moz-range-thumb {
+	background: linear-gradient(160deg, #f2f2f2, #b8b8b8);
+}
+.sliderVolWrap .sliderLabel { color: #cfcfcf; }
 
 .gridArea {
 	position: relative;

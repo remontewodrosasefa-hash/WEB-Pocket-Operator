@@ -11,6 +11,9 @@
 
 	html, body { height: 100%; overflow: hidden; }
 
+	/* reclaim the name bar for screen space */
+	header { display: none !important; }
+
 	main {
 		flex-direction: column;
 		overflow: hidden;
@@ -20,6 +23,15 @@
 
 	/* desktop guide column is replaced by the INFO drawer */
 	nav { display: none !important; }
+
+	/* screen gets even more room on a phone */
+	.lcd { height: 44vh; max-height: 300px; }
+	#hudMain { font-size: 22px; }
+	#hudSub { font-size: 12px; }
+	.head { min-height: 28px; }
+	#logo { width: 34px; height: 34px; }
+	#microphone { height: 30px; }
+	.circuitBoard { gap: 8px; }
 
 	article {
 		order: 0;

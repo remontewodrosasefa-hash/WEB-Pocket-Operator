@@ -15,9 +15,43 @@
 		11: "LIVE REC", 33: "COPY PTN", 34: "PASTE PTN" };
 	var FX_NAMES = ["TONE", "FILTER", "TRIM"];
 
+	// Ethiopian household motifs, line-art. Swapped by mode so the screen has
+	// life without competing with the readout.
+	var ART = {
+		jebena: '<svg viewBox="0 0 100 100"><path d="M50 8c-4 0-6 3-6 6l-2 4h16l-2-4c0-3-2-6-6-6zM38 20c-10 6-16 20-16 34 0 16 12 30 28 30s28-14 28-30c0-14-6-28-16-34zM33 44c6-6 28-6 34 0"/><path d="M66 34c10 2 16 8 12 16"/></svg>',
+		mesob: '<svg viewBox="0 0 100 100"><path d="M50 10l14 12H36zM26 24h48l-6 44H32zM22 72h56l-6 16H28z"/><path d="M34 34h32M32 46h36M31 58h38"/></svg>',
+		gabi: '<svg viewBox="0 0 100 100"><path d="M14 30h72v40H14z"/><path d="M14 38h72M14 62h72M22 30v40M78 30v40"/><path d="M22 44l56 12M78 44L22 56"/></svg>',
+		cross: '<svg viewBox="0 0 100 100"><path d="M50 12v76M28 34h44M24 50h52M28 66h44"/><path d="M50 12c-8 6-8 14 0 20 8-6 8-14 0-20zM50 68c-8 6-8 14 0 20 8-6 8-14 0-20z"/></svg>',
+		masinko: '<svg viewBox="0 0 100 100"><path d="M50 14c-9 8-9 44 0 60 9-16 9-52 0-60z"/><path d="M50 74v14M40 88h20M30 24l40 44M70 24L30 68"/></svg>'
+	};
+	var ART_BY_MODE = { 0: "jebena", 1: "mesob", 2: "cross", 3: "gabi", 4: "masinko", 11: "mesob" };
+
+	// short "what this does" text, shown briefly when a control is used
+	var BTN_INFO = {
+		btnSound: "SOUND — pick the active sound slot, then a pad",
+		btnPattern: "PATTERN — hold to select / chain patterns",
+		btnBPM: "BPM — sliders set swing & tempo · double-tap = presets",
+		btnFX: "FX — cycles slider target: TONE / FILTER / TRIM",
+		btnPlay: "PLAY — start / stop the sequencer",
+		btnWrite: "WRITE — edit steps · hold 3s while playing = live record",
+		btnRecord: "RECORD — sample the mic / a browser tab onto this slot"
+	};
+
 	function g(name, dflt) {
 		return (typeof window[name] !== "undefined") ? window[name] : dflt;
 	}
+
+	var flashTimer;
+	function flash(msg, kind) {
+		var el = document.getElementById("hudFlash");
+		if (!el) { return; }
+		el.textContent = msg;
+		el.className = "show " + (kind || "info");
+		clearTimeout(flashTimer);
+		flashTimer = setTimeout(function () { el.className = el.className.replace("show", "").trim(); }, 2200);
+	}
+	window.PO33 = window.PO33 || {};
+	window.PO33.flash = flash;
 
 	function buildHud() {
 		var lcd = document.querySelector(".lcd");
@@ -29,8 +63,11 @@
 				'<span id="hudClock"></span></div>' +
 			'<div id="hudMain">—</div>' +
 			'<div id="hudSub">&nbsp;</div>' +
+			'<div id="hudArt"></div>' +
+			'<div id="hudFlash"></div>' +
 			'<div id="hudSteps"></div>';
 		lcd.appendChild(hud);
+		wireFeedback();
 
 		var steps = hud.querySelector("#hudSteps");
 		for (var i = 0; i < 16; i++) {
@@ -99,6 +136,49 @@
 			var on = false, cur = play && i === beat;
 			try { on = !!(window.newChannelArr && newChannelArr[sel][pat][i].noteOn); } catch (e) {}
 			kids[i].className = (on ? "on" : "") + (cur ? " cur" : "");
+		}
+
+		var artEl = document.getElementById("hudArt");
+		var wantArt = ART_BY_MODE[effState] || "jebena";
+		if (artEl && artEl.dataset.art !== wantArt) {
+			artEl.dataset.art = wantArt;
+			artEl.innerHTML = ART[wantArt];
+		}
+
+		// live hint while FX is held (punch-in effects land in a later build)
+		if (window.fxHeld && !flashTimer) {
+			flash("FX held · " + (FX_NAMES[fxMode] || "TONE") + " — release to keep", "tip");
+		}
+	}
+
+	// screen reacts to every control: show what it does, or that it did nothing
+	function wireFeedback() {
+		document.addEventListener("click", function (e) {
+			var item = e.target.closest("[id^='btn']");
+			if (!item) { return; }
+			var id = item.id;
+			if (BTN_INFO[id]) { flash(BTN_INFO[id], "info"); return; }
+			if (/^btn([1-9]|1[0-6])$/.test(id)) {
+				var n = +id.slice(3);
+				var st = g("state", 0), md = g("mode", 0);
+				if (st === 0 && md === 0 && !g("play", false)) {
+					flash("pad " + n + " · playing sound " + (g("selectedChannel", 0) + 1), "info");
+				} else if (md === 1) {
+					flash("pad " + n + " · step " + n + " toggled", "info");
+				}
+			}
+		}, true);
+
+		// FX press-and-hold detection (screen feedback now; effects later)
+		var fx = document.getElementById("btnFX");
+		if (fx) {
+			var down = function () { window.fxHeld = true; flash("FX held · " + (FX_NAMES[g("fxMode", 0)] || "TONE"), "tip"); };
+			var up = function () { window.fxHeld = false; };
+			fx.addEventListener("mousedown", down);
+			fx.addEventListener("touchstart", down, { passive: true });
+			fx.addEventListener("mouseup", up);
+			fx.addEventListener("mouseleave", up);
+			fx.addEventListener("touchend", up);
 		}
 	}
 
@@ -277,6 +357,22 @@
 		l2.textContent = pair[1];
 	}
 
+	function wireVolume() {
+		var el = document.getElementById("sliderVol");
+		if (!el || el.dataset.wired) { return; }
+		el.dataset.wired = "1";
+		var apply = function (announce) {
+			var pct = +el.value;                 // 0..100
+			var db = pct === 0 ? -60 : (pct / 100) * 40 - 40;  // -40..0 dB
+			try { if (window.Tone) { Tone.Master.volume.value = db; } } catch (e) {}
+			window.volume = Math.round(pct / 100 * 16);
+			window.mainVolume = db;
+			if (announce) { flash("master volume " + pct + "%", "info"); }
+		};
+		el.addEventListener("input", function () { apply(true); });
+		apply(false);
+	}
+
 	function wireRecordPad() {
 		var pad = document.getElementById("btnRecord");
 		var btn = document.getElementById("recBtn");
@@ -324,6 +420,7 @@
 		buildHud();
 		wireSlider(1);
 		wireSlider(2);
+		wireVolume();
 		wireTouchShims();
 		var tries = 0;
 		var iv = setInterval(function () {
