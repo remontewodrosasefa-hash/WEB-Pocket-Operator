@@ -1,0 +1,169 @@
+/* mobile.css — phone layout: the PO fills the screen; the guide and the library
+ * are drawers behind a button in each bottom corner. Loaded after replica.css.
+ * Everything here is gated to touch / narrow screens; desktop is untouched.
+ */
+
+/* the drawer chrome is built by js/mobile.js and hidden on desktop */
+#fabInfo, #fabLib, #drawerScrim, #infoDrawer { display: none; }
+
+@media (max-width: 720px), (pointer: coarse) {
+
+	html, body { height: 100%; overflow: hidden; }
+
+	main {
+		flex-direction: column;
+		overflow: hidden;
+		transition: transform 0.32s cubic-bezier(.4, .0, .2, 1);
+		will-change: transform;
+	}
+
+	/* desktop guide is replaced by the touch drawer */
+	nav { display: none !important; }
+
+	article {
+		order: 0;
+		flex: 1 1 auto;
+		align-items: flex-start;
+		justify-content: center;
+		overflow-y: auto;
+		padding: 10px 6px 84px;
+	}
+
+	/* ---- bottom-corner buttons ---- */
+	#fabInfo, #fabLib {
+		display: flex;
+		position: fixed;
+		bottom: calc(12px + env(safe-area-inset-bottom, 0));
+		z-index: 900;
+		align-items: center;
+		gap: 6px;
+		height: 46px;
+		padding: 0 16px;
+		border: 1px solid #3a3d33;
+		border-radius: 23px;
+		background: linear-gradient(160deg, #24261f, #141410);
+		color: #ff9a4d;
+		font: 600 13px/1 ui-monospace, Menlo, monospace;
+		letter-spacing: 0.1em;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
+	}
+	#fabInfo { left: calc(12px + env(safe-area-inset-left, 0)); }
+	#fabLib  { right: calc(12px + env(safe-area-inset-right, 0)); }
+	#fabInfo:active, #fabLib:active { transform: translateY(1px); }
+
+	/* ---- scrim ---- */
+	#drawerScrim {
+		display: block;
+		position: fixed;
+		inset: 0;
+		z-index: 840;
+		background: rgba(6, 6, 8, 0.55);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.32s ease;
+	}
+	body.drawer-open #drawerScrim { opacity: 1; pointer-events: auto; }
+
+	/* ---- the two drawers ---- */
+	#infoDrawer, aside#library {
+		display: flex;
+		flex-direction: column;
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		width: 86vw;
+		max-width: 380px;
+		z-index: 850;
+		background: #17171a;
+		box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+		transition: transform 0.32s cubic-bezier(.4, .0, .2, 1);
+		overflow: hidden;
+	}
+	#infoDrawer { left: 0; transform: translateX(-101%); border-right: 1px solid #2c2c30; }
+	aside#library { right: 0; left: auto; margin: 0; max-height: none; transform: translateX(101%); border-left: 1px solid #2c2c30; }
+
+	body.drawer-info #infoDrawer { transform: translateX(0); }
+	body.drawer-info main { transform: translateX(76vw); }
+
+	body.drawer-lib aside#library { transform: translateX(0); }
+	body.drawer-lib main { transform: translateX(-76vw); }
+
+	/* drawer inner header */
+	.drawerHead {
+		flex: 0 0 auto;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 14px;
+		border-bottom: 1px solid #2c2c30;
+	}
+	.drawerHead h2 {
+		margin: 0;
+		font: 700 14px/1 'Delius Unicase', cursive;
+		color: #ff7a1a;
+		letter-spacing: 0.04em;
+	}
+	.drawerClose {
+		border: none;
+		background: #26262b;
+		color: #cfcfcf;
+		width: 30px;
+		height: 30px;
+		border-radius: 8px;
+		font-size: 16px;
+		line-height: 1;
+	}
+
+	/* ---- info drawer body (touch guide) ---- */
+	#infoBody {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		-webkit-overflow-scrolling: touch;
+		padding: 4px 16px 40px;
+		color: #e2e2e2;
+		font-size: 13.5px;
+		line-height: 1.5;
+	}
+	#infoBody h3 {
+		margin: 18px 0 4px;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #ff9a4d;
+		border-bottom: 1px solid #333;
+		padding-bottom: 3px;
+	}
+	#infoBody ol, #infoBody ul { margin: 0; padding-left: 20px; }
+	#infoBody li { margin: 4px 0; }
+	#infoBody b { color: #fff; }
+	#infoBody .tag {
+		display: inline-block;
+		background: #ff7a1a;
+		color: #141410;
+		font-weight: 700;
+		font-size: 11px;
+		padding: 1px 6px;
+		border-radius: 4px;
+	}
+
+	/* library drawer: keep its internal scroll, drop the desktop border-top */
+	aside#library { border-top: none; }
+	#libHead { padding-top: 0; }
+	#libList { -webkit-overflow-scrolling: touch; }
+
+	/* give the LCD HUD a touch, and stop iOS rubber-banding the page */
+	#lcdHud { font-size: 11px; }
+
+	/* PWA: keep clear of the notch / home indicator */
+	header { padding-top: env(safe-area-inset-top, 0); }
+}
+
+/* wider phones / small tablets: drawers a bit narrower relative to screen */
+@media (pointer: coarse) and (min-width: 560px) {
+	#infoDrawer, aside#library { width: 62vw; }
+	body.drawer-info main { transform: translateX(54vw); }
+	body.drawer-lib main { transform: translateX(-54vw); }
+}
