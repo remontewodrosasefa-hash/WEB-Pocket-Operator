@@ -314,6 +314,7 @@
 		var aside = document.getElementById("library");
 		if (!aside) { return; }
 		aside.innerHTML =
+			'<button id="libBack" type="button">&lsaquo; back to the unit</button>' +
 			'<div id="libHead">' +
 				'<h2>Library</h2>' +
 				'<button class="libTab active" id="libTabSamples">Samples</button>' +

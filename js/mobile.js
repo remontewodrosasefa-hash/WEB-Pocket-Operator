@@ -102,9 +102,48 @@
 		document.addEventListener("keydown", function (e) {
 			if (e.key === "Escape") { close(); }
 		});
+		// "‹ back" row inside the library (rendered by library.js, so delegate)
+		document.addEventListener("click", function (e) {
+			if (e.target.closest("#libBack")) { close(); }
+		});
 		// NOTE: the library drawer never auto-closes — you close it with the ×,
-		// the scrim, or the LIBRARY button. Picking / previewing a sample keeps
-		// it open so you can choose a slot and keep browsing.
+		// the scrim, the back row, or the LIBRARY button.
+	}
+
+	/* ---- scale the whole unit to fit the viewport, no scrolling, any size ---- */
+	var fitPending, fitting = false;
+	function fitUnit() {
+		var board = document.querySelector(".circuitBoard");
+		var art = document.querySelector("article");
+		if (!board || !art || fitting) { return; }
+		if (!mq.matches) { board.style.transform = ""; board.style.width = ""; return; }
+		fitting = true;
+		board.style.transform = "none";
+		board.style.width = "372px";
+		var nh = board.offsetHeight || 700;
+		var aw = art.clientWidth - 6;
+		var ah = art.clientHeight - 6;
+		var s = Math.min(aw / 372, ah / nh);
+		s = Math.max(0.3, Math.min(s, 1.25));
+		board.style.transform = "scale(" + s + ")";
+		setTimeout(function () { fitting = false; }, 0);
+	}
+	function scheduleFit() {
+		clearTimeout(fitPending);
+		fitPending = setTimeout(fitUnit, 60);
+	}
+	function watchFit() {
+		fitUnit();
+		[120, 400, 900, 1600].forEach(function (t) { setTimeout(fitUnit, t); });
+		window.addEventListener("resize", scheduleFit);
+		window.addEventListener("orientationchange", function () { setTimeout(fitUnit, 200); });
+		if (window.ResizeObserver) {
+			var board = document.querySelector(".circuitBoard");
+			var art = document.querySelector("article");
+			var ro = new ResizeObserver(scheduleFit);
+			if (board) { ro.observe(board); }
+			if (art) { ro.observe(art); }
+		}
 	}
 
 	function toggle(which) {
@@ -120,9 +159,15 @@
 		document.body.classList.remove("drawer-info", "drawer-lib", "drawer-open");
 	}
 
+	var watching = false;
 	function sync() {
-		if (mq.matches) { build(); }
-		else { close(); }
+		if (mq.matches) {
+			build();
+			if (!watching) { watching = true; watchFit(); }
+		} else {
+			close();
+			fitUnit(); // clears the transform on desktop
+		}
 	}
 
 	if (document.readyState === "loading") {

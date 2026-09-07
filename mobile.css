@@ -1,48 +1,75 @@
 /* mobile.css — phone layout.
- * The PO fills the screen. The guide and the library are drawers, opened by two
- * buttons built into the bottom of the unit itself (see .hwRow in replica.css
- * and js/mobile.js). Loaded after replica.css; desktop is untouched.
+ * The unit is scaled by js/mobile.js (fitUnit) to fill the viewport with NO
+ * scrolling at any phone size. The guide and the library are drawers opened by
+ * two buttons built into the bottom of the unit. Loaded after replica.css.
  */
 
-/* drawer chrome is inert on desktop */
+/* drawer chrome + back button are inert on desktop */
 #drawerScrim, #infoDrawer { display: none; }
+#libBack { display: none; }
 
 @media (max-width: 720px), (pointer: coarse) {
 
 	html, body { height: 100%; overflow: hidden; }
 
-	/* reclaim the name bar for screen space */
 	header { display: none !important; }
+	nav { display: none !important; }
 
 	main {
 		flex-direction: column;
 		overflow: hidden;
+		height: 100%;
 		transition: transform 0.32s cubic-bezier(.4, .0, .2, 1);
 		will-change: transform;
 	}
 
-	/* desktop guide column is replaced by the INFO drawer */
-	nav { display: none !important; }
-
-	/* screen gets even more room on a phone */
-	.lcd { height: 44vh; max-height: 300px; }
-	#hudMain { font-size: 22px; }
-	#hudSub { font-size: 12px; }
-	.head { min-height: 28px; }
-	#logo { width: 34px; height: 34px; }
-	#microphone { height: 30px; }
-	.circuitBoard { gap: 8px; }
-
 	article {
 		order: 0;
 		flex: 1 1 auto;
-		align-items: flex-start;
+		min-height: 0;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		overflow-y: auto;
-		padding: 10px 6px 24px;
+		overflow: hidden;
+		padding: 4px;
 	}
 
-	/* ---- the two hardware buttons at the bottom of the unit ---- */
+	.po33 {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	/* natural size — fitUnit() applies transform: scale() to fit the screen */
+	.circuitBoard {
+		width: 372px;
+		max-width: none;
+		height: auto;
+		gap: 8px;
+		transform-origin: center center;
+	}
+
+	/* screen ~30% smaller than before, fixed within the scaled unit */
+	.lcd { height: 188px; }
+	#hudMain { font-size: 19px; }
+	#hudSub  { font-size: 11px; }
+	#lcdHud  { font-size: 11px; }
+
+	.head { min-height: 26px; }
+	#logo { width: 32px; height: 32px; }
+	#microphone { height: 28px; }
+
+	.buttonGrid { grid-auto-rows: 52px; row-gap: 18px; }
+	.buttonGridItem, .gridHover,
+	.modeRow .buttonGridItem { width: 48px; height: 48px; }
+	.buttonBG { width: 42px; height: 42px; margin-left: -21px; }
+	.btnText { top: calc(100% + 1px); font-size: 11px; }
+	.btnNumber > .btnText { font-size: 13px; }
+	input[type="range"] { height: 30px; }
+
 	.hwRow { display: flex; }
 
 	/* ---- scrim ---- */
@@ -58,34 +85,63 @@
 	}
 	body.drawer-open #drawerScrim { opacity: 1; pointer-events: auto; }
 
-	/* ---- the two drawers ---- */
+	/* ---- drawers: 90% of the screen width ---- */
 	#infoDrawer, aside#library {
 		display: flex;
 		flex-direction: column;
 		position: fixed;
 		top: 0;
 		bottom: 0;
-		width: 86vw;
-		max-width: 380px;
+		width: 90vw;
+		max-width: none;
 		z-index: 850;
 		background: #17171a;
 		box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 		transition: transform 0.32s cubic-bezier(.4, .0, .2, 1);
 		overflow: hidden;
 	}
-	#infoDrawer { left: 0; transform: translateX(-101%); border-right: 1px solid #2c2c30; }
+	#infoDrawer { left: 0; transform: translateX(-102%); border-right: 1px solid #2c2c30; }
 	aside#library {
 		right: 0; left: auto; margin: 0; max-height: none;
-		transform: translateX(101%); border-left: 1px solid #2c2c30; border-top: none;
+		transform: translateX(102%); border-left: 1px solid #2c2c30; border-top: none;
 	}
 
 	body.drawer-info #infoDrawer { transform: translateX(0); }
-	body.drawer-info main { transform: translateX(76vw); }
-
+	body.drawer-info main { transform: translateX(82vw); }
 	body.drawer-lib aside#library { transform: translateX(0); }
-	body.drawer-lib main { transform: translateX(-76vw); }
+	body.drawer-lib main { transform: translateX(-82vw); }
 
-	/* drawer inner header */
+	/* ---- library: back button in its own row ---- */
+	#libBack {
+		display: block;
+		flex: 0 0 auto;
+		width: 100%;
+		text-align: left;
+		padding: 14px 16px;
+		background: #201f24;
+		border: none;
+		border-bottom: 1px solid #2c2c30;
+		color: #ff9a4d;
+		font: 700 15px/1 ui-monospace, Menlo, monospace;
+		letter-spacing: 0.04em;
+	}
+	#libBack:active { background: #2a2932; }
+
+	#libHead { padding: 10px 14px; gap: 8px; }
+	#libHead h2 { flex-basis: 100%; }
+	#libControls { margin-left: 0; flex-wrap: wrap; width: 100%; }
+	#libPack { flex: 1 1 140px; }
+	#libSearch { flex: 0 0 84px; }
+	#recWrap { flex-wrap: wrap; width: 100%; }
+
+	/* full-width sample rows */
+	#libList { grid-template-columns: 1fr !important; padding: 8px 12px 30px; gap: 7px; }
+	.libRow { padding: 10px 10px; font-size: 14px; gap: 12px; }
+	.libPlay { width: 38px; height: 38px; font-size: 13px; }
+	.libAssign { padding: 8px 14px; font-size: 13px; }
+	.slotRow { padding: 10px; font-size: 14px; }
+
+	/* ---- info drawer ---- */
 	.drawerHead {
 		flex: 0 0 auto;
 		display: flex;
@@ -104,14 +160,12 @@
 		border: none;
 		background: #26262b;
 		color: #cfcfcf;
-		width: 30px;
-		height: 30px;
+		width: 32px;
+		height: 32px;
 		border-radius: 8px;
-		font-size: 16px;
+		font-size: 17px;
 		line-height: 1;
 	}
-
-	/* ---- info drawer body (touch guide) ---- */
 	#infoBody {
 		flex: 1 1 auto;
 		min-height: 0;
@@ -143,17 +197,4 @@
 		padding: 1px 6px;
 		border-radius: 4px;
 	}
-
-	#libHead { padding-top: 0; }
-	#libList { -webkit-overflow-scrolling: touch; }
-	#lcdHud { font-size: 11px; }
-
-	header { padding-top: env(safe-area-inset-top, 0); }
-}
-
-/* wider phones / small tablets: drawers a bit narrower */
-@media (pointer: coarse) and (min-width: 560px) {
-	#infoDrawer, aside#library { width: 62vw; }
-	body.drawer-info main { transform: translateX(54vw); }
-	body.drawer-lib main { transform: translateX(-54vw); }
 }
