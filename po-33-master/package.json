@@ -1,0 +1,11 @@
+{
+  "name": "po-33",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "James Benson <jjbenson85@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "npx --yes serve -l 5000 .",
+    "serve": "python3 -m http.server 5000"
+  }
+}

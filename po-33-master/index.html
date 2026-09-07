@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+ 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+ 	<link href="style.css" rel="stylesheet">
+ 	<link href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100" rel="stylesheet">
+ 	<link href="https://fonts.googleapis.com/css?family=Delius+Unicase:700" rel="stylesheet">
+ 	<link href="po33.css" rel="stylesheet">
+ 	<link href="replica.css" rel="stylesheet">
+ 	<link href="library.css" rel="stylesheet">
+ 	<link href="studio.css" rel="stylesheet">
+ 	<meta name="description" content="A browser recreation of the Teenage Engineering PO-33 K.O! pocket sampler and sequencer: 16 sounds, 16-step patterns, pattern chaining, swing and a browsable sample library.">
+ 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+ 	<link rel="manifest" href="manifest.webmanifest">
+ 	<meta name="theme-color" content="#0d0d0f">
+ 	<meta name="mobile-web-app-capable" content="yes">
+ 	<meta name="apple-mobile-web-app-capable" content="yes">
+ 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+ 	<meta name="apple-mobile-web-app-title" content="PO-33">
+ 	<link rel="apple-touch-icon" href="apple-touch-icon.png">
+ 	<link rel="icon" href="icon.svg" type="image/svg+xml">
+ 	<title>PO-33 Knock Out!</title>
+</head>
+<body>
+	<div id="powerOverlay">
+		<div id="powerInner">
+			<div id="powerTitle">PO-33 Knock Out!</div>
+			<p>Web audio is muted until you interact with the page.</p>
+			<button id="powerBtn" type="button">Power on</button>
+			<p class="powerHint">Then use the on-screen buttons or your keyboard.</p>
+		</div>
+	</div>
+	<header>
+	  <div id="headerLeft">Remon gang gang</div>
+	  <div id="headerRight">PO-33 Knock Out!</div>
+	</header>
+	<main>
+	  <article>
+	<div class="po33">
+		<div class="circuitBoard">
+			<div class="head">
+				<div class="koLabelContainer">
+					<div class="koLabel">K.O</div>
+					<div class="koItalicLabel">!</div>
+				</div>
+				<img src="TeenageEngineering3.svg" id="logo" height="150px" width="150px" >
+				<img src="mic.svg" id="microphone">
+			</div>
+			<div class="lcd">
+					<div id="hiphop">HIP-HOP</div>
+					<div id="disco">DISCO</div>
+					<div id="tencho">TENCHO</div>
+				<div class="lcdKO">K.O!</div>
+				<div class="editSymbol"></div>
+				<div class="segmentDisplay">1133</div>
+				<div class="ampm">
+					<div id="am">am</div>
+					<div id="pm">pm</div>
+				</div>
+				<div class="levelMeter">
+					<!-- <div class="levelMeterSegment"></div> -->
+				</div>
+			</div>
+			<div class="controlStrip">
+				<div class="modeRow">
+					<div id="btnSound" class="buttonGridItem soundBtn">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">sound</div>
+					</div>
+					<div id="btnPattern" class="buttonGridItem ">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">pattern</div>
+					</div>
+					<div id="btnBPM" class="buttonGridItem ">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">bpm</div>
+					</div>
+				</div>
+				<div class="sliderRow">
+					<label class="sliderWrap">
+						<input type="range" id="slider1" min="0" max="1000" value="0" step="1" aria-label="dial A">
+						<span class="sliderLabel" id="slider1Label">A</span>
+					</label>
+					<label class="sliderWrap">
+						<input type="range" id="slider2" min="0" max="1000" value="0" step="1" aria-label="dial B">
+						<span class="sliderLabel" id="slider2Label">B</span>
+					</label>
+				</div>
+			</div>
+			<div class="gridArea">
+			<div class="gridGutter"><span class="gutMelodic">MELODIC</span><span class="gutDrum">DRUM</span></div>
+			<div class="buttonGrid">
+				<div id="btn1" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">1</div>
+				</div>
+				<div id="btn2" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">2</div>
+				</div>
+				<div id="btn3" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">3</div>
+				</div>
+				<div id="btn4" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">4</div>
+				</div>
+				<div id="btnRecord" class="buttonGridItem">
+					<div class="buttonBG">
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>			
+					<div class="btnText">record</div>
+				</div>
+				<div id="btn5" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">5</div>
+				</div>
+				<div id="btn6" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">6</div>
+				</div>
+				<div id="btn7" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">7</div>
+				</div>
+				<div id="btn8" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">8</div>
+				</div>
+				<div id="btnFX" class="buttonGridItem fxBtn">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">FX</div>
+				</div>
+				<div id="btn9" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">9</div>
+				</div>
+				<div id="btn10" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">10</div>
+				</div>
+				<div id="btn11" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">11</div>
+				</div>
+				<div id="btn12" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">12</div>
+				</div>
+				<div id="btnPlay" class="buttonGridItem playBtn">
+					<div class="buttonBG">
+						<div id="btnPlayLED"class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">play</div>
+				</div>
+				<div id="btn13" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">13</div>
+				</div>
+				<div id="btn14" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">14</div>
+				</div>
+				<div id="btn15" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">15</div>
+				</div>
+				<div id="btn16" class="buttonGridItem btnNumber">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>
+					<div class="btnText">16</div>
+				</div>
+				<div id="btnWrite" class="buttonGridItem writeBtn">
+					<div class="buttonBG">
+						<div class="led"></div>
+						<div class="square">
+							<div class ="circle"></div>
+						</div>
+					</div>
+					<div class="gridHover"></div>				
+					<div class="btnText">write</div>
+				</div>
+			</div>
+			</div>
+		</div>
+	</div>
+	</article>
+	  <nav>
+	  	<h1>HOW TO PLAY ME!</h1>
+
+	  	<h2>Get started</h2>
+	  	<ol>
+			<li>Click <button onclick="allowSound()">Allow Sound</button> if you skipped the power-on screen.</li>
+	  		<li>Press <button onclick="playButtonFunction()">PLAY</button> to start the sequencer. Press it again to stop.</li>
+	  		<li>When playback is stopped, press any <button>NUMBER</button> button to play the currently selected sound live.</li>
+	 	</ol>
+
+	  	<h2>Keyboard</h2>
+	  	<ul>
+	  		<li><b>Number pads 1&ndash;16:</b> keys <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> / <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> / <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> / <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd></li>
+	  		<li><kbd>Return</kbd> = PLAY &nbsp;&middot;&nbsp; <kbd>5</kbd> = SOUND &nbsp;&middot;&nbsp; <kbd>6</kbd> = PATTERN &nbsp;&middot;&nbsp; <kbd>7</kbd> = BPM &nbsp;&middot;&nbsp; <kbd>8</kbd> = FX &nbsp;&middot;&nbsp; <kbd>9</kbd> = WRITE</li>
+	  	</ul>
+
+	  	<h2>Choose a sound</h2>
+	  	<ol>
+	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button>. Lit LEDs show which slots have a sound.</li>
+	  		<li>Press a <button>NUMBER</button> to pick the active slot. 1&ndash;8 are <b>melodic</b> (each NUMBER = a different note); 9&ndash;16 are <b>drum</b> (each NUMBER = a different pad).</li>
+	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button> again to leave sound-select.</li>
+	  	</ol>
+
+	  	<h2>Load your own samples (Library, bottom of screen)</h2>
+	  	<ol>
+	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button> then a <button>NUMBER</button> to choose which slot you're filling. The Library says "loads into SOUND&nbsp;<i>n</i>".</li>
+	  		<li>Pick a pack, press <b>&#9654;</b> to preview, then <b>click the sample</b> &mdash; it loads onto that slot instantly.</li>
+	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button> to exit. Now the pads (and keys) play your sample. Use it live, or WRITE it into a pattern.</li>
+	  		<li><b>slot&hellip;</b> on a row lets you target a specific slot without changing the selected one. The <b>Slots</b> tab shows the whole 1&ndash;16 map.</li>
+	  	</ol>
+
+	  	<h2>Record a sample</h2>
+	  	<ol>
+	  		<li>Choose the target slot first (<button onclick="soundButtonFunction()">SOUND</button> + <button>NUMBER</button>).</li>
+	  		<li>In the Library bar pick <b>&#127897; microphone</b> or <b>&#128421; browser tab audio</b>, then press <b>&#9679; record</b> (or tap the orange <button>RECORD</button> pad on the unit).</li>
+	  		<li>For tab audio: in the share dialog choose the Chrome tab playing the sound (YouTube / Spotify web) and tick <b>&ldquo;Share tab audio&rdquo;</b>. Play the part you want; press <b>&#9632; stop</b> (auto-stops at 20s).</li>
+	  		<li>The clip lands on the selected slot and in the <b>&#9733; my recordings</b> pack. <b>download .wav</b> to keep it &mdash; drop it in <code>samples/</code> to make it permanent.</li>
+	  		<li>Capturing the Spotify/YouTube <i>desktop apps</i> isn't possible from a browser on macOS &mdash; use their web players in a tab, or route audio through a loopback device (BlackHole / Loopback) and pick it as the microphone.</li>
+	  	</ol>
+
+	  	<h2>Build a pattern</h2>
+	  	<ol>
+	  		<li>Press <button onclick="writeButtonFunction()">WRITE</button> to enter edit mode.</li>
+	  		<li>Press a <button>NUMBER</button> button (a step 1&ndash;16) to add the current sound to that step.</li>
+	  		<li>Press <button onclick="writeButtonFunction()">WRITE</button> again to return to performance mode, then pick a NUMBER to set the pitch / sample used when writing.</li>
+	  	</ol>
+
+	  	<h2>Chain patterns into a song</h2>
+	  	<ol>
+	  		<li>Hold <button onclick="patternButtonFunction()">PATTERN</button> (press it to toggle the hold).</li>
+	  		<li>Press a <button>NUMBER</button> to select a pattern; press more numbers to append them to the chain.</li>
+	  		<li>Press <button onclick="patternButtonFunction()">PATTERN</button> again to exit.</li>
+	  	</ol>
+
+	  	<h2>Tempo, swing &amp; volume</h2>
+	  	<ol>
+	  		<li>Press <button onclick="tempoButtonFunction()">BPM</button>, then drag the two <b>sliders</b> (label shows what they do): <b>swing</b> and <b>tempo</b>. Mouse wheel over a slider also works.</li>
+	  		<li>Double-tap <button onclick="tempoButtonFunction()">BPM</button> to cycle the preset tempos (80 / 120 / 140).</li>
+	  		<li>NUMBER buttons 1&ndash;16 set the master volume. In performance mode the sliders are pitch / volume (or filter, or trim &mdash; press <button onclick="fxButtonFunction()">FX</button> to switch).</li>
+	  	</ol>
+
+	  	<h2>On your phone (install as an app)</h2>
+	  	<ol>
+	  		<li>Open the site in a browser (see the URL your host gives you).</li>
+	  		<li><b>iPhone:</b> Share &rarr; <b>Add to Home Screen</b>. &nbsp; <b>Android:</b> menu &rarr; <b>Install app</b> / <b>Add to Home screen</b>.</li>
+	  		<li>Launch it from the home-screen icon &mdash; runs full-screen and works offline after the first load.</li>
+	  		<li>Everything is touch: tap pads, drag sliders. Tab-audio recording is desktop-Chrome only; mic recording works on Android and recent iOS Safari.</li>
+	  	</ol>
+
+	  	<h2>Record &amp; effects</h2>
+	  	<ol>
+	  		<li>While playing, hold <button onclick="writeButtonFunction()">WRITE</button> for 3 seconds to live-record what you play into the pattern.</li>
+	  		<li>In performance mode press <button onclick="fxButtonFunction()">FX</button> to reach FLT; the dials apply a filter you can then write into a pattern.</li>
+	  		<li>In Pattern-select mode press <button onclick="writeButtonFunction()">WRITE</button> to copy a pattern, then choose an empty slot to paste it.</li>
+	  	</ol>
+	  </nav>
+	</main>
+	<aside id="library"></aside>
+	<footer></footer>
+	
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="js/Tone.js"></script>
+<script src="js/po33.js"></script>
+<script src="js/boot.js"></script>
+<script src="js/library.js"></script>
+<script src="js/studio.js"></script>
+</body>

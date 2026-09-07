@@ -1,0 +1,17 @@
+Po ALL 430 samples
+
+0-24 po12 rhythm
+100-147 po14 sub
+200-247 po16 factory
+300-320 po20 arcade
+400-418 po24 office
+500-530 po28 robot
+
+531-572 po128 Mega Man
+
+600-615 po32 tonic
+700-767 po33 K.O. 
+800-830 po35 speak
+
+900-951 po133 Street fighter
+952-981 po137 Rick and Morty

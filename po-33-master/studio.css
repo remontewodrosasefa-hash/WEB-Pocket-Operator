@@ -1,0 +1,115 @@
+/* studio.css - LCD HUD + recorder controls */
+
+/* ---------- LCD HUD ---------- */
+
+.lcd { position: relative; }
+
+#lcdHud {
+	position: absolute;
+	inset: 0;
+	padding: 7px 11px 9px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	font-family: ui-monospace, "SF Mono", Menlo, monospace;
+	color: #1b2411;
+	background: linear-gradient(180deg, #c4cdae 0%, #b3bd9b 45%, #a3ad8a 100%);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+#lcdHud .hudTop {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	font-size: 10px;
+	letter-spacing: 0.08em;
+	opacity: 0.85;
+}
+#hudMode {
+	font-weight: 700;
+	background: #1b2411;
+	color: #c4cdae;
+	padding: 1px 6px;
+	border-radius: 3px;
+}
+
+#hudMain {
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.15;
+	margin-top: 2px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+#hudSub {
+	font-size: 10px;
+	line-height: 1.2;
+	opacity: 0.8;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+#hudSteps {
+	margin-top: auto;
+	display: grid;
+	grid-template-columns: repeat(16, 1fr);
+	gap: 2px;
+}
+#hudSteps i {
+	height: 7px;
+	border-radius: 1px;
+	background: rgba(27, 36, 17, 0.16);
+}
+#hudSteps i.on { background: rgba(27, 36, 17, 0.6); }
+#hudSteps i.cur { background: #b3402a; box-shadow: 0 0 4px rgba(179, 64, 42, 0.8); }
+#hudSteps i:nth-child(4n+1) { background: rgba(27, 36, 17, 0.3); }
+#hudSteps i.on:nth-child(4n+1) { background: rgba(27, 36, 17, 0.7); }
+#hudSteps i.cur:nth-child(4n+1) { background: #b3402a; }
+
+/* ---------- recorder ---------- */
+
+#recWrap {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 8px;
+}
+
+#recSource {
+	font: inherit;
+	font-size: 12px;
+	padding: 4px 6px;
+	background: #26262b;
+	color: #e2e2e2;
+	border: 1px solid #3a3a40;
+	border-radius: 5px;
+}
+
+#recBtn {
+	font: inherit;
+	font-size: 12px;
+	padding: 5px 12px;
+	background: #2a1c1c;
+	color: #ff6b6b;
+	border: 1px solid #5a3535;
+	border-radius: 5px;
+	cursor: pointer;
+}
+#recBtn:hover { border-color: #ff6b6b; }
+#recBtn.recording {
+	background: #ff3b3b;
+	color: #fff;
+	border-color: #ff3b3b;
+	animation: recPulse 1s ease-in-out infinite;
+}
+@keyframes recPulse { 50% { opacity: 0.6; } }
+
+#recStatus { font-size: 11px; color: #9a9a9a; }
+.recDl { color: #ff9a4d; text-decoration: underline; }
+
+@media screen and (max-width: 640px) {
+	#recWrap { margin-left: 0; }
+}
