@@ -391,6 +391,8 @@
 		addUserSample: function (id, url, seconds) { return addUserSample(id, url, seconds); },
 		findSample: findSample,
 		slotName: function (slot1to16) { return slotSampleIds[slot1to16 - 1] || null; },
+		slotIds: function () { return slotSampleIds.slice(); },
+		restoreSlots: function () { restoreSlots(); },
 		toast: toast
 	};
 

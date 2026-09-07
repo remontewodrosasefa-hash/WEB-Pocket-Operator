@@ -140,6 +140,123 @@
 #recStatus { font-size: 11px; color: #9a9a9a; }
 .recDl { color: #ff9a4d; text-decoration: underline; }
 
+#expBtn {
+	font: inherit;
+	font-size: 12px;
+	padding: 5px 10px;
+	background: #1c2620;
+	color: #9ad0a0;
+	border: 1px solid #375040;
+	border-radius: 5px;
+	cursor: pointer;
+}
+#expBtn.recording { background: #ff3b3b; color: #fff; border-color: #ff3b3b; animation: recPulse 1s ease-in-out infinite; }
+
 @media screen and (max-width: 640px) {
 	#recWrap { margin-left: 0; }
 }
+
+/* ---------- PROJECT browser (drawn over the LCD) ---------- */
+
+#projBtn {
+	font: inherit;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	padding: 1px 6px;
+	margin-left: 8px;
+	background: #1b2411;
+	color: #c4cdae;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+#projView {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	padding: 8px 11px 10px;
+	background: linear-gradient(180deg, #c4cdae, #a3ad8a);
+	color: #1b2411;
+	font-family: ui-monospace, Menlo, monospace;
+}
+.pvHead {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-weight: 700;
+	font-size: 12px;
+	letter-spacing: 0.08em;
+}
+.pvHead button {
+	border: none;
+	background: #1b2411;
+	color: #c4cdae;
+	width: 22px;
+	height: 22px;
+	border-radius: 4px;
+	font-size: 14px;
+	line-height: 1;
+}
+.pvNew { display: flex; gap: 4px; }
+.pvNew input {
+	flex: 1;
+	min-width: 0;
+	font: inherit;
+	font-size: 12px;
+	padding: 4px 6px;
+	border: 1px solid #1b2411;
+	border-radius: 3px;
+	background: rgba(255,255,255,0.4);
+	color: #1b2411;
+}
+.pvNew button {
+	font: inherit;
+	font-size: 11px;
+	padding: 4px 8px;
+	border: 1px solid #1b2411;
+	border-radius: 3px;
+	background: transparent;
+	color: #1b2411;
+}
+#pvList {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.pvEmpty { font-size: 12px; opacity: 0.6; padding: 8px 2px; }
+.pvRow {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	border-bottom: 1px solid rgba(27,36,17,0.25);
+	padding: 3px 0;
+}
+.pvRow.cur { font-weight: 700; }
+.pvRow > button[data-pv="open"] {
+	flex: 1;
+	text-align: left;
+	border: none;
+	background: none;
+	font: inherit;
+	font-size: 13px;
+	color: #1b2411;
+	padding: 4px 2px;
+}
+.pvDate { font-size: 10px; opacity: 0.6; }
+.pvRow > button[data-pv="del"] {
+	border: none;
+	background: none;
+	color: #7a2a15;
+	font-size: 14px;
+	padding: 2px 6px;
+}
+.pvCur { font-size: 10px; opacity: 0.7; }

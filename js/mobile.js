@@ -67,6 +67,13 @@
 			'<li>The effect lasts while you hold the pad.</li>' +
 			'</ol>' +
 
+			'<h3>Projects</h3>' +
+			'<p>Saved in this browser — they survive site updates (only clearing ' +
+				'browser data or switching device loses them).</p>' +
+			'<div id="clearRow">' +
+				'<button id="projOpenBtn" type="button">open project browser (on screen)</button>' +
+			'</div>' +
+
 			'<h3>Clear</h3>' +
 			'<div id="clearRow">' +
 				'<button id="clearPtnBtn" type="button">clear this pattern</button>' +
@@ -120,6 +127,7 @@
 			if (e.target.closest("#libBack")) { close(); }
 			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
 			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }
+			if (e.target.id === "projOpenBtn" && window.PO33 && PO33.projects) { close(); PO33.projects.show(); }
 		});
 		// NOTE: the library drawer never auto-closes — you close it with the ×,
 		// the scrim, the back row, or the LIBRARY button.

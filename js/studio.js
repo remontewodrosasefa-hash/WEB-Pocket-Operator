@@ -145,10 +145,40 @@
 			artEl.innerHTML = ART[wantArt];
 		}
 
-		// live hint while FX is held (punch-in effects land in a later build)
+		// live hint while FX is held
 		if (window.fxHeld && !flashTimer) {
 			flash("FX held · " + (FX_NAMES[fxMode] || "TONE") + " — release to keep", "tip");
 		}
+
+		// recommended next step — nudge on mode changes only, never nagging
+		var ctxKey = effState + "|" + mode + "|" + (play ? 1 : 0) + "|" + (name ? 1 : 0);
+		if (ctxKey !== tick._ctx) {
+			tick._ctx = ctxKey;
+			var tip = nextHint(effState, mode, play, name, sel, pat);
+			if (tip && !flashTimer) { flash("next → " + tip, "tip"); }
+		}
+	}
+
+	function patternHasSteps(pat) {
+		try {
+			for (var c = 0; c < 16; c++) {
+				for (var b = 0; b < 16; b++) { if (newChannelArr[c][pat][b].noteOn) { return true; } }
+			}
+		} catch (e) {}
+		return false;
+	}
+
+	function nextHint(state, mode, play, haveSample, sel, pat) {
+		if (state === 2) { return "tap a pad to pick the slot, or click a Library sample"; }
+		if (state === 4) { return "drag the sliders for swing & tempo"; }
+		if (state === 3) { return "tap pads to pick / chain patterns, PATTERN to exit"; }
+		if (mode === 1) {
+			return patternHasSteps(pat) ? "PLAY to hear it, or WRITE to exit" : "tap pads 1-16 to add steps";
+		}
+		if (!haveSample && sel < 8) { return "open LIBRARY to load a sound onto this slot"; }
+		if (!play && patternHasSteps(pat)) { return "press PLAY"; }
+		if (!play) { return "SOUND + a pad to choose a sound, then WRITE to sequence"; }
+		return "hold FX + pads 1-8 for effects";
 	}
 
 	// screen reacts to every control: show what it does, or that it did nothing
@@ -390,6 +420,131 @@
 		if (mediaRec && mediaRec.state === "recording") { mediaRec.stop(); }
 	}
 
+	/* ---- export the mix as MP3 (records the master bus, encodes with lamejs) ---- */
+
+	var expRec = null, expChunks = [], expDest = null;
+
+	function loadLame() {
+		return new Promise(function (res, rej) {
+			if (window.lamejs) { return res(); }
+			var s = document.createElement("script");
+			s.src = "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js";
+			s.onload = res; s.onerror = rej;
+			document.head.appendChild(s);
+		});
+	}
+
+	function wireExport() {
+		var wrap = document.getElementById("recWrap");
+		if (!wrap || document.getElementById("expBtn")) { return; }
+		var b = document.createElement("button");
+		b.id = "expBtn"; b.type = "button"; b.textContent = "⬇ mp3";
+		b.title = "record the mix and export as MP3";
+		b.addEventListener("click", toggleExport);
+		wrap.appendChild(b);
+	}
+
+	function toggleExport() {
+		var b = document.getElementById("expBtn");
+		if (expRec && expRec.state === "recording") { expRec.stop(); return; }
+		loadLame().then(function () {
+			var raw = (window.Tone && Tone.context && (Tone.context._context || Tone.context)) || null;
+			if (!raw || !raw.createMediaStreamDestination) { status("export not supported here"); return; }
+			expDest = raw.createMediaStreamDestination();
+			try { Tone.Master.connect(expDest); } catch (e) { status("export: routing failed"); return; }
+			expChunks = [];
+			expRec = new MediaRecorder(expDest.stream);
+			expRec.ondataavailable = function (e) { if (e.data.size) { expChunks.push(e.data); } };
+			expRec.onstop = finishExport;
+			expRec.start();
+			b.textContent = "■ stop & save";
+			b.classList.add("recording");
+			flash("recording the mix — press stop to save MP3", "tip");
+		}).catch(function () { status("could not load MP3 encoder (offline?)"); });
+	}
+
+	async function finishExport() {
+		var b = document.getElementById("expBtn");
+		b.textContent = "⬇ mp3";
+		b.classList.remove("recording");
+		try { Tone.Master.disconnect(expDest); } catch (e) {}
+		var raw = Tone.context._context || Tone.context;
+		var buf = await new Blob(expChunks).arrayBuffer();
+		var audio;
+		try { audio = await raw.decodeAudioData(buf.slice(0)); }
+		catch (e) { status("export: decode failed"); return; }
+
+		status("encoding MP3…");
+		var mp3 = encodeMp3(audio);
+		var url = URL.createObjectURL(mp3);
+		var a = document.createElement("a");
+		a.href = url; a.download = "po33-mix-" + Date.now() + ".mp3"; a.textContent = "download MP3";
+		a.className = "recDl";
+		var s = document.getElementById("recStatus");
+		s.textContent = "mix ready · ";
+		s.appendChild(a);
+	}
+
+	function encodeMp3(audio) {
+		var ch = Math.min(2, audio.numberOfChannels);
+		var enc = new lamejs.Mp3Encoder(ch, audio.sampleRate, 128);
+		var l = audio.getChannelData(0);
+		var r = ch > 1 ? audio.getChannelData(1) : l;
+		var block = 1152, out = [];
+		var li = new Int16Array(block), ri = new Int16Array(block);
+		for (var i = 0; i < l.length; i += block) {
+			var n = Math.min(block, l.length - i);
+			for (var j = 0; j < n; j++) {
+				li[j] = Math.max(-1, Math.min(1, l[i + j])) * 32767;
+				ri[j] = Math.max(-1, Math.min(1, r[i + j])) * 32767;
+			}
+			var chunk = ch > 1 ? enc.encodeBuffer(li.subarray(0, n), ri.subarray(0, n))
+			                   : enc.encodeBuffer(li.subarray(0, n));
+			if (chunk.length) { out.push(chunk); }
+		}
+		var end = enc.flush();
+		if (end.length) { out.push(end); }
+		return new Blob(out, { type: "audio/mp3" });
+	}
+
+	/* ---- IndexedDB: recordings survive a reload ---- */
+
+	function idbOpen() {
+		return new Promise(function (res, rej) {
+			var r = indexedDB.open("po33", 1);
+			r.onupgradeneeded = function () {
+				if (!r.result.objectStoreNames.contains("rec")) { r.result.createObjectStore("rec"); }
+			};
+			r.onsuccess = function () { res(r.result); };
+			r.onerror = function () { rej(r.error); };
+		});
+	}
+	function idbPut(name, blob, seconds) {
+		if (!window.indexedDB) { return; }
+		idbOpen().then(function (db) {
+			var tx = db.transaction("rec", "readwrite");
+			tx.objectStore("rec").put({ blob: blob, seconds: seconds }, name);
+		}).catch(function () {});
+	}
+	function idbRestore() {
+		if (!window.indexedDB || !window.PO33Lib) { return; }
+		idbOpen().then(function (db) {
+			var tx = db.transaction("rec", "readonly");
+			var store = tx.objectStore("rec");
+			var keys = store.getAllKeys(), vals = store.getAll();
+			keys.onsuccess = function () {
+				vals.onsuccess = function () {
+					keys.result.forEach(function (name, i) {
+						var v = vals.result[i];
+						if (!v || !v.blob) { return; }
+						var url = URL.createObjectURL(v.blob);
+						PO33Lib.addUserSample(name, url, v.seconds || null);
+					});
+				};
+			};
+		}).catch(function () {});
+	}
+
 	async function onRecStop() {
 		clearInterval(recTimer);
 		document.getElementById("recBtn").textContent = "● record";
@@ -415,6 +570,7 @@
 			PO33Lib.addUserSample(name, url, secs);
 			PO33Lib.assignUrl(slot, url, "recordings/" + name, secs);
 		}
+		idbPut(name, wavBlob, secs); // persist across reloads
 
 		var s = document.getElementById("recStatus");
 		s.innerHTML = "saved " + secs + 's → SOUND ' + slot + ' &nbsp;';
@@ -596,9 +752,10 @@
 		var tries = 0;
 		var iv = setInterval(function () {
 			var haveRec = buildRecorder();
-			if (haveRec) { wireRecordPad(); }
+			if (haveRec) { wireRecordPad(); wireExport(); }
 			if (haveRec || ++tries > 60) { clearInterval(iv); }
 		}, 250);
+		setTimeout(idbRestore, 1800);
 	}
 
 	if (document.readyState === "loading") {
