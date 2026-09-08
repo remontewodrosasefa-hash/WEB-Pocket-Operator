@@ -11,6 +11,8 @@
 	var previewPlayer = null;
 	var currentPreviewBtn = null;
 	var slotSampleIds = new Array(16).fill(null); // id string per slot, or null
+	var drumPadIds = {};                          // { slotIdx: { padIdx: id } } per-pad drum overrides
+	var lastSample = null;                        // last sample clicked / previewed
 	var els = {};
 
 	function currentSlot() {
@@ -30,8 +32,14 @@
 	function refreshTarget() {
 		if (!els.target) { return; }
 		var s = currentSlot();
-		els.target.innerHTML = "click a sample &rarr; loads into <b>SOUND " + s +
-			"</b> (" + (s <= 8 ? "melodic" : "drum") + ")";
+		if (s <= 8) {
+			els.target.innerHTML = "click a sample &rarr; <b>SOUND " + s + "</b> (melodic)";
+		} else {
+			var pad = 1;
+			try { pad = (window.channelSettingsArr[s - 1].notePitch % 16) + 1; } catch (e) {}
+			els.target.innerHTML = "click a sample &rarr; <b>SOUND " + s + "</b> pad <b>" + pad +
+				"</b> · <button class=\"libFill\" id=\"libKit\">whole kit</button>";
+		}
 	}
 
 	/* ---------- preview ---------- */
@@ -58,12 +66,15 @@
 
 	/* ---------- assign a sample to a slot ---------- */
 
-	function assign(slot1to16, sample, quiet) {
+	// mode: undefined/"auto" → melodic replaces the slot; drum assigns to the
+	// current pad only. "kit" → drum slot: same sample on all 16 pads.
+	function assign(slot1to16, sample, quiet, mode) {
 		if (!window.Tone) { toast("audio not ready"); return; }
 		Tone.start && Tone.start();
 
 		var idx = slot1to16 - 1;
 		var url = sample.url;
+		var msg;
 
 		if (slot1to16 <= 8) {
 			if (typeof melodicFilterArr[idx] === "undefined") {
@@ -73,23 +84,55 @@
 			try { melodicArr[idx] && melodicArr[idx].dispose(); } catch (e) {}
 			melodicArr[idx] = new Tone.Sampler({ "C#4": url });
 			melodicArr[idx].connect(melodicFilterArr[idx]);
+			slotSampleIds[idx] = sample.id;
+			msg = "SOUND " + slot1to16 + "  ←  " + sample.id;
 		} else {
 			var di = idx - 8;
 			if (typeof drumFilterArr[di] === "undefined") {
 				drumFilterArr[di] = new Tone.Filter(20, "highpass");
 				drumFilterArr[di].chain(meter, Tone.Master);
 			}
-			try { drumArr[di] && drumArr[di].dispose(); } catch (e) {}
-			var map = {};
-			for (var k = 0; k < noteArray.length; k++) { map[noteArray[k]] = url; }
-			drumArr[di] = new Tone.Players(map);
-			drumArr[di].connect(drumFilterArr[di]);
+			var perPad = mode !== "kit" && drumArr[di] && drumArr[di].add;
+			if (perPad) {
+				// replace just the currently selected pad's sample
+				var pad = 0;
+				try { pad = window.channelSettingsArr[idx].notePitch % 16; } catch (e) {}
+				drumArr[di].add(noteArray[pad], url);
+				drumPadIds[idx] = drumPadIds[idx] || {};
+				drumPadIds[idx][pad] = sample.id;
+				msg = "SOUND " + slot1to16 + " · pad " + (pad + 1) + "  ←  " + sample.id;
+			} else {
+				try { drumArr[di] && drumArr[di].dispose(); } catch (e) {}
+				var map = {};
+				for (var k = 0; k < noteArray.length; k++) { map[noteArray[k]] = url; }
+				drumArr[di] = new Tone.Players(map);
+				drumArr[di].connect(drumFilterArr[di]);
+				slotSampleIds[idx] = sample.id;
+				drumPadIds[idx] = {};
+				msg = "SOUND " + slot1to16 + " · whole kit  ←  " + sample.id;
+			}
 		}
 
-		slotSampleIds[idx] = sample.id;
 		saveSlots();
-		if (!quiet) { toast("SOUND " + slot1to16 + "  ←  " + sample.id); }
+		if (!quiet) { toast(msg); }
+		if (window.PO33 && PO33.flash && !quiet) { PO33.flash(msg, "info"); }
 		rerender();
+	}
+
+	// no silent slots: the engine only pre-loads 1-4 and 9-12, so seed the rest
+	// with PO-33 K.O. samples on first run (skips any the user already set).
+	function fillDefaults() {
+		if (!MANIFEST) { return; }
+		var po33 = MANIFEST.packs.filter(function (p) { return p.id === "po33"; })[0];
+		if (!po33 || !po33.samples.length) { return; }
+		var s = po33.samples;
+		var picks = { 5: 8, 6: 20, 7: 33, 8: 47, 13: 2, 14: 15, 15: 28, 16: 40 };
+		Object.keys(picks).forEach(function (slot) {
+			var idx = slot - 1;
+			if (slotSampleIds[idx]) { return; }               // user already chose one
+			var smp = s[picks[slot] % s.length];
+			assign(+slot, smp, true, "kit");
+		});
 	}
 
 	// auto-fill a run of slots. mixAllPacks=true → a random spread from every
@@ -119,7 +162,7 @@
 		var step = Math.max(1, Math.floor(pool.length / n));
 		for (var k = 0; k < n; k++) {
 			var smp = pool[(k * step) % pool.length];
-			assign(base + k, smp, true);
+			assign(base + k, smp, true, "kit");
 		}
 		toast("filled slots " + base + "–" + (base + n - 1));
 		if (window.PO33 && PO33.flash) { PO33.flash("auto-filled " + n + " " + (base === 1 ? "melodic" : "drum") + " slots", "tip"); }
@@ -133,6 +176,7 @@
 
 	function saveSlots() {
 		try { localStorage.setItem("po33.slots", JSON.stringify(slotSampleIds)); } catch (e) {}
+		try { localStorage.setItem("po33.drumpads", JSON.stringify(drumPadIds)); } catch (e) {}
 	}
 
 	function userPack() {
@@ -179,13 +223,29 @@
 	function restoreSlots() {
 		var raw;
 		try { raw = localStorage.getItem("po33.slots"); } catch (e) { return; }
-		if (!raw) { return; }
-		var saved;
-		try { saved = JSON.parse(raw); } catch (e) { return; }
-		saved.forEach(function (id, idx) {
-			var smp = id && findSample(id);
-			if (smp) { assign(idx + 1, smp, true); }
-		});
+		if (raw) {
+			var saved;
+			try { saved = JSON.parse(raw); } catch (e) { saved = null; }
+			if (saved) {
+				saved.forEach(function (id, idx) {
+					var smp = id && findSample(id);
+					if (smp) { assign(idx + 1, smp, true, "kit"); }
+				});
+			}
+		}
+		// re-apply per-pad drum overrides on top of the kits
+		try {
+			var pads = JSON.parse(localStorage.getItem("po33.drumpads") || "{}");
+			Object.keys(pads).forEach(function (slotIdx) {
+				var cs = window.channelSettingsArr && window.channelSettingsArr[slotIdx];
+				var savedPitch = cs ? cs.notePitch : 0;
+				Object.keys(pads[slotIdx]).forEach(function (padIdx) {
+					var smp = findSample(pads[slotIdx][padIdx]);
+					if (smp && cs) { cs.notePitch = +padIdx; assign(+slotIdx + 1, smp, true); }
+				});
+				if (cs) { cs.notePitch = savedPitch; }
+			});
+		} catch (e) {}
 	}
 
 	/* ---------- rendering ---------- */
@@ -210,6 +270,7 @@
 			row.title = "load into SOUND " + currentSlot();
 			row.onclick = function (e) {
 				if (e.target.closest(".libPlay") || e.target.closest(".libAssign")) { return; }
+				lastSample = smp;
 				assign(currentSlot(), smp);
 			};
 
@@ -217,7 +278,7 @@
 			play.className = "libPlay";
 			play.textContent = "▶";
 			play.title = "preview";
-			play.onclick = function () { preview(smp.url, play); };
+			play.onclick = function () { lastSample = smp; preview(smp.url, play); };
 
 			var nm = document.createElement("span");
 			nm.className = "libName";
@@ -359,6 +420,14 @@
 				else { fillSlots(+b.dataset.n, false); }
 			};
 		});
+		// "whole kit" button is re-rendered in the target line — delegate
+		aside.addEventListener("click", function (e) {
+			if (e.target.id === "libKit") {
+				var smp = lastSample;
+				if (!smp) { toast("preview or tap a sample first"); return; }
+				assign(currentSlot(), smp, false, "kit");
+			}
+		});
 
 		// keep the "loads into SOUND n" hint live as the user changes slot
 		document.addEventListener("click", function () { setTimeout(refreshTarget, 0); }, true);
@@ -366,6 +435,7 @@
 
 		renderSamples();
 		setTimeout(restoreSlots, 1200); // let po33.js finish building its nodes
+		setTimeout(fillDefaults, 1500); // no silent slots — fill any empty ones
 	}
 
 	function init() {
