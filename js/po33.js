@@ -279,8 +279,9 @@ var keys = new Tone.Players({
 
 						var vol = thisChannel.fxVolume;
 						var pitch = thisChannel.notePitch
-						var trim = chanSettings.fxTrim/1000;
-						var length = chanSettings.fxLength/1000;
+						//PER-STEP TRIM (falls back to the channel setting)
+						var trim = (thisChannel.fxTrim!=null?thisChannel.fxTrim:chanSettings.fxTrim)/1000;
+						var length = (thisChannel.fxLength!=null?thisChannel.fxLength:chanSettings.fxLength)/1000;
 
 
 						//var pitch = thisChannel.fxPitch;

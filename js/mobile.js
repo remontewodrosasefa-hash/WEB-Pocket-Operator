@@ -79,6 +79,20 @@
 			'<li>Just recorded something? Hit <b>&#9986; chop x16</b> next to the download link.</li>' +
 			'</ol>' +
 
+			'<h3>Step locks &amp; accent</h3><ol>' +
+			'<li>In <span class="tag">WRITE</span>, <b>press and hold a lit step</b> for a moment ' +
+				'&mdash; the screen shows <b>LOCK step N</b>.</li>' +
+			'<li>That step <b>stays latched</b> &mdash; let go and move a <b>slider</b>. The value ' +
+				'is saved to <i>that step only</i>. Which pair the sliders control follows the FX ' +
+				'mode: <b>TONE</b> note/volume, <b>FILTER</b> cutoff/res, <b>TRIM</b> start/length.</li>' +
+			'<li>Tap the latched pad again to finish (or tap another lit step to jump to it).</li>' +
+			'<li>Slider&nbsp;2 in TONE mode is <b>accent / velocity</b>: louder steps show taller on ' +
+				'the step bar, quieter ones sit low. Locked steps get a red outline.</li>' +
+			'</ol>' +
+			'<div id="clearRow">' +
+				'<button id="clearLocksBtn" type="button">clear locks on this sound</button>' +
+			'</div>' +
+
 			'<h3>Projects</h3>' +
 			'<p>Saved in this browser — they survive site updates (only clearing ' +
 				'browser data or switching device loses them).</p>' +
@@ -137,6 +151,7 @@
 		// "‹ back" row inside the library (rendered by library.js, so delegate)
 		document.addEventListener("click", function (e) {
 			if (e.target.closest("#libBack")) { close(); }
+			if (e.target.id === "clearLocksBtn" && window.PO33 && PO33.locks) { PO33.locks.clearAll(); }
 			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
 			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }
 			if (e.target.id === "projOpenBtn" && window.PO33 && PO33.projects) { close(); PO33.projects.show(); }

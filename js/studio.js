@@ -139,10 +139,23 @@
 		updateClock();
 
 		var kids = E.steps;
+		var heldLock = (window.PO33 && PO33.locks) ? PO33.locks.held() : -1;
 		for (var i = 0; i < 16; i++) {
-			var on = false, cur = play && i === beat;
-			try { on = !!(window.newChannelArr && newChannelArr[sel][pat][i].noteOn); } catch (e) {}
-			var cls = (on ? "on" : "") + (cur ? " cur" : "");
+			var on = false, cur = play && i === beat, lk = false, acc = "";
+			try {
+				var bt = window.newChannelArr && newChannelArr[sel][pat][i];
+				if (bt) {
+					on = !!bt.noteOn;
+					lk = on && !!bt.locked;
+					if (on) {
+						var bv = (bt.fxVolume == null ? -12 : bt.fxVolume);
+						if (bv > -8) { acc = " acc"; }
+						else if (bv < -18) { acc = " ghost"; }
+					}
+				}
+			} catch (e) {}
+			var cls = (on ? "on" : "") + (cur ? " cur" : "") + (lk ? " lk" : "") + acc +
+				(i === heldLock ? " held" : "");
 			if (kids[i].className !== cls) { kids[i].className = cls; }
 		}
 
