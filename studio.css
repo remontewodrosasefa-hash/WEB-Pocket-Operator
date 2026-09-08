@@ -268,3 +268,79 @@ body.projOpen #projView { display: flex; }
 	padding: 6px 8px;
 }
 .pvCur { flex: 0 0 auto; font-size: 10px; opacity: 0.7; padding-top: 2px; }
+
+/* ---------- waveform trim editor ---------- */
+
+#trimView { display: none; }
+body.trimOpen #trimView { display: flex; }
+#trimView {
+	position: absolute;
+	inset: 0;
+	z-index: 6;
+	flex-direction: column;
+	gap: 6px;
+	padding: 9px 12px 11px;
+	background: linear-gradient(180deg, #c4cdae, #a3ad8a);
+	color: #1b2411;
+	font-family: ui-monospace, Menlo, monospace;
+}
+.tvHead {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-weight: 700;
+	font-size: 11px;
+	letter-spacing: 0.06em;
+}
+.tvHead button {
+	font: inherit;
+	font-size: 10px;
+	padding: 3px 7px;
+	margin-left: 4px;
+	border: 1px solid #1b2411;
+	border-radius: 3px;
+	background: transparent;
+	color: #1b2411;
+}
+#tvWave {
+	position: relative;
+	flex: 1 1 auto;
+	min-height: 0;
+	border: 1px solid rgba(27,36,17,0.4);
+	border-radius: 2px;
+	overflow: hidden;
+	touch-action: none;
+}
+#tvCanvas { display: block; width: 100%; height: 100%; }
+.tvShade {
+	position: absolute;
+	top: 0; bottom: 0;
+	background: rgba(27,36,17,0.32);
+	pointer-events: none;
+}
+#tvShadeL { left: 0; }
+.tvHandle {
+	position: absolute;
+	top: -2px; bottom: -2px;
+	width: 14px;
+	margin-left: -7px;
+	cursor: ew-resize;
+	touch-action: none;
+}
+.tvHandle::after {
+	content: "";
+	position: absolute;
+	left: 6px; top: 0; bottom: 0;
+	width: 2px;
+	background: #7a2a15;
+}
+.tvHandle::before {
+	content: "";
+	position: absolute;
+	left: 1px; top: 50%;
+	width: 12px; height: 12px;
+	margin-top: -6px;
+	border-radius: 3px;
+	background: #7a2a15;
+}
+#tvNote { font-size: 10px; opacity: 0.7; }

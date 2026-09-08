@@ -89,8 +89,9 @@
 	function tick() {
 		var modeEl = E.mode;
 		if (!modeEl) { return; }
-		// project browser covers the LCD — don't churn behind it
-		if (document.body.classList.contains("projOpen")) { updateClock(); return; }
+		// an overlay covers the LCD — don't churn behind it
+		if (document.body.classList.contains("projOpen") ||
+		    document.body.classList.contains("trimOpen")) { updateClock(); return; }
 
 		var mode = g("mode", 0), state = g("state", 0), view = g("view", 0);
 		var play = g("play", false);

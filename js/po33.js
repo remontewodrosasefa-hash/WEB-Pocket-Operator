@@ -317,7 +317,18 @@ var keys = new Tone.Players({
 						var pitch = thisChannel.fxPitch;
 						var gain = thisChannel.fxVolume;
 
-						thisSampler.get(noteArray[thisPitch]).start(time);
+						//RESPECT PER-NOTE TRIM / LENGTH (0-1000 = fraction of the sample)
+						var thisPlayer = thisSampler.get(noteArray[thisPitch]);
+						try {
+							var sd = thisPlayer.buffer && thisPlayer.buffer.duration;
+							if(sd && (offset > 0 || (duration != null && duration < 1000))){
+								thisPlayer.start(time, sd*(offset/1000), sd*((duration==null?1000:duration)/1000));
+							}else{
+								thisPlayer.start(time);
+							}
+						}catch(err){
+							thisPlayer.start(time);
+						}
 					}
 
 			}
