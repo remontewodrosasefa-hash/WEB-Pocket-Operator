@@ -203,17 +203,34 @@
 		padding: 1px 6px;
 		border-radius: 4px;
 	}
-	#clearRow { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
-	#clearRow button {
+	.btnRow { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+	.btnRow button {
 		font: inherit;
 		font-size: 13px;
 		padding: 11px 12px;
 		border-radius: 8px;
 		text-align: left;
-		background: #241d1d;
-		color: #ff8a8a;
-		border: 1px solid #5a3535;
+		background: #232329;
+		color: #d8d8d8;
+		border: 1px solid #3a3a40;
 	}
-	#clearRow button:active { background: #2e2222; }
+	.btnRow button:active { background: #2c2c33; }
+	/* destructive actions read red */
+	#clearPtnBtn, #clearLocksBtn, #clearAllBtn {
+		background: #241d1d; color: #ff8a8a; border-color: #5a3535;
+	}
 	#clearAllBtn { border-color: #7a3a3a; color: #ff6b6b; }
+	#projOpenBtn { color: #ffb060; border-color: #5a4a30; }
+}
+
+/* punch-in FX cheat-sheet grid inside the info drawer */
+@media (max-width: 720px), (pointer: coarse) {
+	#infoBody .fxGrid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 3px 10px;
+		font-size: 12px;
+		margin: 6px 0;
+	}
+	#infoBody .fxGrid b { color: #ffb060; margin-right: 3px; }
 }

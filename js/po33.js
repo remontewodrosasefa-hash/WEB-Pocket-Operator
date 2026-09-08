@@ -263,6 +263,9 @@ var keys = new Tone.Players({
 					//SKIP MELODIC SLOTS WITH NOTHING LOADED YET (5-8 START EMPTY)
 					if(!melodicArr[i] || !melodicFilterArr[i]) continue;
 
+					//SKIP MUTED / NON-SOLOED CHANNELS
+					if(window.po33Silenced && window.po33Silenced(i)) continue;
+
 					if(thisChannel.noteOn==1){
 						var chanSettings = channelSettingsArr[i];
 
@@ -300,6 +303,9 @@ var keys = new Tone.Players({
 
 					//SKIP DRUM SLOTS WITH NOTHING LOADED YET (13-16 START EMPTY)
 					if(!drumArr[i] || !drumFilterArr[i]) continue;
+
+					//SKIP MUTED / NON-SOLOED CHANNELS
+					if(window.po33Silenced && window.po33Silenced(i+8)) continue;
 
 					if(thisChannel.noteOn==1){
 						var chanSettings = channelSettingsArr[i+8];
@@ -706,6 +712,8 @@ $("#btnWrite").mouseup(function() {
 
 //PLAYER PLAY SOUND FOR LIVE PLAYBACK
 var playSound = function(channel,pitch){
+	//MUTED / NON-SOLOED CHANNELS STAY SILENT WHEN PLAYED LIVE TOO
+	if(window.po33Silenced && window.po33Silenced(channel)) return;
 	var chan =  channelSettingsArr[channel];
 	var vol = chan.fxVolume;
 	var filterFreq = chan.fxFilterFreq;

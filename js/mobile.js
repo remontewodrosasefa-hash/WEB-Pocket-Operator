@@ -61,11 +61,15 @@
 			'</ol>' +
 
 			'<h3>Effects (hold FX)</h3><ol>' +
-			'<li>Press &amp; hold <span class="tag">FX</span>, then tap pads 1&ndash;8 for punch-in effects: ' +
-				'<b>1</b> crush · <b>2</b> lo-fi · <b>3</b> filter down · <b>4</b> filter up · ' +
-				'<b>5</b> delay · <b>6</b> stutter · <b>7</b> pitch up · <b>8</b> pitch down.</li>' +
-			'<li>The effect lasts while you hold the pad.</li>' +
+			'<li>Press &amp; hold <span class="tag">FX</span>, then tap any pad for a punch-in effect:</li>' +
 			'</ol>' +
+			'<p class="fxGrid">' +
+				'<b>1</b> crush <b>2</b> lo-fi <b>3</b> filter&nbsp;down <b>4</b> filter&nbsp;up ' +
+				'<b>5</b> delay <b>6</b> stutter <b>7</b> pitch&nbsp;up <b>8</b> pitch&nbsp;down ' +
+				'<b>9</b> reverb <b>10</b> wide&nbsp;6/9 <b>11</b> phaser <b>12</b> tape&nbsp;stop ' +
+				'<b>13</b> roll <b>14</b> ping-pong <b>15</b> wobble <b>16</b> kill' +
+			'</p>' +
+			'<p>Each lasts only while you hold the pad.</p>' +
 
 			'<h3>Trim &amp; chop</h3><ol>' +
 			'<li>Stop playback, then tap <span class="tag">FX</span> until the screen says ' +
@@ -89,19 +93,28 @@
 			'<li>Slider&nbsp;2 in TONE mode is <b>accent / velocity</b>: louder steps show taller on ' +
 				'the step bar, quieter ones sit low. Locked steps get a red outline.</li>' +
 			'</ol>' +
-			'<div id="clearRow">' +
+			'<div class="btnRow">' +
 				'<button id="clearLocksBtn" type="button">clear locks on this sound</button>' +
+			'</div>' +
+
+			'<h3>Mute, solo &amp; metronome</h3><ol>' +
+			'<li>In <span class="tag">SOUND</span> mode, <b>hold a pad</b> to cycle that sound ' +
+				'<b>muted &rarr; solo &rarr; on</b>. Solo on any sound silences the rest.</li>' +
+			'</ol>' +
+			'<div class="btnRow">' +
+				'<button id="metroBtn" type="button">metronome on / off</button>' +
+				'<button id="unmuteBtn" type="button">un-mute everything</button>' +
 			'</div>' +
 
 			'<h3>Projects</h3>' +
 			'<p>Saved in this browser — they survive site updates (only clearing ' +
 				'browser data or switching device loses them).</p>' +
-			'<div id="clearRow">' +
+			'<div class="btnRow">' +
 				'<button id="projOpenBtn" type="button">open project browser (on screen)</button>' +
 			'</div>' +
 
 			'<h3>Clear</h3>' +
-			'<div id="clearRow">' +
+			'<div class="btnRow">' +
 				'<button id="clearPtnBtn" type="button">clear this pattern</button>' +
 				'<button id="clearAllBtn" type="button">clear everything (triple-click)</button>' +
 			'</div>' +
@@ -152,6 +165,8 @@
 		document.addEventListener("click", function (e) {
 			if (e.target.closest("#libBack")) { close(); }
 			if (e.target.id === "clearLocksBtn" && window.PO33 && PO33.locks) { PO33.locks.clearAll(); }
+			if (e.target.id === "metroBtn" && window.PO33 && PO33.metro) { PO33.metro.toggle(); }
+			if (e.target.id === "unmuteBtn" && window.PO33 && PO33.channels) { PO33.channels.clearAll(); }
 			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
 			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }
 			if (e.target.id === "projOpenBtn" && window.PO33 && PO33.projects) { close(); PO33.projects.show(); }

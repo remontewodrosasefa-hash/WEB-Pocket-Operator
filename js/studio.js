@@ -282,15 +282,22 @@
 		fxTried = true;
 		try {
 			var M = Tone.Master;
-			var hp = new Tone.Filter(20, "highpass");
-			var lp = new Tone.Filter(20000, "lowpass");
-			var dist = new Tone.Distortion(0.9); dist.wet.value = 0;
-			var delay = new Tone.FeedbackDelay(0.19, 0.34); delay.wet.value = 0;
-			var pitch = new Tone.PitchShift(0);
-			var trem = new Tone.Tremolo(13, 0);
+			var hp     = new Tone.Filter(20, "highpass");
+			var lp     = new Tone.Filter(20000, "lowpass");
+			var dist   = new Tone.Distortion(0.9);      dist.wet.value = 0;
+			var chorus = new Tone.Chorus(4, 2.5, 0.7);  chorus.wet.value = 0;
+			var phaser = new Tone.Phaser(0.6, 3, 900);  phaser.wet.value = 0;
+			var delay  = new Tone.FeedbackDelay(0.19, 0.34); delay.wet.value = 0;
+			var pong   = new Tone.PingPongDelay(0.25, 0.45); pong.wet.value = 0;
+			var pitch  = new Tone.PitchShift(0);
+			var verb   = new Tone.Freeverb(0.85, 3000); verb.wet.value = 0;
+			var wob    = new Tone.AutoFilter(5, 200, 4); wob.wet.value = 0;
+			try { wob.start(); } catch (e) {}
+			var trem   = new Tone.Tremolo(13, 0);
 			try { trem.start(); } catch (e) {}
+			var kill   = new Tone.Gain(1);
 
-			hp.chain(lp, dist, delay, pitch, trem, M);
+			hp.chain(lp, dist, chorus, phaser, delay, pong, pitch, verb, wob, trem, kill, M);
 
 			var rerouted = false;
 			try {
@@ -302,13 +309,21 @@
 			}
 			if (!rerouted) { return; }
 
-			fxNodes = { hp: hp, lp: lp, dist: dist, delay: delay, pitch: pitch, trem: trem };
+			fxNodes = { hp: hp, lp: lp, dist: dist, chorus: chorus, phaser: phaser,
+				delay: delay, pong: pong, pitch: pitch, verb: verb, wob: wob,
+				trem: trem, kill: kill };
 		} catch (e) {
 			fxNodes = null;
 		}
 	}
 
-	var FX_LABELS = ["", "CRUSH", "LO-FI", "FILTER DOWN", "FILTER UP", "DELAY", "STUTTER", "PITCH UP", "PITCH DOWN"];
+	var FX_LABELS = ["",
+		"CRUSH", "LO-FI", "FILTER DOWN", "FILTER UP",
+		"DELAY", "STUTTER", "PITCH UP", "PITCH DOWN",
+		"REVERB", "WIDE 6/9", "PHASER", "TAPE STOP",
+		"ROLL", "PING-PONG", "WOBBLE", "KILL"];
+
+	var tapeTimer = null;
 
 	function fxOn(n) {
 		window.fxWasUsed = true;
@@ -316,30 +331,62 @@
 		if (!fxNodes) { return; }
 		var f = fxNodes;
 		switch (n) {
-			case 1: distTo(0.92); ramp(f.lp.frequency, 3500, 0.05); break;
-			case 2: ramp(f.lp.frequency, 900, 0.05); distTo(0.45); break;
-			case 3: ramp(f.lp.frequency, 240, 0.12); break;
-			case 4: ramp(f.hp.frequency, 1800, 0.12); break;
-			case 5: ramp(f.delay.wet, 0.55, 0.04); break;
-			case 6: ramp(f.trem.depth, 1, 0.02); break;
-			case 7: pitchTo(7); break;
-			case 8: pitchTo(-5); break;
+			case 1:  distTo(0.92); ramp(f.lp.frequency, 3500, 0.05); break;
+			case 2:  ramp(f.lp.frequency, 900, 0.05); distTo(0.45); break;
+			case 3:  ramp(f.lp.frequency, 240, 0.12); break;
+			case 4:  ramp(f.hp.frequency, 1800, 0.12); break;
+			case 5:  ramp(f.delay.wet, 0.55, 0.04); break;
+			case 6:  try { f.trem.frequency.value = 13; } catch (e) {}
+			         ramp(f.trem.depth, 1, 0.02); break;
+			case 7:  pitchTo(7); break;
+			case 8:  pitchTo(-5); break;
+			case 9:  ramp(f.verb.wet, 0.6, 0.05); break;
+			case 10: ramp(f.chorus.wet, 1, 0.05); break;
+			case 11: ramp(f.phaser.wet, 1, 0.05); break;
+			case 12: tapeStop(); break;
+			case 13: try { f.trem.frequency.value = 26; } catch (e) {}
+			         ramp(f.trem.depth, 1, 0.02); break;
+			case 14: ramp(f.pong.wet, 0.6, 0.04); break;
+			case 15: ramp(f.wob.wet, 1, 0.05); break;
+			case 16: ramp(f.kill.gain, 0, 0.015); break;
 		}
 	}
 
+	// slow the "tape" down: pitch drops and the top end closes over ~0.6s
+	function tapeStop() {
+		var f = fxNodes;
+		if (!f) { return; }
+		clearTimeout(tapeTimer);
+		var t0 = Date.now();
+		var step = function () {
+			var k = Math.min(1, (Date.now() - t0) / 600);
+			pitchTo(-12 * k);
+			ramp(f.lp.frequency, 20000 - (19700 * k), 0.05);
+			if (k < 1) { tapeTimer = setTimeout(step, 40); }
+		};
+		step();
+	}
+
 	function fxOff() {
+		clearTimeout(tapeTimer);
 		if (!fxNodes) { return; }
 		var f = fxNodes;
 		ramp(f.lp.frequency, 20000, 0.12);
 		ramp(f.hp.frequency, 20, 0.12);
 		ramp(f.delay.wet, 0, 0.12);
+		ramp(f.pong.wet, 0, 0.12);
+		ramp(f.verb.wet, 0, 0.15);
+		ramp(f.chorus.wet, 0, 0.08);
+		ramp(f.phaser.wet, 0, 0.08);
+		ramp(f.wob.wet, 0, 0.08);
 		ramp(f.trem.depth, 0, 0.06);
+		ramp(f.kill.gain, 1, 0.02);
 		pitchTo(0);
 		distTo(0);
 	}
 
 	function wireFxPads() {
-		for (var n = 1; n <= 8; n++) {
+		for (var n = 1; n <= 16; n++) {
 			(function (n) {
 				var el = document.getElementById("btn" + n);
 				if (!el || el.dataset.fxWired) { return; }
@@ -659,13 +706,38 @@
 			window["dial" + n + "Value"] = +el.value;
 			try { window.dialFunction(n); } catch (e) {}
 		};
-		el.addEventListener("input", apply);
+		el.addEventListener("input", function () { apply(); readout(n); });
 		// mouse wheel over a slider also turns it
 		el.addEventListener("wheel", function (ev) {
 			ev.preventDefault();
 			el.value = Math.max(0, Math.min(1000, +el.value + (ev.deltaY < 0 ? 30 : -30)));
 			apply();
 		}, { passive: false });
+	}
+
+	// after dialFunction has run, report what the value actually became
+	function readout(n) {
+		if (window.PO33 && PO33.locks && PO33.locks.held() >= 0) { return; } // lock bar owns the screen
+		var st = g("state", 0), fx = g("fxMode", 0);
+		var cs;
+		try { cs = window.channelSettingsArr[g("selectedChannel", 0)]; } catch (e) {}
+		if (st === 4) {
+			flash(n === 1 ? ("swing " + Math.round(g("swing", 0) / 10) + "%")
+			              : (g("tempo", 120) + " BPM"), "info");
+			return;
+		}
+		if (!cs) { return; }
+		if (fx === 1) {
+			flash(n === 1
+				? ((cs.fxFilterType === "lowpass" ? "LPF " : "HPF ") + Math.round(cs.fxFilterFreq) + " Hz")
+				: ("resonance " + (Math.round((cs.fxFilterRes || 0) * 10) / 10)), "info");
+		} else if (fx === 2) {
+			flash(n === 1 ? ("start " + Math.round((cs.fxTrim || 0) / 10) + "%")
+			              : ("length " + Math.round((cs.fxLength == null ? 1000 : cs.fxLength) / 10) + "%"), "info");
+		} else {
+			flash(n === 1 ? ("pitch " + Math.round((cs.fxPitch || 0) / 62.5))
+			              : ("sample vol " + (Math.round((cs.fxVolume || 0) * 10) / 10) + " dB"), "info");
+		}
 	}
 
 	var SLIDER_LABELS = {
@@ -719,6 +791,43 @@
 
 	window.PO33.clearPattern = clearPattern;
 	window.PO33.clearAll = clearAll;
+
+	/* ---- metronome (Transport-scheduled, so it stays in time) ---- */
+
+	var metroSynth = null, metroId = null;
+
+	function metroOn() { try { return localStorage.getItem("po33.metro") === "1"; } catch (e) { return false; } }
+
+	function setMetro(on) {
+		try { localStorage.setItem("po33.metro", on ? "1" : "0"); } catch (e) {}
+		try {
+            if (on) {
+                if (!metroSynth) {
+                    metroSynth = new Tone.Synth({
+                        oscillator: { type: "square" },
+                        envelope: { attack: 0.001, decay: 0.02, sustain: 0, release: 0.02 }
+                    }).toMaster();
+                    metroSynth.volume.value = -18;
+                }
+                if (metroId === null) {
+                    var count = 0;
+                    metroId = Tone.Transport.scheduleRepeat(function (time) {
+                        metroSynth.triggerAttackRelease(count % 4 === 0 ? "C6" : "C5", "64n", time);
+                        count++;
+                    }, "4n");
+                }
+            } else if (metroId !== null) {
+                Tone.Transport.clear(metroId);
+                metroId = null;
+            }
+		} catch (e) {}
+		flash("metronome " + (on ? "on" : "off"), "info");
+	}
+
+	window.PO33.metro = {
+		toggle: function () { var v = !metroOn(); setMetro(v); return v; },
+		isOn: metroOn
+	};
 
 	function wireVolume() {
 		var el = document.getElementById("sliderVol");
@@ -794,6 +903,7 @@
 			if (haveRec || ++tries > 60) { clearInterval(iv); }
 		}, 250);
 		setTimeout(idbRestore, 1800);
+		setTimeout(function () { if (metroOn()) { setMetro(true); } }, 1200);
 	}
 
 	if (document.readyState === "loading") {

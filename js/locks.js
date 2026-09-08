@@ -184,6 +184,45 @@
 		flash("locks cleared on SOUND " + (ch + 1), "warn");
 	}
 
+	/* ---------- mute / solo (hold a pad in SOUND mode) ---------- */
+
+	var chanState = {};                       // channel -> "mute" | "solo"
+
+	function loadChanState() {
+		try { chanState = JSON.parse(localStorage.getItem("po33.chanstate") || "{}"); }
+		catch (e) { chanState = {}; }
+	}
+	function saveChanState() {
+		try { localStorage.setItem("po33.chanstate", JSON.stringify(chanState)); } catch (e) {}
+	}
+	function anySolo() {
+		for (var k in chanState) { if (chanState[k] === "solo") { return true; } }
+		return false;
+	}
+
+	// the engine calls this on every step and on live play
+	window.po33Silenced = function (ch) {
+		if (anySolo()) { return chanState[ch] !== "solo"; }
+		return chanState[ch] === "mute";
+	};
+
+	function cycleChanState(ch) {
+		var cur = chanState[ch];
+		if (!cur) { chanState[ch] = "mute"; }
+		else if (cur === "mute") { chanState[ch] = "solo"; }
+		else { delete chanState[ch]; }
+		saveChanState();
+		var now = chanState[ch];
+		flash("SOUND " + (ch + 1) + " · " + (now === "mute" ? "MUTED" : now === "solo" ? "SOLO" : "on"),
+			now ? "warn" : "tip");
+	}
+
+	function clearChanStates() {
+		chanState = {};
+		saveChanState();
+		flash("all sounds un-muted", "tip");
+	}
+
 	/* ---------- pads ---------- */
 
 	function wirePads() {
@@ -195,8 +234,19 @@
 				var step = n - 1;
 
 				el.addEventListener("pointerdown", function () {
-					if (!inWrite() || window.fxHeld) { return; }
+					if (window.fxHeld) { return; }
 					clearTimeout(holdTimer);
+
+					// SOUND mode: holding a pad cycles mute -> solo -> on
+					if (g("state", 0) === 2) {
+						holdTimer = setTimeout(function () {
+							el.dataset.lockFired = "1";
+							cycleChanState(step);
+						}, HOLD_MS);
+						return;
+					}
+
+					if (!inWrite()) { return; }
 
 					// already latched? a short tap finishes, or moves the latch
 					if (lockStep >= 0) { return; }
@@ -271,12 +321,17 @@
 		held: function () { return lockStep; },
 		unlatch: unlatch
 	};
+	window.PO33.channels = {
+		state: function (ch) { return chanState[ch] || "on"; },
+		cycle: cycleChanState,
+		clearAll: clearChanStates
+	};
 
 	function boot() {
 		var tries = 0;
 		var iv = setInterval(function () {
 			if (document.getElementById("btn1") && document.getElementById("slider1")) {
-				wirePads(); wireSliders(); ensureBar(); watch(); clearInterval(iv);
+				loadChanState(); wirePads(); wireSliders(); ensureBar(); watch(); clearInterval(iv);
 			} else if (++tries > 80) { clearInterval(iv); }
 		}, 150);
 	}
