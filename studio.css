@@ -344,3 +344,43 @@ body.trimOpen #trimView { display: flex; }
 	background: #7a2a15;
 }
 #tvNote { font-size: 10px; opacity: 0.7; }
+
+/* ---------- chop / auto-slice row inside the trim editor ---------- */
+
+#tvSlice {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 10px;
+	letter-spacing: 0.04em;
+	flex-wrap: wrap;
+}
+#tvSlice > span { font-weight: 700; }
+#tvSlice button {
+	font: inherit;
+	font-size: 11px;
+	font-weight: 700;
+	min-width: 26px;
+	padding: 4px 7px;
+	border: 1px solid #1b2411;
+	border-radius: 3px;
+	background: transparent;
+	color: #1b2411;
+}
+#tvSlice button:active { background: #1b2411; color: #c4cdae; }
+#tvSlice label { display: flex; align-items: center; gap: 4px; opacity: 0.8; }
+#tvSlice input[type="checkbox"] { accent-color: #1b2411; margin: 0; }
+
+/* "chop" action offered on a fresh recording */
+#recSlice {
+	font: inherit;
+	font-size: 12px;
+	padding: 3px 9px;
+	margin-left: 6px;
+	background: #2b2620;
+	color: #ffb060;
+	border: 1px solid #5a4a30;
+	border-radius: 5px;
+	cursor: pointer;
+}
+#recSlice:hover { border-color: #ff7a1a; }

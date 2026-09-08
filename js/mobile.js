@@ -67,6 +67,18 @@
 			'<li>The effect lasts while you hold the pad.</li>' +
 			'</ol>' +
 
+			'<h3>Trim &amp; chop</h3><ol>' +
+			'<li>Stop playback, then tap <span class="tag">FX</span> until the screen says ' +
+				'<b>TRIM</b> &mdash; the waveform appears with two handles.</li>' +
+			'<li>Drag the handles to top &amp; tail the sample. <b>preview</b> hears it, ' +
+				'<b>apply to pattern</b> updates steps you already wrote.</li>' +
+			'<li><b>chop 4 / 8 / 16</b> slices the sample across the 16 pads of a drum slot. ' +
+				'With <b>lay out + match tempo</b> ticked it also writes the slices across the ' +
+				'16 steps and sets the BPM so one bar = the loop &mdash; press PLAY and it replays, ' +
+				'then move the pads around to re-chop it.</li>' +
+			'<li>Just recorded something? Hit <b>&#9986; chop x16</b> next to the download link.</li>' +
+			'</ol>' +
+
 			'<h3>Projects</h3>' +
 			'<p>Saved in this browser — they survive site updates (only clearing ' +
 				'browser data or switching device loses them).</p>' +

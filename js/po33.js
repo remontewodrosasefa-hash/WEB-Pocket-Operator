@@ -260,6 +260,9 @@ var keys = new Tone.Players({
 			for(i=0;i<MELODIC_CHANNELS;i++){
 				var thisChannel = newChannelArr[i][currentPattern][beat];
 
+					//SKIP MELODIC SLOTS WITH NOTHING LOADED YET (5-8 START EMPTY)
+					if(!melodicArr[i] || !melodicFilterArr[i]) continue;
+
 					if(thisChannel.noteOn==1){
 						var chanSettings = channelSettingsArr[i];
 
@@ -291,11 +294,14 @@ var keys = new Tone.Players({
 
 			}
 
-			for(i=0;i<DRUM_CHANNELS-4;i++){
+			for(i=0;i<DRUM_CHANNELS;i++){
 				var thisChannel = newChannelArr[i+8][currentPattern][beat];
 
+					//SKIP DRUM SLOTS WITH NOTHING LOADED YET (13-16 START EMPTY)
+					if(!drumArr[i] || !drumFilterArr[i]) continue;
+
 					if(thisChannel.noteOn==1){
-						var chanSettings = channelSettingsArr[i];
+						var chanSettings = channelSettingsArr[i+8];
 
 						//FILTER
 						var thisFilter = drumFilterArr[i];

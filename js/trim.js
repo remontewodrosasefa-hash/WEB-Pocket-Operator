@@ -46,7 +46,14 @@
 				'<div class="tvShade" id="tvShadeL"></div><div class="tvShade" id="tvShadeR"></div>' +
 				'<div class="tvHandle" id="tvStart"></div><div class="tvHandle" id="tvEnd"></div>' +
 			'</div>' +
-			'<div id="tvNote">drag the handles · affects new steps</div>';
+			'<div id="tvSlice">' +
+				'<span>chop:</span>' +
+				'<button type="button" data-tv="s4">4</button>' +
+				'<button type="button" data-tv="s8">8</button>' +
+				'<button type="button" data-tv="s16">16</button>' +
+				'<label><input type="checkbox" id="tvLayout" checked> lay out + match tempo</label>' +
+			'</div>' +
+			'<div id="tvNote">drag handles to trim &middot; chop spreads slices across the 16 pads</div>';
 		hud.appendChild(wrap);
 
 		canvas = wrap.querySelector("#tvCanvas");
@@ -64,6 +71,7 @@
 			var a = e.target.getAttribute("data-tv");
 			if (a === "prev") { preview(); }
 			else if (a === "all") { applyToPattern(); }
+			else if (a && a.charAt(0) === "s") { doSlice(parseInt(a.slice(1), 10)); }
 		});
 		return true;
 	}
@@ -173,6 +181,15 @@
 			}
 			if (window.PO33 && PO33.flash) { PO33.flash("trim applied to pattern " + (p + 1), "tip"); }
 		} catch (e) {}
+	}
+
+	function doSlice(n) {
+		if (!window.PO33 || !PO33.slice) { return; }
+		var lay = wrap.querySelector("#tvLayout");
+		var opts = { layout: !!(lay && lay.checked), matchTempo: !!(lay && lay.checked) };
+		if (PO33.slice.current(n, opts)) {
+			curBufKey = "";                       // force a redraw of the new pad buffer
+		}
 	}
 
 	/* ---------- show / hide loop ---------- */

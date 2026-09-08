@@ -594,6 +594,20 @@
 		dl.href = url; dl.download = name + ".wav"; dl.textContent = "download .wav";
 		dl.className = "recDl";
 		s.appendChild(dl);
+
+		// offer to chop the fresh recording across a drum slot's 16 pads
+		if (window.PO33 && PO33.slice) {
+			var chop = document.createElement("button");
+			chop.id = "recSlice";
+			chop.type = "button";
+			chop.textContent = "\u2702 chop x16";
+			chop.title = "slice this recording across the 16 pads of a drum slot";
+			chop.addEventListener("click", function () {
+				var target = slot >= 9 ? slot : 16;
+				PO33.slice.toSlot(audioBuf, target, 16, { layout: true, matchTempo: true });
+			});
+			s.appendChild(chop);
+		}
 	}
 
 	/* minimal 16-bit PCM WAV encoder */
