@@ -97,6 +97,19 @@
 				'<button id="clearLocksBtn" type="button">clear locks on this sound</button>' +
 			'</div>' +
 
+			'<h3>Motion recording</h3><ol>' +
+			'<li>Tap <b>arm motion rec</b> below, press <span class="tag">PLAY</span>, ' +
+				'then sweep a <b>slider</b> &mdash; the value is stamped onto each step as the ' +
+				'playhead passes it. Stopping playback saves it.</li>' +
+			'<li>Whatever the FX mode is (TONE / FILTER / TRIM) decides which parameter records.</li>' +
+			'</ol>' +
+			'<div class="btnRow"><button id="motionBtn" type="button">arm motion rec</button></div>' +
+
+			'<h3>Micro-timing (nudge)</h3><ol>' +
+			'<li>Hold a lit step to latch it, then use the <b>timing &#9664; &#9654;</b> buttons ' +
+				'on screen to push that hit early or late (&plusmn;60ms). On desktop, scroll over a step.</li>' +
+			'</ol>' +
+
 			'<h3>Mute, solo &amp; metronome</h3><ol>' +
 			'<li>In <span class="tag">SOUND</span> mode, <b>hold a pad</b> to cycle that sound ' +
 				'<b>muted &rarr; solo &rarr; on</b>. Solo on any sound silences the rest.</li>' +
@@ -166,6 +179,10 @@
 			if (e.target.closest("#libBack")) { close(); }
 			if (e.target.id === "clearLocksBtn" && window.PO33 && PO33.locks) { PO33.locks.clearAll(); }
 			if (e.target.id === "metroBtn" && window.PO33 && PO33.metro) { PO33.metro.toggle(); }
+			if (e.target.id === "motionBtn" && window.PO33 && PO33.motion) {
+				var on = PO33.motion.toggle();
+				e.target.textContent = on ? "disarm motion rec" : "arm motion rec";
+			}
 			if (e.target.id === "unmuteBtn" && window.PO33 && PO33.channels) { PO33.channels.clearAll(); }
 			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
 			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }

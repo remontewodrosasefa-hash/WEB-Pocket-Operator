@@ -293,7 +293,8 @@ var keys = new Tone.Players({
 						var offset = sampleLength*trim;
 
 						thisSampler.volume.value = vol;
-						thisSampler.triggerAttackExt(noteArray[pitch],time,1,offset,duration);
+						var _nt = time + (thisChannel.nudge||0)/1000;
+						thisSampler.triggerAttackExt(noteArray[pitch],_nt,1,offset,duration);
 					}
 
 			}
@@ -330,17 +331,18 @@ var keys = new Tone.Players({
 						var pitch = thisChannel.fxPitch;
 						var gain = thisChannel.fxVolume;
 
-						//RESPECT PER-NOTE TRIM / LENGTH (0-1000 = fraction of the sample)
+						//RESPECT PER-NOTE TRIM / LENGTH (0-1000 = fraction of the sample) + MICRO-TIMING
 						var thisPlayer = thisSampler.get(noteArray[thisPitch]);
+						var _dt = time + (thisChannel.nudge||0)/1000;
 						try {
 							var sd = thisPlayer.buffer && thisPlayer.buffer.duration;
 							if(sd && (offset > 0 || (duration != null && duration < 1000))){
-								thisPlayer.start(time, sd*(offset/1000), sd*((duration==null?1000:duration)/1000));
+								thisPlayer.start(_dt, sd*(offset/1000), sd*((duration==null?1000:duration)/1000));
 							}else{
-								thisPlayer.start(time);
+								thisPlayer.start(_dt);
 							}
 						}catch(err){
-							thisPlayer.start(time);
+							thisPlayer.start(_dt);
 						}
 					}
 
@@ -391,6 +393,7 @@ function Beat(){
 	this.fxFilterFreq = 20;
 	this.fxResonance=0;
 	this.fxFilterRes = 1;
+	this.nudge=0;            //PER-STEP MICRO-TIMING, MS (+ = later)
 }
 
 //AN ARRAY TO HOLD ALL THE BEAT SETTINGS FOR EVEY BEAT IN EVERY PATTERN FOR EVERY CHANNEL

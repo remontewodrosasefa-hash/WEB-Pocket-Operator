@@ -411,3 +411,21 @@ body.trimOpen #trimView { display: flex; }
 #hudSteps i.acc   { height: 13px; margin-top: -4px; background: rgba(27, 36, 17, 0.85); }
 #hudSteps i.ghost { height: 5px; margin-top: 4px; background: rgba(27, 36, 17, 0.35); }
 #hudSteps i.held  { background: #7a2a15; box-shadow: 0 0 5px rgba(122, 42, 21, 0.9); }
+
+/* lock bar nudge buttons */
+.lbNudge { display: inline-flex; align-items: center; gap: 4px; }
+.lbNudge button {
+	border: 1px solid #c4cdae;
+	background: transparent;
+	color: #c4cdae;
+	width: 18px; height: 18px;
+	border-radius: 3px;
+	font-size: 9px;
+	line-height: 1;
+	padding: 0;
+}
+.lbNudge button:active { background: #c4cdae; color: #1b2411; }
+
+/* motion recording armed — pulse the mode tag */
+body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-in-out infinite; }
+@keyframes motionPulse { 50% { opacity: 0.55; } }

@@ -126,33 +126,45 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
 
 ## Added in the browser edition
 
-* Power-on screen that unlocks Web Audio (needed on Safari/Chrome on macOS)
-* Rebuilt device layout — clean fl/grid instead of the old negative-margin hack
-  (`replica.css`, layered over `po33.css`)
-* **LCD HUD** (`js/studio.js`) — the screen now shows the current mode, selected
-  sound + its sample, pattern, tempo/swing/volume and a live 16-step readout
-* **Library dock** (`js/library.js`) — browse the sample packs under `samples/`,
-  preview, and **click a sample to load it onto the currently selected sound
-  slot** (`SOUND` + a number picks the slot). Slots tab shows the full map.
-* **Recorder** (`js/studio.js`) — capture the **microphone** or a **browser
-  tab's audio** straight onto the selected slot; download the clip as `.wav`
-* Rewritten in-page "How to play me" guide
-* `start.command` + `npm start` for one-step local serving
-* **PWA** — `manifest.webmanifest` + `sw.js`; installable, works offline after
-  first load
-* **Mobile / touch build** — responsive layout, the two knobs replaced by two
-  sliders, touch shims for WRITE long-press and BPM double-tap
+**Foundations**
+* Power-on screen that unlocks Web Audio · rebuilt clean flex/grid layout
+* **LCD HUD** (`js/studio.js`) — live mode / sound / pattern / step readout,
+  transient button feedback, "recommended next" hints, Ethiopian screen motifs
+* **Library dock** (`js/library.js`) — browse the packs under `samples/`,
+  preview, load onto the selected slot; per-pad drum kits; `fill 4/8/surprise`
+* **Recorder** (`js/studio.js`) — mic or browser-tab audio onto a slot,
+  persisted in IndexedDB; `.wav` and **MP3** export
+* **PWA** — installable, offline after first load; **mobile drawer build** with
+  scale-to-fit, the two knobs replaced by three sliders (A / B / master)
 
-## Next steps
+**Sound design (Tier 1)**
+* **Waveform trim editor** (`js/trim.js`) — FX → TRIM shows the waveform with
+  drag handles; per-step and channel-wide; drum trim fixed in the sequencer
+* **Auto-slice** (`js/slice.js`) — chop a sample 4 / 8 / 16 ways across a drum
+  slot's pads, optionally lay out across the steps + match tempo
+* **Per-step parameter locks + accent** (`js/locks.js`) — hold a lit step to
+  latch it, move a slider to lock note / volume / cutoff / res / trim to that
+  step; accent & ghost render on the step bar
 
-* Punch-in FX bank (hold FX → 16 live effects: stutter, reverse, tape-stop,
-  delay, bitcrush, filter …) via a bypassed Tone.js master effects chain
-* Persist recordings across reloads (IndexedDB) + save/load/export projects
-* Per-pad drum kit assignment (16 samples per drum slot, not one)
-* Sample trim / length / pitch from the dials
+**Performance (Tier 2)**
+* **16 punch-in effects** — crush · lo-fi · filter down/up · delay · stutter ·
+  pitch up/down · reverb · wide 6/9 · phaser · tape stop · roll · ping-pong ·
+  wobble · kill (bypassed master chain, built on first FX hold)
+* **On-screen parameter readout** while dragging any slider
+* **Metronome** (Transport-scheduled), **mute / solo** (hold a pad in SOUND),
+  **motion recording** (arm, play, sweep a slider), **micro-timing / nudge**
+  (±60 ms per step)
+* **Projects** (`js/projects.js`) — save / load / on-screen browser, in
+  `localStorage` (survives deploys)
 
-## Not yet implemented (from the original)
+## Still to do
 
-Trim sample and change length · change sample volume and pitch with dials ·
-record samples.
+* **Tier 2 leftovers:** LFO / parameter modulation
+* **Tier 3+:** richer animated screen art, expand button-feedback coverage,
+  crop a recorded clip, resample a slot through FX, engine lo-fi character
+* **PWA polish:** "update available" prompt, in-app A2HS hint, haptics on pad
+  press, landscape tuning
+* **Housekeeping:** history still carries `PO ALL/` (~65 MB `.git`) — optional
+  `git filter-repo`/BFG + force-push to purge
+
 

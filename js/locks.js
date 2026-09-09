@@ -23,6 +23,7 @@
 	var lockChannel = -1;     // channel the latch belongs to
 	var holdTimer = null;
 	var bar = null;
+	var nudgeSave = null;
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "info"); } }
@@ -47,6 +48,17 @@
 		bar.id = "lockBar";
 		bar.hidden = true;
 		hud.appendChild(bar);
+		bar.addEventListener("click", function (e) {
+			var d = e.target.getAttribute("data-nudge");
+			if (d == null || lockStep < 0) { return; }
+			e.stopPropagation();
+			var b = beatAt(lockStep, lockChannel);
+			if (!b) { return; }
+			b.nudge = Math.max(-60, Math.min(60, (b.nudge || 0) + (+d)));
+			if (Math.abs(b.nudge) < 2) { b.nudge = 0; }
+			b.locked = 1;
+			showBar();
+		});
 		return bar;
 	}
 
@@ -70,9 +82,14 @@
 		var el = ensureBar();
 		var b = beatAt(lockStep, lockChannel);
 		if (!el || !b) { return; }
-		el.innerHTML = '<b>LOCK step ' + (lockStep + 1) + '</b> · ' + FX_LABEL[g("fxMode", 0)] +
+		var nd = b.nudge || 0;
+		el.innerHTML = '<b>LOCK ' + (lockStep + 1) + '</b> ' + FX_LABEL[g("fxMode", 0)] +
 			' — ' + describe(b) +
-			'<span class="lbHint">move a slider · tap the pad to finish</span>';
+			'<span class="lbNudge">timing ' +
+				'<button data-nudge="-4">&#9664;</button>' +
+				(nd > 0 ? "+" : "") + nd + 'ms' +
+				'<button data-nudge="4">&#9654;</button></span>' +
+			'<span class="lbHint">move a slider · tap pad to finish</span>';
 		el.hidden = false;
 		document.body.classList.add("lockHold");
 	}
@@ -99,11 +116,10 @@
 
 	/* ---------- write a slider value into the latched step ---------- */
 
-	function applyLock(dialNumber, value) {
-		var b = beatAt(lockStep, lockChannel);
+	// write one slider's value into a specific beat, per the current FX mode
+	function writeParam(b, dialNumber, value) {
 		if (!b) { return; }
 		var fx = g("fxMode", 0);
-
 		if (fx === 1) {                                   // FILTER
 			if (dialNumber === 1) {
 				var minv = Math.log(20), maxv = Math.log(12000);
@@ -134,7 +150,36 @@
 			}
 		}
 		b.locked = 1;
+	}
+
+	function applyLock(dialNumber, value) {
+		var b = beatAt(lockStep, lockChannel);
+		if (!b) { return; }
+		writeParam(b, dialNumber, value);
 		showBar();
+	}
+
+	/* ---------- motion recording ---------- *
+	 * When armed and the sequencer is running, moving a slider writes its value
+	 * to whichever step is playing right now (only steps that are on), building
+	 * up parameter locks across the bar as the playhead sweeps.
+	 */
+	var motionArmed = false;
+
+	function armMotion(on) {
+		motionArmed = on;
+		document.body.classList.toggle("motionRec", on);
+		flash(on ? "motion rec ARMED — play, then move a slider" : "motion rec off", on ? "warn" : "tip");
+	}
+
+	function motionWrite(dialNumber, value) {
+		if (!motionArmed || !g("play", false)) { return false; }
+		var ch = g("selectedChannel", 0);
+		var beat = g("beatCount", 0);
+		var b = beatAt(beat, ch);
+		if (!b || !b.noteOn) { return false; }
+		writeParam(b, dialNumber, value);
+		return true;
 	}
 
 	// park the sliders on the latched step's values so nothing jumps
@@ -265,6 +310,21 @@
 				el.addEventListener("pointerup", function () { clearTimeout(holdTimer); }, true);
 				el.addEventListener("pointercancel", function () { clearTimeout(holdTimer); }, true);
 
+				// wheel over a lit step (WRITE mode) nudges its micro-timing +/- 60ms
+				el.addEventListener("wheel", function (e) {
+					if (!inWrite() || window.fxHeld) { return; }
+					var b = beatAt(step);
+					if (!b || !b.noteOn) { return; }
+					e.preventDefault();
+					b.nudge = Math.max(-60, Math.min(60,
+						(b.nudge || 0) + (e.deltaY < 0 ? -4 : 4)));
+					if (Math.abs(b.nudge) < 2) { b.nudge = 0; }
+					b.locked = b.nudge ? 1 : b.locked;
+					flash("step " + n + " timing " + (b.nudge > 0 ? "+" : "") + b.nudge + "ms", "info");
+					clearTimeout(nudgeSave);
+					nudgeSave = setTimeout(persist, 400);
+				}, { passive: false });
+
 				el.addEventListener("click", function (e) {
 					// swallow the click that ended a hold
 					if (el.dataset.lockFired) {
@@ -297,20 +357,29 @@
 		if (document.documentElement.dataset.lockSliders) { return; }
 		document.documentElement.dataset.lockSliders = "1";
 		document.addEventListener("input", function (e) {
-			if (lockStep < 0) { return; }
 			var id = e.target && e.target.id;
 			var n = id === "slider1" ? 1 : (id === "slider2" ? 2 : 0);
 			if (!n) { return; }
+			if (motionArmed && g("play", false)) {
+				// let dialFunction still run (channel-wide) AND stamp the step
+				motionWrite(n, +e.target.value);
+				return;
+			}
+			if (lockStep < 0) { return; }
 			e.stopImmediatePropagation();   // keep it off the channel-wide handler
 			applyLock(n, +e.target.value);
 		}, true);
 	}
 
-	// leaving WRITE, switching sound or pattern drops the latch
+	// leaving WRITE, switching sound or pattern drops the latch;
+	// stopping playback disarms + saves motion recording
 	function watch() {
+		var wasPlaying = false;
 		setInterval(function () {
-			if (lockStep < 0) { return; }
-			if (!inWrite() || g("selectedChannel", 0) !== lockChannel) { unlatch(true); }
+			if (lockStep >= 0 && (!inWrite() || g("selectedChannel", 0) !== lockChannel)) { unlatch(true); }
+			var playing = g("play", false);
+			if (motionArmed && wasPlaying && !playing) { persist(); armMotion(false); }
+			wasPlaying = playing;
 		}, 200);
 	}
 
@@ -320,6 +389,10 @@
 		clearAll: clearAllLocks,
 		held: function () { return lockStep; },
 		unlatch: unlatch
+	};
+	window.PO33.motion = {
+		toggle: function () { armMotion(!motionArmed); return motionArmed; },
+		isArmed: function () { return motionArmed; }
 	};
 	window.PO33.channels = {
 		state: function (ch) { return chanState[ch] || "on"; },
