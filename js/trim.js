@@ -40,14 +40,14 @@
 		wrap.innerHTML =
 			'<div class="tvHead"><span id="tvLabel">TRIM</span>' +
 				'<span><button type="button" data-tv="prev">&#9654; preview</button>' +
-				'<button type="button" data-tv="all">apply to pattern</button></span></div>' +
+				'<button type="button" data-tv="all">apply trim to steps</button></span></div>' +
 			'<div id="tvWave">' +
 				'<canvas id="tvCanvas"></canvas>' +
 				'<div class="tvShade" id="tvShadeL"></div><div class="tvShade" id="tvShadeR"></div>' +
 				'<div class="tvHandle" id="tvStart"></div><div class="tvHandle" id="tvEnd"></div>' +
 			'</div>' +
 			'<div id="tvSlice">' +
-				'<span>chop:</span>' +
+				'<span id="tvDest">chop:</span>' +
 				'<button type="button" data-tv="s4">4</button>' +
 				'<button type="button" data-tv="s8">8</button>' +
 				'<button type="button" data-tv="s16">16</button>' +
@@ -150,6 +150,14 @@
 			label.textContent = "TRIM · SOUND " + (ch + 1) +
 				"  " + Math.round(startF * 100) + "%–" + Math.round(endF * 100) + "%";
 		}
+		var dest = document.getElementById("tvDest");
+		if (dest && window.PO33 && PO33.slice && PO33.slice.target) {
+			var t = PO33.slice.target();
+			dest.textContent = "chop \u2192 SOUND " + t + ":";
+			dest.title = t === (ch + 1)
+				? "chops replace this slot's 16 pads"
+				: "melodic slots hold one sample, so chops land on drum SOUND " + t;
+		}
 	}
 
 	/* ---------- feedback ---------- */
@@ -228,7 +236,9 @@
 		catch (e) { say("slice failed: " + e.message); return; }
 		if (ok) {
 			curBufKey = "";                       // force a redraw of the new pad buffer
-			say("chopped x" + n + " onto SOUND " + target + (opts.layout ? " + laid out" : ""));
+			say("chopped x" + n + " \u2192 SOUND " + target + " pads" +
+				(opts.layout ? ", laid out on its 16 steps" : "") +
+				(target !== sel ? " (select SOUND " + target + " to play it)" : ""));
 		} else {
 			say("couldn't chop — sample too short?");
 		}

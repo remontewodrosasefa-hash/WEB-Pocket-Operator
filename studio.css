@@ -488,3 +488,4 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 	cursor: pointer;
 }
 #impBtn:hover { border-color: #9ad0e0; }
+#tvDest { font-weight: 700; }

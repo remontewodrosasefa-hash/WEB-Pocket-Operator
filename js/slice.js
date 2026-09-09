@@ -45,16 +45,23 @@
 		}
 	}
 
-	function makeSlices(buf, n) {
+	// region = {from, to} as 0..1 fractions of the buffer (the trim handles).
+	// Only that slice of audio gets chopped.
+	function makeSlices(buf, n, region) {
 		var ctx = rawCtx();
 		if (!ctx || !buf) { return []; }
-		var per = Math.floor(buf.length / n);
+		region = region || { from: 0, to: 1 };
+		var f = Math.max(0, Math.min(1, region.from));
+		var t = Math.max(f + 0.01, Math.min(1, region.to));
+		var regStart = Math.floor(buf.length * f);
+		var regLen = Math.floor(buf.length * (t - f));
+		var per = Math.floor(regLen / n);
 		if (per < 64) { return []; }
 		var chans = buf.numberOfChannels;
 		var out = [];
 		for (var k = 0; k < n; k++) {
-			var start = k * per;
-			var len = (k === n - 1) ? (buf.length - start) : per;
+			var start = regStart + k * per;
+			var len = (k === n - 1) ? (regStart + regLen - start) : per;
 			var sub = ctx.createBuffer(chans, len, buf.sampleRate);
 			for (var c = 0; c < chans; c++) {
 				var src = buf.getChannelData(c);
@@ -100,7 +107,7 @@
 		var di = slot - 9;
 		if (!ensureDrumSlot(di)) { flash("could not prepare slot " + slot, "warn"); return false; }
 
-		var slices = makeSlices(buf, n);
+		var slices = makeSlices(buf, n, opts.region);
 		if (!slices.length) { flash("sample too short to slice", "warn"); return false; }
 
 		// spread N slices over the 16 pads (16 -> 1:1, 8 -> each twice, 4 -> each 4x)
@@ -166,18 +173,34 @@
 	/* ---------- convenience entry points ---------- */
 
 	// slice whatever sound is selected; if it's melodic, drop the chops on slot 16
-	function sliceCurrent(n, opts) {
+	// Where a chop can land: only drum slots (9-16) have 16 separate pad players.
+	// A melodic slot is a single Sampler, so its chops have to go somewhere else.
+	function chopTarget() {
 		var sel = g("selectedChannel", 0) + 1;
-		var target = sel >= 9 ? sel : 16;
+		return sel >= 9 ? sel : 16;
+	}
+
+	function sliceCurrent(n, opts) {
+		opts = opts || {};
+		var sel = g("selectedChannel", 0);
 		var buf = selectedBuffer();
-		if (sel < 9) { flash("melodic slot - chops go to SOUND 16", "info"); }
-		return sliceToSlot(buf, target, n, opts);
+		// respect the trim handles unless the caller passed its own region
+		if (!opts.region) {
+			try {
+				var cs = window.channelSettingsArr[sel];
+				var from = (cs.fxTrim || 0) / 1000;
+				var len = (cs.fxLength == null ? 1000 : cs.fxLength) / 1000;
+				opts.region = { from: from, to: Math.min(1, from + len) };
+			} catch (e) {}
+		}
+		return sliceToSlot(buf, chopTarget(), n, opts);
 	}
 
 	window.PO33 = window.PO33 || {};
 	window.PO33.slice = {
 		toSlot: sliceToSlot,
 		current: sliceCurrent,
+		target: chopTarget,
 		selectedBuffer: selectedBuffer,
 		makeSlices: makeSlices
 	};
