@@ -152,6 +152,23 @@
 		}
 	}
 
+	/* ---------- feedback ---------- */
+
+	// the trim panel covers the HUD, so its own messages must render inside it
+	var sayTimer;
+	function say(msg, keep) {
+		if (note) {
+			note.textContent = msg;
+			clearTimeout(sayTimer);
+			if (!keep) {
+				sayTimer = setTimeout(function () {
+					note.innerHTML = "drag handles to trim &middot; chop spreads slices across the 16 pads";
+				}, 2600);
+			}
+		}
+		if (window.PO33 && PO33.flash) { PO33.flash(msg, "tip"); }
+	}
+
 	/* ---------- preview / apply ---------- */
 
 	function preview() {
@@ -172,23 +189,48 @@
 
 	function applyToPattern() {
 		var ch = g("selectedChannel", 0);
-		var cs = window.channelSettingsArr[ch];
 		var p = g("currentPattern", 0);
+		var cs, n = 0;
+		try { cs = window.channelSettingsArr[ch]; } catch (e) {}
+		if (!cs) { say("no sound selected"); return; }
 		try {
 			for (var b = 0; b < 16; b++) {
 				var beat = window.newChannelArr[ch][p][b];
-				if (beat.noteOn) { beat.fxTrim = cs.fxTrim; beat.fxLength = cs.fxLength; }
+				if (beat && beat.noteOn) {
+					beat.fxTrim = cs.fxTrim;
+					beat.fxLength = cs.fxLength;
+					beat.locked = 1;
+					n++;
+				}
 			}
-			if (window.PO33 && PO33.flash) { PO33.flash("trim applied to pattern " + (p + 1), "tip"); }
-		} catch (e) {}
+			localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  "));
+		} catch (e) {
+			say("couldn't apply: " + e.message);
+			return;
+		}
+		if (n === 0) {
+			say("SOUND " + (ch + 1) + " has no steps in pattern " + (p + 1) + " yet");
+		} else {
+			say("trim applied to " + n + " step" + (n > 1 ? "s" : "") + " of pattern " + (p + 1));
+		}
 	}
 
 	function doSlice(n) {
-		if (!window.PO33 || !PO33.slice) { return; }
+		if (!window.PO33 || !PO33.slice) { say("slicer not loaded"); return; }
+		var buf = selectedBuffer();
+		if (!buf) { say("no sample on SOUND " + (g("selectedChannel", 0) + 1)); return; }
 		var lay = wrap.querySelector("#tvLayout");
 		var opts = { layout: !!(lay && lay.checked), matchTempo: !!(lay && lay.checked) };
-		if (PO33.slice.current(n, opts)) {
+		var sel = g("selectedChannel", 0) + 1;
+		var target = sel >= 9 ? sel : 16;
+		var ok = false;
+		try { ok = PO33.slice.current(n, opts); }
+		catch (e) { say("slice failed: " + e.message); return; }
+		if (ok) {
 			curBufKey = "";                       // force a redraw of the new pad buffer
+			say("chopped x" + n + " onto SOUND " + target + (opts.layout ? " + laid out" : ""));
+		} else {
+			say("couldn't chop — sample too short?");
 		}
 	}
 

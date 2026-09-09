@@ -654,6 +654,8 @@
 			tx.objectStore("rec").put({ blob: blob, seconds: seconds }, name);
 		}).catch(function () {});
 	}
+	window.PO33.idbPut = idbPut;
+
 	function idbRestore() {
 		if (!window.indexedDB || !window.PO33Lib) { return; }
 		idbOpen().then(function (db) {

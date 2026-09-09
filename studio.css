@@ -69,6 +69,7 @@
 	position: absolute;
 	left: 0; right: 0;
 	bottom: 26px;
+	z-index: 20;               /* above the trim / project / lock overlays */
 	text-align: center;
 	font-size: 12px;
 	font-weight: 700;
@@ -474,3 +475,16 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
 }
+
+/* import button in the recorder bar */
+#impBtn {
+	font: inherit;
+	font-size: 12px;
+	padding: 5px 10px;
+	background: #26262b;
+	color: #9ad0e0;
+	border: 1px solid #37454f;
+	border-radius: 5px;
+	cursor: pointer;
+}
+#impBtn:hover { border-color: #9ad0e0; }

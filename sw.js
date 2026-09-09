@@ -2,7 +2,7 @@
  * App shell is precached; wav / sample files are cached on first use so the
  * whole 500-file pack isn't downloaded up front.
  */
-var VERSION = "po33-v23";
+var VERSION = "po33-v24";
 var SHELL = VERSION + "-shell";
 var MEDIA = VERSION + "-media";
 
@@ -25,6 +25,7 @@ var SHELL_FILES = [
 	"./js/library.js",
 	"./js/studio.js",
 	"./js/scene.js",
+	"./js/import.js",
 	"./game/sprites/tree.png",
 	"./game/sprites/hero_idle.png",
 	"./game/sprites/hero_walk.png",
@@ -65,6 +66,29 @@ self.addEventListener("activate", function (e) {
 
 self.addEventListener("fetch", function (e) {
 	var req = e.request;
+
+	// Share Target: another app shared an audio/video file into the PWA.
+	// Stash it in a cache and bounce to the app, which picks it up.
+	if (req.method === "POST" && new URL(req.url).pathname.indexOf("share-target") !== -1) {
+		e.respondWith((async function () {
+			try {
+				var form = await req.formData();
+				var file = form.get("audio");
+				if (file) {
+					var c = await caches.open("po33-share");
+					await c.put("shared-audio", new Response(file, {
+						headers: {
+							"Content-Type": file.type || "application/octet-stream",
+							"X-Filename": file.name || "shared-audio"
+						}
+					}));
+				}
+			} catch (err) { /* fall through to the app anyway */ }
+			return Response.redirect("./index.html?shared=1", 303);
+		})());
+		return;
+	}
+
 	if (req.method !== "GET") { return; }
 	var url = new URL(req.url);
 	if (url.origin !== location.origin) { return; }
