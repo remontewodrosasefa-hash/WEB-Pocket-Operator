@@ -2,6 +2,27 @@
 // Modern browsers (incl. Safari/Chrome on macOS) start the AudioContext
 // suspended until a user gesture. This unlocks it once, up front.
 (function () {
+	var APP_VERSION = "17";   // keep in sync with sw.js VERSION (po33-v<n>)
+
+	// small always-on version chip at the very top; doubles as the update button
+	function versionTag() {
+		if (document.getElementById("versionTag")) { return document.getElementById("versionTag"); }
+		var t = document.createElement("div");
+		t.id = "versionTag";
+		t.textContent = "v" + APP_VERSION;
+		t.title = "app version";
+		document.body.appendChild(t);
+		return t;
+	}
+	function markUpdate(worker) {
+		var t = versionTag();
+		if (!worker || t.dataset.upd) { return; }
+		t.dataset.upd = "1";
+		t.classList.add("hasUpdate");
+		t.textContent = "v" + APP_VERSION + "  ·  update ready ↻";
+		t.onclick = function () { t.textContent = "updating…"; worker.postMessage("skipWaiting"); };
+	}
+
 	function unlockAudio() {
 		try {
 			if (window.Tone) {
@@ -41,26 +62,17 @@
 
 	// register the service worker (PWA / offline). Needs a secure context
 	// (https:// or localhost) — silently skipped otherwise.
+	window.addEventListener("load", versionTag);
+
 	if ("serviceWorker" in navigator && window.isSecureContext) {
 		window.addEventListener("load", function () {
 			navigator.serviceWorker.register("sw.js").then(function (reg) {
-				// a new version is waiting -> offer a one-tap refresh
-				function offer(worker) {
-					if (!worker) { return; }
-					var bar = document.createElement("div");
-					bar.id = "updateBar";
-					bar.innerHTML = "new version ready \u00b7 <button type=\"button\">refresh</button>";
-					bar.querySelector("button").addEventListener("click", function () {
-						worker.postMessage("skipWaiting");
-					});
-					document.body.appendChild(bar);
-				}
-				if (reg.waiting) { offer(reg.waiting); }
+				if (reg.waiting) { markUpdate(reg.waiting); }
 				reg.addEventListener("updatefound", function () {
 					var nw = reg.installing;
 					if (!nw) { return; }
 					nw.addEventListener("statechange", function () {
-						if (nw.state === "installed" && navigator.serviceWorker.controller) { offer(nw); }
+						if (nw.state === "installed" && navigator.serviceWorker.controller) { markUpdate(nw); }
 					});
 				});
 				// check for an update whenever the app regains focus
