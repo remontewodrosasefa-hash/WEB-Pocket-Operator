@@ -1,253 +1,296 @@
 /* scene.js — ambient pixel-art farm on the LCD.
- * Lives in the #hudArt band (below the readout, above the step bar), never
- * covers text. It grows the longer you use the unit and reacts to every
- * button press. This is the always-visible teaser of the full FARM screen.
+ * Sits in the #hudArt band (below the readout, above the step bar) and never
+ * covers text. A little farmer walks about, chops the tree and tends the crops;
+ * the farm grows the more you use the unit, and everything reacts to presses.
  *
- * Art: "Sprout Lands - Basic pack" by Cup Nooble (non-commercial licence).
+ * Art: "Farm RPG FREE 16x16 - Tiny Asset Pack" (32x32 character frames).
  * Only the sprites used are committed, in game/sprites/.
  */
 (function () {
 	"use strict";
 
 	var SRC = "game/sprites/";
-	// [sheet, sx, sy, sw, sh]  — tweak here if a crop looks off
-	var SPR = {
-		ground:  ["grass",   8,  96, 16, 16],
-		tuft:    ["grass",  120, 96, 16, 16],
-		bush:    ["biome",    0,  60, 30, 20],
-		tree:    ["biome",    2,   0, 36, 50],
-		rock:    ["biome",  128,   8, 16, 16],
-		mush:    ["biome",   96,   0, 16, 16],
-		log:     ["biome",   80,  28, 26, 14],
-		coop:    ["coop",     0,   0, 48, 48],
-		cropA:   ["plants",  16,  16, 16, 16],
-		cropB:   ["plants",  32,  16, 16, 16],
-		cropC:   ["plants",  48,  16, 16, 16],
-		cropD:   ["plants",  64,  16, 16, 16],
-		chkIdle0:["chicken",  0,   0, 16, 16],
-		chkIdle1:["chicken", 16,   0, 16, 16],
-		chkWalk0:["chicken",  0,  16, 16, 16],
-		chkWalk1:["chicken", 16,  16, 16, 16]
-	};
+	var SHEETS = ["ground", "tree", "hero_idle", "hero_walk", "hen", "chick", "house2", "crops", "chest"];
 
-	// xp milestones -> what's on the farm
+	/* frame geometry ------------------------------------------------- */
+	var HERO = 32;                       // hero frames are 32x32
+	var HERO_ROW = { front: 0, back: 1, side: 2 };
+	var IDLE_FRAMES = 4, WALK_FRAMES = 6;
+	var TREE_W = 32, TREE_H = 48;        // 5 stages: nub, sprout, small, full, stump
+	var HEN = 16;
+
+	// ground fill tile inside the autotile sheet
+	var GROUND = [112, 32, 16, 16];
+	// a few crop stages out of Spring Crops (16x16 cells)
+	var CROP = [[0, 0], [16, 0], [32, 0], [48, 0]];
+
+	/* progression ----------------------------------------------------- */
+	// ~80% fewer presses than the first pass, for testing
 	var STAGES = [
-		{ xp: 0,   has: ["tuft"] },
-		{ xp: 6,   has: ["tuft", "bush"] },
-		{ xp: 18,  has: ["tuft", "bush", "rock"] },
-		{ xp: 35,  has: ["tuft", "bush", "rock", "tree"] },
-		{ xp: 70,  has: ["tuft", "bush", "tree", "chicken", "crop"] },
-		{ xp: 140, has: ["tuft", "bush", "tree", "chicken2", "crop"] },
-		{ xp: 280, has: ["tuft", "bush", "tree", "chicken2", "crop", "coop"] },
-		{ xp: 550, has: ["tuft", "bush", "tree", "chicken3", "cropFull", "coop"] }
+		{ xp: 0,   has: [] },
+		{ xp: 2,   has: ["tree"] },
+		{ xp: 6,   has: ["tree", "hen"] },
+		{ xp: 12,  has: ["tree", "hen", "crop"] },
+		{ xp: 22,  has: ["tree", "hen", "crop", "chest"] },
+		{ xp: 36,  has: ["tree", "hen2", "crop", "chest"] },
+		{ xp: 60,  has: ["tree", "hen2", "chick", "crop", "chest", "house"] },
+		{ xp: 100, has: ["treeFull", "hen2", "chick", "cropFull", "chest", "house"] }
 	];
 
-	var sheets = {}, ready = false, host, cv, ctx, W = 0, H = 0, DPR = 1;
-	var xp = 0, chickens = [], puffs = [], lastTick = 0, reactUntil = 0;
+	var img = {}, host, cv, ctx, W = 0, H = 0, DPR = 1, S = 2;
+	var xp = 0, hens = [], chips = [], puffs = [], last = 0, booted = false;
 
-	function loadXp() {
-		try { xp = parseInt(localStorage.getItem("po33.scene.xp"), 10) || 0; } catch (e) { xp = 0; }
-	}
-	function saveXp() {
-		try { localStorage.setItem("po33.scene.xp", String(xp)); } catch (e) {}
-	}
-	window.PO33 = window.PO33 || {};
-	window.PO33.scene = {
-		xp: function () { return xp; },
-		add: function (n) { bump(n || 1); },
-		reset: function () { xp = 0; saveXp(); }
-	};
+	var hero = { x: 40, dir: 1, state: "idle", t: 0, chop: 0, target: null };
+
+	/* ---------- state ---------- */
+
+	function loadXp() { try { xp = parseInt(localStorage.getItem("po33.scene.xp"), 10) || 0; } catch (e) { xp = 0; } }
+	function saveXp() { try { localStorage.setItem("po33.scene.xp", String(xp)); } catch (e) {} }
 
 	function stage() {
 		var st = STAGES[0];
 		for (var i = 0; i < STAGES.length; i++) { if (xp >= STAGES[i].xp) { st = STAGES[i]; } }
 		return st;
 	}
-	function nextStageXp() {
-		for (var i = 0; i < STAGES.length; i++) { if (xp < STAGES[i].xp) { return STAGES[i].xp; } }
-		return null;
-	}
+	function has(k) { return stage().has.indexOf(k) > -1; }
+
+	window.PO33 = window.PO33 || {};
+	window.PO33.scene = {
+		xp: function () { return xp; },
+		add: function (n) { bump(n || 1); },
+		reset: function () { xp = 0; saveXp(); syncHens(); }
+	};
 
 	function bump(n) {
 		var before = stage();
 		xp += n;
 		saveXp();
-		reactUntil = performance.now() + 260;   // little hop on the chickens
-		if (chickens.length) { chickens[0].hop = 8; }
-		puffs.push({ x: 10 + Math.random() * (W - 20), y: H - 6, life: 1 });
+		// the farmer reacts: walk to the tree and chop
+		hero.state = "walk";
+		hero.chop = 46;
+		hero.target = treeX();
+		hens.forEach(function (h) { h.hop = 7; });
 		if (stage() !== before) {
-			puffs.push({ x: W / 2, y: H / 2, life: 1, big: true });
-			if (window.PO33 && PO33.flash) { PO33.flash("farm grew — " + newThing(before, stage()), "tip"); }
+			puffs.push({ x: W / 2, y: H * 0.4, life: 1, big: true });
+			var added = stage().has.filter(function (x) { return before.has.indexOf(x) === -1; })[0];
+			if (added && window.PO33.flash) { PO33.flash("farm grew · " + added.replace(/\d|Full/g, ""), "tip"); }
+			syncHens();
 		}
-		syncChickens();
-	}
-	function newThing(a, b) {
-		var added = b.has.filter(function (x) { return a.has.indexOf(x) === -1; });
-		return (added[0] || "nice").replace(/\d/, "").replace("cropFull", "harvest");
 	}
 
-	function syncChickens() {
-		var h = stage().has;
-		var want = h.indexOf("chicken3") > -1 ? 3 : h.indexOf("chicken2") > -1 ? 2 : h.indexOf("chicken") > -1 ? 1 : 0;
-		while (chickens.length < want) {
-			chickens.push({ x: 20 + chickens.length * 22, dir: 1, t: Math.random() * 100, hop: 0, peck: 0 });
+	function syncHens() {
+		var want = (has("hen2") ? 2 : has("hen") ? 1 : 0) + (has("chick") ? 1 : 0);
+		while (hens.length < want) {
+			hens.push({ x: 30 + hens.length * 26, t: Math.random() * 50, hop: 0, baby: hens.length === want - 1 && has("chick") });
 		}
-		chickens.length = want;
+		hens.length = want;
 	}
 
-	/* ---------- loading ---------- */
+	/* ---------- geometry ---------- */
 
-	function loadSheets(done) {
-		var names = ["grass", "biome", "plants", "coop", "chicken"];
-		var left = names.length;
-		names.forEach(function (n) {
-			var img = new Image();
-			img.onload = img.onerror = function () { if (--left === 0) { done(); } };
-			img.src = SRC + n + ".png";
-			sheets[n] = img;
+	function baseY() { return H - 4; }
+	function treeX()  { return W - 40 * S / 2 - 6; }
+
+	/* ---------- drawing ---------- */
+
+	function blit(sheet, sx, sy, sw, sh, dx, dy, scale) {
+		var im = img[sheet];
+		if (!im || !im.width) { return; }
+		scale = scale || S;
+		ctx.drawImage(im, sx, sy, sw, sh, Math.round(dx), Math.round(dy), sw * scale, sh * scale);
+	}
+
+	function drawGround() {
+		var g = GROUND, tile = 16 * S;
+		var y = baseY() - tile * 0.55;
+		for (var x = -tile; x < W + tile; x += tile) { blit("ground", g[0], g[1], g[2], g[3], x, y); }
+	}
+
+	function drawHero(now) {
+		var walking = hero.state === "walk";
+		var frames = walking ? WALK_FRAMES : IDLE_FRAMES;
+		var sheet = walking ? "hero_walk" : "hero_idle";
+		var fps = walking ? 10 : 5;
+		var f = Math.floor(now / (1000 / fps)) % frames;
+		var row = HERO_ROW.side;
+		var chopping = hero.chop > 0 && Math.abs(hero.x - (hero.target || 0)) < 8;
+		var bob = chopping ? (Math.floor(now / 90) % 2 ? 2 : -2) : 0;
+
+		var im = img[sheet];
+		if (!im || !im.width) { return; }
+		var dw = HERO * S, dh = HERO * S;
+		var dx = hero.x, dy = baseY() - dh + 4 + bob;
+		ctx.save();
+		ctx.translate(Math.round(dx + (hero.dir < 0 ? dw : 0)), Math.round(dy));
+		ctx.scale(hero.dir < 0 ? -1 : 1, 1);
+		ctx.drawImage(im, f * HERO, row * HERO, HERO, HERO, 0, 0, dw, dh);
+		ctx.restore();
+
+		if (chopping && Math.random() < 0.35) {
+			chips.push({ x: hero.x + dw * 0.8, y: dy + dh * 0.45,
+				vx: 0.6 + Math.random(), vy: -1.2 - Math.random(), life: 1 });
+		}
+	}
+
+	function drawTree() {
+		if (!has("tree") && !has("treeFull")) { return; }
+		var stg = has("treeFull") ? 3 : (xp > 30 ? 3 : xp > 12 ? 2 : 1);
+		blit("tree", stg * TREE_W, 0, TREE_W, TREE_H, treeX(), baseY() - TREE_H * S + 6);
+	}
+
+	function drawHens(now, dt) {
+		hens.forEach(function (h, i) {
+			h.t += dt * 0.004;
+			if (h.hop > 0) { h.hop -= dt * 0.05; }
+			h.x += Math.sin(h.t * 0.7 + i) * 0.25;
+			h.x = Math.max(4, Math.min(W - HEN * S - 4, h.x));
+			var flip = Math.cos(h.t * 0.7 + i) < 0;
+			var f = Math.floor(now / 260) % 4;
+			var sheet = h.baby ? "chick" : "hen";
+			var im = img[sheet];
+			if (!im || !im.width) { return; }
+			var d = HEN * S * (h.baby ? 0.75 : 1);
+			ctx.save();
+			ctx.translate(Math.round(h.x + (flip ? d : 0)), Math.round(baseY() - d - Math.max(0, h.hop)));
+			ctx.scale(flip ? -1 : 1, 1);
+			ctx.drawImage(im, f * HEN, 0, HEN, HEN, 0, 0, d, d);
+			ctx.restore();
 		});
 	}
 
-	function draw(key, dx, dy, scale) {
-		var s = SPR[key];
-		if (!s) { return; }
-		var img = sheets[s[0]];
-		if (!img || !img.width) { return; }
-		scale = scale || 1;
-		ctx.drawImage(img, s[1], s[2], s[3], s[4],
-			Math.round(dx), Math.round(dy), s[3] * scale, s[4] * scale);
+	function drawProps() {
+		if (has("house")) { blit("house2", 0, 0, 64, 64, 2, baseY() - 64 * S * 0.7, S * 0.7); }
+		if (has("chest")) { blit("chest", 0, 0, 32, 32, W * 0.26, baseY() - 32 * S * 0.6, S * 0.6); }
+		if (has("crop") || has("cropFull")) {
+			var st = has("cropFull") ? 3 : Math.max(0, Math.min(3, Math.floor((xp - 12) / 12)));
+			var c = CROP[st];
+			for (var i = 0; i < 3; i++) {
+				blit("crops", c[0], c[1], 16, 16, W * 0.44 + i * 16 * S * 0.8, baseY() - 16 * S * 0.8, S * 0.8);
+			}
+		}
 	}
 
-	/* ---------- build / size ---------- */
-
-	function build() {
-		host = document.getElementById("hudArt");
-		if (!host || cv) { return !!host; }
-		window.__sceneOwnsArt = true;             // tell studio.js to leave #hudArt alone
-		host.innerHTML = "";
-		host.style.opacity = "1";
-		cv = document.createElement("canvas");
-		cv.id = "sceneCanvas";
-		host.appendChild(cv);
-		ctx = cv.getContext("2d");
-		ctx.imageSmoothingEnabled = false;
-		cv.addEventListener("pointerdown", function () { bump(2); });
-		resize();
-		if (window.ResizeObserver) { new ResizeObserver(resize).observe(host); }
-		return true;
+	function drawParticles(dt) {
+		var i, p;
+		for (i = chips.length - 1; i >= 0; i--) {
+			p = chips[i];
+			p.life -= dt * 0.002; p.x += p.vx; p.y += p.vy; p.vy += 0.09;
+			if (p.life <= 0) { chips.splice(i, 1); continue; }
+			ctx.fillStyle = "rgba(150,100,50," + p.life + ")";
+			ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
+		}
+		for (i = puffs.length - 1; i >= 0; i--) {
+			p = puffs[i];
+			p.life -= dt * 0.0018;
+			if (p.life <= 0) { puffs.splice(i, 1); continue; }
+			ctx.fillStyle = "rgba(255,220,130," + p.life * 0.9 + ")";
+			ctx.beginPath();
+			ctx.arc(p.x, p.y - (1 - p.life) * 16, 10 * (1.3 - p.life), 0, 7);
+			ctx.fill();
+		}
 	}
+
+	/* ---------- loop ---------- */
+
+	function frame(now) {
+		requestAnimationFrame(frame);
+		if (!ctx || !W) { return; }
+		var dt = Math.min(50, now - last); last = now;
+		ctx.clearRect(0, 0, W, H);
+
+		// hero movement
+		if (hero.chop > 0) { hero.chop -= dt * 0.06; }
+		var tgt = hero.target;
+		if (hero.state === "walk" && tgt != null) {
+			var d = tgt - hero.x;
+			if (Math.abs(d) > 6) { hero.dir = d > 0 ? 1 : -1; hero.x += hero.dir * dt * 0.045; }
+			else if (hero.chop <= 0) { hero.state = "idle"; hero.target = null; }
+		} else if (hero.state === "idle") {
+			hero.t += dt;
+			if (hero.t > 3200) {                      // wander now and then
+				hero.t = 0; hero.state = "walk";
+				hero.target = 20 + Math.random() * Math.max(20, W - 80);
+			}
+		}
+		hero.x = Math.max(2, Math.min(W - HERO * S - 2, hero.x));
+
+		drawGround();
+		drawProps();
+		drawTree();
+		drawHens(now, dt);
+		drawHero(now);
+		drawParticles(dt);
+	}
+
+	/* ---------- setup ---------- */
 
 	function resize() {
-		if (!host) { return; }
+		if (!host || !cv) { return; }
 		var r = host.getBoundingClientRect();
 		W = Math.max(80, Math.floor(r.width));
-		H = Math.max(28, Math.floor(r.height));
+		H = Math.max(34, Math.floor(r.height));
 		DPR = Math.min(2, window.devicePixelRatio || 1);
+		// scale so the tallest sprite (tree, 48px) always fits the band
+		S = Math.max(1, Math.min(2.4, (H - 6) / TREE_H));
 		cv.width = W * DPR; cv.height = H * DPR;
 		cv.style.width = W + "px"; cv.style.height = H + "px";
 		ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 		ctx.imageSmoothingEnabled = false;
 	}
 
-	/* ---------- render loop ---------- */
-
-	function frame(now) {
-		requestAnimationFrame(frame);
-		if (!ctx || !W) { return; }
-		var dt = Math.min(60, now - lastTick); lastTick = now;
-		ctx.clearRect(0, 0, W, H);
-
-		var groundY = H - 10;
-
-		// ground strip
-		var s = SPR.ground;
-		for (var gx = 0; gx < W; gx += 16) { draw("ground", gx, H - 16); }
-
-		var has = stage().has;
-		var farRight = W - 4;
-
-		// static-ish props, back to front
-		if (has.indexOf("tree") > -1)  { draw("tree", farRight - 30, groundY - 44); }
-		if (has.indexOf("coop") > -1)  { draw("coop", 4, groundY - 42); }
-		if (has.indexOf("bush") > -1)  { draw("bush", W * 0.32, groundY - 20); }
-		if (has.indexOf("rock") > -1)  { draw("rock", W * 0.62, groundY - 12); }
-		if (xp > 100) { draw("mush", W * 0.5, groundY - 12); }
-		if (xp > 200) { draw("log", W * 0.14, groundY - 12); }
-		draw("tuft", 6, groundY - 12);
-		draw("tuft", W - 22, groundY - 12);
-
-		// crop patch, grows with xp past its unlock
-		if (has.indexOf("crop") > -1 || has.indexOf("cropFull") > -1) {
-			var over = xp - 70;
-			var st = has.indexOf("cropFull") > -1 ? 3 : Math.max(0, Math.min(3, Math.floor(over / 40)));
-			var keys = ["cropA", "cropB", "cropC", "cropD"];
-			for (var c = 0; c < 3; c++) { draw(keys[st], W * 0.42 + c * 14, groundY - 14); }
-		}
-
-		// chickens
-		var reacting = now < reactUntil;
-		chickens.forEach(function (ch, i) {
-			ch.t += dt * 0.004;
-			var bob = Math.sin(ch.t * 4) > 0 ? 0 : 1;
-			if (ch.hop > 0) { ch.hop -= dt * 0.06; }
-			var hopY = Math.max(0, ch.hop);
-			// wander a little
-			ch.x += Math.sin(ch.t * 0.6 + i) * 0.15 * (reacting ? 3 : 1);
-			ch.x = Math.max(4, Math.min(W - 20, ch.x));
-			var flip = Math.cos(ch.t * 0.6 + i) < 0;
-			var key = reacting ? (bob ? "chkWalk0" : "chkWalk1") : (bob ? "chkIdle0" : "chkIdle1");
-			var sp = SPR[key], img = sheets[sp[0]];
-			if (img && img.width) {
-				ctx.save();
-				ctx.translate(Math.round(ch.x + (flip ? 16 : 0)), Math.round(groundY - 16 - hopY));
-				ctx.scale(flip ? -1 : 1, 1);
-				ctx.drawImage(img, sp[1], sp[2], sp[3], sp[4], 0, 0, sp[3], sp[4]);
-				ctx.restore();
-			}
-		});
-
-		// dust puffs
-		for (var p = puffs.length - 1; p >= 0; p--) {
-			var pf = puffs[p];
-			pf.life -= dt * 0.003;
-			if (pf.life <= 0) { puffs.splice(p, 1); continue; }
-			ctx.fillStyle = pf.big ? "rgba(255,215,120," + pf.life + ")" : "rgba(120,110,80," + (pf.life * 0.7) + ")";
-			var rad = (pf.big ? 6 : 3) * (1.4 - pf.life);
-			ctx.beginPath();
-			ctx.arc(pf.x, pf.y - (1 - pf.life) * 10, rad, 0, 7);
-			ctx.fill();
-		}
+	function build() {
+		host = document.getElementById("hudArt");
+		if (!host) { return false; }
+		if (cv) { return true; }
+		window.__sceneOwnsArt = true;
+		host.innerHTML = "";
+		cv = document.createElement("canvas");
+		cv.id = "sceneCanvas";
+		host.appendChild(cv);
+		ctx = cv.getContext("2d");
+		ctx.imageSmoothingEnabled = false;
+		cv.addEventListener("pointerdown", function () { bump(1); });
+		resize();
+		if (window.ResizeObserver) { new ResizeObserver(resize).observe(host); }
+		window.addEventListener("resize", resize);
+		return true;
 	}
 
-	/* ---------- hooks ---------- */
-
 	function wireButtons() {
-		// every pad / mode button press feeds the farm (rate-limited)
-		var last = 0;
+		var t = 0;
 		document.addEventListener("pointerdown", function (e) {
 			if (!e.target.closest || !e.target.closest("[id^='btn']")) { return; }
 			var now = Date.now();
-			if (now - last < 90) { return; }
-			last = now;
+			if (now - t < 90) { return; }
+			t = now;
 			bump(1);
 		}, true);
 	}
 
 	function boot() {
+		if (booted) { return; }
+		booted = true;
 		loadXp();
-		loadSheets(function () {
-			ready = true;
-			var tries = 0;
-			var iv = setInterval(function () {
-				if (build()) {
-					clearInterval(iv);
-					syncChickens();
-					wireButtons();
-					requestAnimationFrame(frame);
-				} else if (++tries > 100) { clearInterval(iv); }
-			}, 120);
+		var left = SHEETS.length;
+		SHEETS.forEach(function (n) {
+			var im = new Image();
+			im.onload = im.onerror = function () { if (--left === 0) { start(); } };
+			im.src = SRC + n + ".png";
+			img[n] = im;
 		});
 	}
+	function start() {
+		var tries = 0;
+		var iv = setInterval(function () {
+			if (build()) {
+				clearInterval(iv);
+				syncHens();
+				wireButtons();
+				requestAnimationFrame(frame);
+			} else if (++tries > 100) { clearInterval(iv); }
+		}, 120);
+	}
+
 	if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", boot); }
 	else { boot(); }
 })();

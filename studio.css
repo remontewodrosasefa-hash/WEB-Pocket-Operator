@@ -460,13 +460,17 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 }
 
 /* ambient farm scene on the LCD */
-#hudArt { align-items: stretch; opacity: 1; }
+#hudArt {
+	align-items: stretch;
+	justify-content: stretch;
+	opacity: 1;
+	min-height: 62px;          /* always enough room for the farmer + tree */
+	overflow: hidden;
+}
 #sceneCanvas {
 	display: block;
 	width: 100%;
 	height: 100%;
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
-	mix-blend-mode: multiply;      /* sit on the LCD instead of over it */
-	opacity: 0.9;
 }

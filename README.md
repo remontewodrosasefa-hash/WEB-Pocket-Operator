@@ -177,9 +177,9 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
 
 ## Credits
 
-* Pixel art (farm scene): **Sprout Lands – Basic Pack** by *Cup Nooble*
-  (non-commercial licence; only the used sprites are bundled, in
-  `game/sprites/`). https://cupnooble.itch.io/sprout-lands-asset-pack
+* Pixel art (farm scene): **Farm RPG FREE 16x16 – Tiny Asset Pack**
+  (32×32 character frames). Only the used sprites are bundled, in
+  `game/sprites/`; the raw pack is not redistributed.
 * Tileset: **Summer Plains 32×32** by *Schwarnhild*.
   https://schwarnhild.itch.io/summer-plains-tileset-and-asset-pack-32x32-pixels
 * Original PO-33 web clone by [James Benson](https://github.com/jjbenson85).

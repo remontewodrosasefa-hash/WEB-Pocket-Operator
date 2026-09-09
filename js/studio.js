@@ -757,6 +757,17 @@
 		var apply = function () {
 			window["dial" + n + "Value"] = +el.value;
 			try { window.dialFunction(n); } catch (e) {}
+			// dialFunction only writes fxPitch, which playback never reads.
+			// In TONE mode slider 1 is PITCH, so drive the note the engine
+			// actually plays (notePitch, 0-15) as well.
+			if (n === 1 && g("state", 0) !== 4 && g("fxMode", 0) === 0) {
+				try {
+					var ch = g("selectedChannel", 0);
+					var v = Math.max(0, Math.min(15, Math.round(+el.value / 1000 * 15)));
+					window.channelSettingsArr[ch].notePitch = v;
+					window.selectedPitch = v;
+				} catch (e) {}
+			}
 		};
 		el.addEventListener("input", function () { apply(); readout(n); });
 		// mouse wheel over a slider also turns it
@@ -787,7 +798,7 @@
 			flash(n === 1 ? ("start " + Math.round((cs.fxTrim || 0) / 10) + "%")
 			              : ("length " + Math.round((cs.fxLength == null ? 1000 : cs.fxLength) / 10) + "%"), "info");
 		} else {
-			flash(n === 1 ? ("pitch " + Math.round((cs.fxPitch || 0) / 62.5))
+			flash(n === 1 ? ("pitch · pad " + ((cs.notePitch || 0) + 1))
 			              : ("sample vol " + (Math.round((cs.fxVolume || 0) * 10) / 10) + " dB"), "info");
 		}
 	}
