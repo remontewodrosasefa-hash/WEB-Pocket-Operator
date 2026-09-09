@@ -501,3 +501,19 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 #tvGo { font-weight: 700; }
 #tvSlice button[data-tv="less"],
 #tvSlice button[data-tv="more"] { min-width: 24px; font-weight: 700; }
+
+/* undo button on the LCD top bar */
+#undoBtn {
+	font: 700 12px/1 ui-monospace, Menlo, monospace;
+	padding: 2px 7px 3px;
+	margin-right: 6px;
+	background: transparent;
+	color: #1b2411;
+	border: 1px solid #1b2411;
+	border-radius: 3px;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+}
+#undoBtn:disabled { opacity: 0.3; cursor: default; }
+#undoBtn:active:not(:disabled) { background: #1b2411; color: #c4cdae; }

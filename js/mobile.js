@@ -138,6 +138,22 @@
 				'<b>nudge</b> alternate ones for a rolling feel, or drop an <b>auto-slice</b> of a ',
 				'vocal on a spare drum slot and trigger chops on the &amp;s.</p>',
 
+			'<h3>Live record (play it in)</h3>',
+			'<div class="callout">',
+				'<b>The fastest way to write a part.</b> Instead of placing steps one by one, ',
+				'play the pads in time and they record themselves onto the bar.',
+				'<ol>',
+				'<li>Press <span class="tag">PLAY</span> so the pattern is running.</li>',
+				'<li><b>Press and hold <span class="tag">WRITE</span> for 3 seconds</b> &mdash; the ',
+					'screen changes to <b>&#9679; LIVE REC</b>. (Or tap <i>arm live rec</i> in ',
+					'<b>utilities</b> to skip the hold.)</li>',
+				'<li>Tap pads in time. Each hit lands on whichever step is passing.</li>',
+				'<li>Tap <span class="tag">WRITE</span> again to stop recording.</li>',
+				'</ol>',
+				'Messy take? Hit <b>&#8630; undo</b> on the screen (or <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Z</kbd>) ',
+				'&mdash; the whole take comes off in one go.',
+			'</div>',
+
 			'<h3>From beat to song</h3>',
 			'<p>Think in <b>sections</b>, each its own pattern:</p><ol>',
 			'<li><b>Pattern 1 = the main loop.</b> Get it right.</li>',
@@ -240,7 +256,11 @@
 			'<p>Arm below, <span class="tag">PLAY</span>, then sweep a <b>slider</b> &mdash; the value ',
 				'stamps onto each step as the playhead passes. Stop playback to save. The FX mode ',
 				'(TONE / FILTER / TRIM) picks which parameter records.</p>',
-			'<div class="btnRow"><button id="motionBtn" type="button">arm motion rec</button></div>',
+			'<div class="btnRow">',
+				'<button id="liveRecBtn" type="button">arm live rec (play pads into the bar)</button>',
+				'<button id="motionBtn" type="button">arm motion rec</button>',
+				'<button id="undoDrawerBtn" type="button">undo last change</button>',
+			'</div>',
 
 			'<h3>Mute / solo</h3>',
 			'<p>In <span class="tag">SOUND</span> mode, <b>hold a pad</b> to cycle that sound ',
@@ -351,6 +371,8 @@
 			if (e.target.closest("#libBack")) { close(); }
 			if (e.target.id === "clearLocksBtn" && window.PO33 && PO33.locks) { PO33.locks.clearAll(); }
 			if (e.target.id === "metroBtn" && window.PO33 && PO33.metro) { PO33.metro.toggle(); }
+			if (e.target.id === "liveRecBtn" && window.PO33 && PO33.liveRec) { close(); PO33.liveRec(); }
+			if (e.target.id === "undoDrawerBtn" && window.PO33 && PO33.undo) { PO33.undo.undo(); }
 			if (e.target.id === "motionBtn" && window.PO33 && PO33.motion) {
 				var on = PO33.motion.toggle();
 				e.target.textContent = on ? "disarm motion rec" : "arm motion rec";

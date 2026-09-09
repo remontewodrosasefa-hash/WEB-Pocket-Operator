@@ -858,6 +858,20 @@
 		}, 1500);
 	}
 
+	// arm live record without the hidden 3-second WRITE hold
+	function liveRec() {
+		if (!g("play", false)) { flash("press PLAY first, then arm live rec", "warn"); return false; }
+		try {
+			window.btnWriteHold = true;
+			window.mode = 0;                    // so writeButtonFunction lands on 11
+            window.writeButtonFunction();
+			window.btnWriteHold = false;
+			flash("LIVE REC armed — play the pads", "warn");
+			return true;
+		} catch (e) { return false; }
+	}
+	window.PO33.liveRec = liveRec;
+
 	window.PO33.clearPattern = clearPattern;
 	window.PO33.clearAll = clearAll;
 

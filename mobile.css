@@ -300,3 +300,16 @@
 	}
 	#scaleOct { font-size: 12px; min-width: 52px; text-align: center; color: #ffb060; }
 }
+
+/* highlighted callout in the guide */
+@media (max-width: 720px), (pointer: coarse) {
+	#infoBody .callout {
+		border-left: 3px solid #ff7a1a;
+		background: #201f24;
+		padding: 10px 12px;
+		border-radius: 0 8px 8px 0;
+		margin: 8px 0;
+		font-size: 13px;
+	}
+	#infoBody .callout ol { margin: 6px 0; }
+}
