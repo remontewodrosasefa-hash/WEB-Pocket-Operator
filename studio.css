@@ -464,7 +464,7 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 	align-items: stretch;
 	justify-content: stretch;
 	opacity: 1;
-	min-height: 62px;          /* always enough room for the farmer + tree */
+	min-height: 72px;          /* always enough room for the farmer + tree */
 	overflow: hidden;
 }
 #sceneCanvas {

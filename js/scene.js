@@ -1,31 +1,33 @@
-/* scene.js — ambient pixel-art farm on the LCD.
- * Sits in the #hudArt band (below the readout, above the step bar) and never
- * covers text. A little farmer walks about, chops the tree and tends the crops;
- * the farm grows the more you use the unit, and everything reacts to presses.
+/* scene.js — ambient pixel farm on the LCD.
  *
- * Art: "Farm RPG FREE 16x16 - Tiny Asset Pack" (32x32 character frames).
- * Only the sprites used are committed, in game/sprites/.
+ * Lives in the #hudArt band, never draws outside it. Every sprite is recoloured
+ * to the LCD's two-tone ink on load, so it reads like something actually drawn
+ * on this display rather than a colour sticker on top of it.
+ *
+ * All source rects below were measured off the sheets (transparent-gap scan),
+ * not guessed.
+ *
+ * Art: "Farm RPG FREE 16x16 - Tiny Asset Pack". Only the used sprites ship,
+ * in game/sprites/.
  */
 (function () {
 	"use strict";
 
 	var SRC = "game/sprites/";
-	var SHEETS = ["ground", "tree", "hero_idle", "hero_walk", "hen", "chick", "house2", "crops", "chest"];
+	var SHEETS = ["ground", "tree", "hero_idle", "hero_walk", "hen", "chest", "crops", "house2"];
 
-	/* frame geometry ------------------------------------------------- */
-	var HERO = 32;                       // hero frames are 32x32
-	var HERO_ROW = { front: 0, back: 1, side: 2 };
-	var IDLE_FRAMES = 4, WALK_FRAMES = 6;
-	var TREE_W = 32, TREE_H = 48;        // 5 stages: nub, sprout, small, full, stump
+	var INK = [27, 36, 17];               // LCD dark green
+
+	/* measured source rects [x, y, w, h] ------------------------------ */
+	var GROUND = [112, 32, 16, 16];
+	var HOUSE  = [4, 3, 72, 86];
+	var CHEST  = [8, 2, 16, 15];
+	var TREE   = [[13, 42, 7, 4], [43, 34, 9, 12], [71, 14, 20, 33], [96, 1, 32, 46]];
+	var CROP   = [[2, 23, 11, 8], [35, 23, 10, 9], [50, 20, 11, 12], [66, 18, 12, 14]];
+	var HERO = 32, HERO_SIDE_ROW = 2, IDLE_F = 4, WALK_F = 6;
 	var HEN = 16;
 
-	// ground fill tile inside the autotile sheet
-	var GROUND = [112, 32, 16, 16];
-	// a few crop stages out of Spring Crops (16x16 cells)
-	var CROP = [[0, 0], [16, 0], [32, 0], [48, 0]];
-
 	/* progression ----------------------------------------------------- */
-	// ~80% fewer presses than the first pass, for testing
 	var STAGES = [
 		{ xp: 0,   has: [] },
 		{ xp: 2,   has: ["tree"] },
@@ -33,20 +35,18 @@
 		{ xp: 12,  has: ["tree", "hen", "crop"] },
 		{ xp: 22,  has: ["tree", "hen", "crop", "chest"] },
 		{ xp: 36,  has: ["tree", "hen2", "crop", "chest"] },
-		{ xp: 60,  has: ["tree", "hen2", "chick", "crop", "chest", "house"] },
-		{ xp: 100, has: ["treeFull", "hen2", "chick", "cropFull", "chest", "house"] }
+		{ xp: 60,  has: ["tree", "hen2", "crop", "chest", "house"] },
+		{ xp: 100, has: ["treeFull", "hen2", "cropFull", "chest", "house"] }
 	];
 
-	var img = {}, host, cv, ctx, W = 0, H = 0, DPR = 1, S = 2;
+	var sheet = {}, host, cv, ctx, W = 0, H = 0, DPR = 1, S = 2;
 	var xp = 0, hens = [], chips = [], puffs = [], last = 0, booted = false;
-
-	var hero = { x: 40, dir: 1, state: "idle", t: 0, chop: 0, target: null };
+	var hero = { x: 40, dir: 1, walking: false, idleT: 0, chop: 0, target: null };
 
 	/* ---------- state ---------- */
 
 	function loadXp() { try { xp = parseInt(localStorage.getItem("po33.scene.xp"), 10) || 0; } catch (e) { xp = 0; } }
 	function saveXp() { try { localStorage.setItem("po33.scene.xp", String(xp)); } catch (e) {} }
-
 	function stage() {
 		var st = STAGES[0];
 		for (var i = 0; i < STAGES.length; i++) { if (xp >= STAGES[i].xp) { st = STAGES[i]; } }
@@ -63,134 +63,61 @@
 
 	function bump(n) {
 		var before = stage();
-		xp += n;
-		saveXp();
-		// the farmer reacts: walk to the tree and chop
-		hero.state = "walk";
-		hero.chop = 46;
-		hero.target = treeX();
-		hens.forEach(function (h) { h.hop = 7; });
+		xp += n; saveXp();
+		hero.walking = true;
+		hero.chop = 60;
+		hero.target = treeX() - HERO * S * 0.75;      // stand just left of the tree
+		hens.forEach(function (h) { h.hop = 6; });
 		if (stage() !== before) {
-			puffs.push({ x: W / 2, y: H * 0.4, life: 1, big: true });
-			var added = stage().has.filter(function (x) { return before.has.indexOf(x) === -1; })[0];
-			if (added && window.PO33.flash) { PO33.flash("farm grew · " + added.replace(/\d|Full/g, ""), "tip"); }
+			puffs.push({ x: W / 2, y: H * 0.45, life: 1 });
+			var got = stage().has.filter(function (x) { return before.has.indexOf(x) === -1; })[0];
+			if (got && window.PO33.flash) { PO33.flash("farm grew · " + got.replace(/\d|Full/g, ""), "tip"); }
 			syncHens();
 		}
 	}
 
 	function syncHens() {
-		var want = (has("hen2") ? 2 : has("hen") ? 1 : 0) + (has("chick") ? 1 : 0);
-		while (hens.length < want) {
-			hens.push({ x: 30 + hens.length * 26, t: Math.random() * 50, hop: 0, baby: hens.length === want - 1 && has("chick") });
-		}
+		var want = has("hen2") ? 2 : has("hen") ? 1 : 0;
+		while (hens.length < want) { hens.push({ x: 0, t: Math.random() * 40, hop: 0, home: 0 }); }
 		hens.length = want;
+		hens.forEach(function (h, i) { h.home = 0.40 + i * 0.07; h.x = W * h.home; });
 	}
 
-	/* ---------- geometry ---------- */
+	/* ---------- sprites → LCD ink ---------- */
 
-	function baseY() { return H - 4; }
-	function treeX()  { return W - 40 * S / 2 - 6; }
-
-	/* ---------- drawing ---------- */
-
-	function blit(sheet, sx, sy, sw, sh, dx, dy, scale) {
-		var im = img[sheet];
-		if (!im || !im.width) { return; }
-		scale = scale || S;
-		ctx.drawImage(im, sx, sy, sw, sh, Math.round(dx), Math.round(dy), sw * scale, sh * scale);
-	}
-
-	function drawGround() {
-		var g = GROUND, tile = 16 * S;
-		var y = baseY() - tile * 0.55;
-		for (var x = -tile; x < W + tile; x += tile) { blit("ground", g[0], g[1], g[2], g[3], x, y); }
-	}
-
-	function drawHero(now) {
-		var walking = hero.state === "walk";
-		var frames = walking ? WALK_FRAMES : IDLE_FRAMES;
-		var sheet = walking ? "hero_walk" : "hero_idle";
-		var fps = walking ? 10 : 5;
-		var f = Math.floor(now / (1000 / fps)) % frames;
-		var row = HERO_ROW.side;
-		var chopping = hero.chop > 0 && Math.abs(hero.x - (hero.target || 0)) < 8;
-		var bob = chopping ? (Math.floor(now / 90) % 2 ? 2 : -2) : 0;
-
-		var im = img[sheet];
-		if (!im || !im.width) { return; }
-		var dw = HERO * S, dh = HERO * S;
-		var dx = hero.x, dy = baseY() - dh + 4 + bob;
-		ctx.save();
-		ctx.translate(Math.round(dx + (hero.dir < 0 ? dw : 0)), Math.round(dy));
-		ctx.scale(hero.dir < 0 ? -1 : 1, 1);
-		ctx.drawImage(im, f * HERO, row * HERO, HERO, HERO, 0, 0, dw, dh);
-		ctx.restore();
-
-		if (chopping && Math.random() < 0.35) {
-			chips.push({ x: hero.x + dw * 0.8, y: dy + dh * 0.45,
-				vx: 0.6 + Math.random(), vy: -1.2 - Math.random(), life: 1 });
-		}
-	}
-
-	function drawTree() {
-		if (!has("tree") && !has("treeFull")) { return; }
-		var stg = has("treeFull") ? 3 : (xp > 30 ? 3 : xp > 12 ? 2 : 1);
-		blit("tree", stg * TREE_W, 0, TREE_W, TREE_H, treeX(), baseY() - TREE_H * S + 6);
-	}
-
-	function drawHens(now, dt) {
-		hens.forEach(function (h, i) {
-			h.t += dt * 0.004;
-			if (h.hop > 0) { h.hop -= dt * 0.05; }
-			h.x += Math.sin(h.t * 0.7 + i) * 0.25;
-			h.x = Math.max(4, Math.min(W - HEN * S - 4, h.x));
-			var flip = Math.cos(h.t * 0.7 + i) < 0;
-			var f = Math.floor(now / 260) % 4;
-			var sheet = h.baby ? "chick" : "hen";
-			var im = img[sheet];
-			if (!im || !im.width) { return; }
-			var d = HEN * S * (h.baby ? 0.75 : 1);
-			ctx.save();
-			ctx.translate(Math.round(h.x + (flip ? d : 0)), Math.round(baseY() - d - Math.max(0, h.hop)));
-			ctx.scale(flip ? -1 : 1, 1);
-			ctx.drawImage(im, f * HEN, 0, HEN, HEN, 0, 0, d, d);
-			ctx.restore();
-		});
-	}
-
-	function drawProps() {
-		if (has("house")) { blit("house2", 0, 0, 64, 64, 2, baseY() - 64 * S * 0.7, S * 0.7); }
-		if (has("chest")) { blit("chest", 0, 0, 32, 32, W * 0.26, baseY() - 32 * S * 0.6, S * 0.6); }
-		if (has("crop") || has("cropFull")) {
-			var st = has("cropFull") ? 3 : Math.max(0, Math.min(3, Math.floor((xp - 12) / 12)));
-			var c = CROP[st];
-			for (var i = 0; i < 3; i++) {
-				blit("crops", c[0], c[1], 16, 16, W * 0.44 + i * 16 * S * 0.8, baseY() - 16 * S * 0.8, S * 0.8);
+	function monoize(im) {
+		var c = document.createElement("canvas");
+		c.width = im.width; c.height = im.height;
+		var x = c.getContext("2d");
+		x.drawImage(im, 0, 0);
+		try {
+			var d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+			for (var i = 0; i < p.length; i += 4) {
+				if (p[i + 3] < 40) { p[i + 3] = 0; continue; }
+				var lum = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) / 255;
+				p[i] = INK[0]; p[i + 1] = INK[1]; p[i + 2] = INK[2];
+				p[i + 3] = Math.max(70, Math.min(255, Math.round(255 * (1 - lum * 0.75))));
 			}
-		}
+			x.putImageData(d, 0, 0);
+		} catch (e) { /* tainted canvas — fall back to the colour sprite */ }
+		return c;
 	}
 
-	function drawParticles(dt) {
-		var i, p;
-		for (i = chips.length - 1; i >= 0; i--) {
-			p = chips[i];
-			p.life -= dt * 0.002; p.x += p.vx; p.y += p.vy; p.vy += 0.09;
-			if (p.life <= 0) { chips.splice(i, 1); continue; }
-			ctx.fillStyle = "rgba(150,100,50," + p.life + ")";
-			ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
-		}
-		for (i = puffs.length - 1; i >= 0; i--) {
-			p = puffs[i];
-			p.life -= dt * 0.0018;
-			if (p.life <= 0) { puffs.splice(i, 1); continue; }
-			ctx.fillStyle = "rgba(255,220,130," + p.life * 0.9 + ")";
-			ctx.beginPath();
-			ctx.arc(p.x, p.y - (1 - p.life) * 16, 10 * (1.3 - p.life), 0, 7);
-			ctx.fill();
-		}
+	function blit(name, r, dx, dy, scale) {
+		var s = sheet[name];
+		if (!s) { return; }
+		scale = scale || S;
+		var dw = Math.max(1, Math.round(r[2] * scale)), dh = Math.max(1, Math.round(r[3] * scale));
+		if (dx > W || dx + dw < 0) { return; }              // never draw outside the band
+		ctx.drawImage(s, r[0], r[1], r[2], r[3], Math.round(dx), Math.round(dy), dw, dh);
 	}
 
-	/* ---------- loop ---------- */
+	/* ---------- layout ---------- */
+
+	function baseY() { return H - 3; }
+	function treeX() { return W - TREE[3][2] * S - 6; }
+
+	/* ---------- render ---------- */
 
 	function frame(now) {
 		requestAnimationFrame(frame);
@@ -198,28 +125,98 @@
 		var dt = Math.min(50, now - last); last = now;
 		ctx.clearRect(0, 0, W, H);
 
-		// hero movement
+		var base = baseY();
+
+		/* hero movement, clamped hard to the band */
 		if (hero.chop > 0) { hero.chop -= dt * 0.06; }
-		var tgt = hero.target;
-		if (hero.state === "walk" && tgt != null) {
-			var d = tgt - hero.x;
-			if (Math.abs(d) > 6) { hero.dir = d > 0 ? 1 : -1; hero.x += hero.dir * dt * 0.045; }
-			else if (hero.chop <= 0) { hero.state = "idle"; hero.target = null; }
-		} else if (hero.state === "idle") {
-			hero.t += dt;
-			if (hero.t > 3200) {                      // wander now and then
-				hero.t = 0; hero.state = "walk";
-				hero.target = 20 + Math.random() * Math.max(20, W - 80);
+		var heroW = HERO * S;
+		var minX = 2, maxX = W - heroW - 2;
+		if (hero.walking && hero.target != null) {
+			var d = hero.target - hero.x;
+			if (Math.abs(d) > 4) { hero.dir = d > 0 ? 1 : -1; hero.x += hero.dir * dt * 0.05; }
+			else if (hero.chop <= 0) { hero.walking = false; hero.target = null; }
+		} else if (!hero.walking) {
+			hero.idleT += dt;
+			if (hero.idleT > 3400) {
+				hero.idleT = 0; hero.walking = true;
+				hero.target = minX + Math.random() * Math.max(10, maxX - minX);
 			}
 		}
-		hero.x = Math.max(2, Math.min(W - HERO * S - 2, hero.x));
+		hero.x = Math.max(minX, Math.min(maxX, hero.x));
 
-		drawGround();
-		drawProps();
-		drawTree();
-		drawHens(now, dt);
-		drawHero(now);
-		drawParticles(dt);
+		/* ground */
+		var gw = 16 * S;
+		for (var gx = -gw; gx < W + gw; gx += gw) { blit("ground", GROUND, gx, base - gw * 0.55); }
+
+		/* props, back to front */
+		if (has("house")) { blit("house2", HOUSE, 2, base - HOUSE[3] * 0.9, 0.9); }
+		if (has("chest")) { blit("chest", CHEST, W * 0.29, base - CHEST[3] * 1.5, 1.5); }
+		if (has("crop") || has("cropFull")) {
+			var cs = has("cropFull") ? 3 : Math.max(0, Math.min(3, Math.floor((xp - 12) / 8)));
+			var c = CROP[cs];
+			for (var i = 0; i < 3; i++) { blit("crops", c, W * 0.52 + i * 15, base - c[3] * 1.6, 1.6); }
+		}
+		if (has("tree") || has("treeFull")) {
+			var ts = has("treeFull") ? 3 : (xp > 24 ? 3 : xp > 10 ? 2 : 1);
+			var t = TREE[ts];
+			blit("tree", t, W - t[2] * S - 6, base - t[3] * S);
+		}
+
+		/* hens */
+		hens.forEach(function (h, i) {
+			h.t += dt * 0.003;
+			if (h.hop > 0) { h.hop -= dt * 0.05; }
+			h.x = W * h.home + Math.sin(h.t + i) * 10;
+			h.x = Math.max(2, Math.min(W - HEN * S - 2, h.x));
+			var flip = Math.cos(h.t + i) < 0;
+			var f = Math.floor(now / 280) % 4;
+			ctx.save();
+			ctx.translate(Math.round(h.x + (flip ? HEN * S : 0)), Math.round(base - HEN * S - Math.max(0, h.hop)));
+			ctx.scale(flip ? -1 : 1, 1);
+			var hs = sheet.hen;
+			if (hs) { ctx.drawImage(hs, f * HEN, 0, HEN, HEN, 0, 0, HEN * S, HEN * S); }
+			ctx.restore();
+		});
+
+		/* hero */
+		var chopping = hero.chop > 0 && hero.target != null && Math.abs(hero.x - hero.target) <= 6;
+		var walking = hero.walking && !chopping;
+		var name = walking ? "hero_walk" : "hero_idle";
+		var nf = walking ? WALK_F : IDLE_F;
+		var f2 = Math.floor(now / (1000 / (walking ? 10 : 5))) % nf;
+		var bob = chopping ? (Math.floor(now / 100) % 2 ? 3 : -1) : 0;
+		var hs2 = sheet[name];
+		if (hs2) {
+			ctx.save();
+			ctx.translate(Math.round(hero.x + (hero.dir < 0 ? heroW : 0)), Math.round(base - HERO * S + bob));
+			ctx.scale(hero.dir < 0 ? -1 : 1, 1);
+			ctx.drawImage(hs2, f2 * HERO, HERO_SIDE_ROW * HERO, HERO, HERO, 0, 0, heroW, HERO * S);
+			ctx.restore();
+		}
+		if (chopping && Math.random() < 0.3) {
+			chips.push({ x: hero.x + heroW * 0.9, y: base - HERO * S * 0.55,
+				vx: 0.5 + Math.random(), vy: -1.1 - Math.random(), life: 1 });
+		}
+
+		/* particles, in LCD ink */
+		var k, p;
+		for (k = chips.length - 1; k >= 0; k--) {
+			p = chips[k];
+			p.life -= dt * 0.002; p.x += p.vx; p.y += p.vy; p.vy += 0.09;
+			if (p.life <= 0 || p.x > W) { chips.splice(k, 1); continue; }
+			ctx.fillStyle = "rgba(27,36,17," + p.life + ")";
+			ctx.fillRect(Math.round(p.x), Math.round(p.y), 2, 2);
+		}
+		for (k = puffs.length - 1; k >= 0; k--) {
+			p = puffs[k];
+			p.life -= dt * 0.0016;
+			if (p.life <= 0) { puffs.splice(k, 1); continue; }
+			ctx.strokeStyle = "rgba(27,36,17," + p.life * 0.8 + ")";
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.arc(p.x, p.y - (1 - p.life) * 14, 6 + (1 - p.life) * 16, 0, 7);
+			ctx.stroke();
+		}
 	}
 
 	/* ---------- setup ---------- */
@@ -228,14 +225,15 @@
 		if (!host || !cv) { return; }
 		var r = host.getBoundingClientRect();
 		W = Math.max(80, Math.floor(r.width));
-		H = Math.max(34, Math.floor(r.height));
+		H = Math.max(40, Math.floor(r.height));
 		DPR = Math.min(2, window.devicePixelRatio || 1);
-		// scale so the tallest sprite (tree, 48px) always fits the band
-		S = Math.max(1, Math.min(2.4, (H - 6) / TREE_H));
+		// scale so the tallest thing on the ground (the tree) always fits
+		S = Math.max(1, Math.min(2.2, (H - 6) / TREE[3][3]));
 		cv.width = W * DPR; cv.height = H * DPR;
 		cv.style.width = W + "px"; cv.style.height = H + "px";
 		ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 		ctx.imageSmoothingEnabled = false;
+		syncHens();
 	}
 
 	function build() {
@@ -262,8 +260,7 @@
 			if (!e.target.closest || !e.target.closest("[id^='btn']")) { return; }
 			var now = Date.now();
 			if (now - t < 90) { return; }
-			t = now;
-			bump(1);
+			t = now; bump(1);
 		}, true);
 	}
 
@@ -274,20 +271,16 @@
 		var left = SHEETS.length;
 		SHEETS.forEach(function (n) {
 			var im = new Image();
-			im.onload = im.onerror = function () { if (--left === 0) { start(); } };
+			im.onload = function () { sheet[n] = monoize(im); if (--left === 0) { start(); } };
+			im.onerror = function () { if (--left === 0) { start(); } };
 			im.src = SRC + n + ".png";
-			img[n] = im;
 		});
 	}
 	function start() {
 		var tries = 0;
 		var iv = setInterval(function () {
-			if (build()) {
-				clearInterval(iv);
-				syncHens();
-				wireButtons();
-				requestAnimationFrame(frame);
-			} else if (++tries > 100) { clearInterval(iv); }
+			if (build()) { clearInterval(iv); syncHens(); wireButtons(); requestAnimationFrame(frame); }
+			else if (++tries > 100) { clearInterval(iv); }
 		}, 120);
 	}
 
