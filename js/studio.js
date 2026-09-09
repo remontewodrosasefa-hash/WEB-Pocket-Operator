@@ -477,6 +477,7 @@
 	 * ============================================================ */
 
 	var mediaRec = null, chunks = [], recTimer = null, recStart = 0, recStream = null;
+	var recTargetSlot = null;   // the pad that was held when recording started
 	var MAX_MS = 20000;
 
 	function buildRecorder() {
@@ -533,6 +534,8 @@
 		mediaRec = new MediaRecorder(recStream);
 		mediaRec.ondataavailable = function (ev) { if (ev.data.size) { chunks.push(ev.data); } };
 		mediaRec.onstop = onRecStop;
+		// lock in whichever pad is held right now — the hardware behaviour
+		recTargetSlot = (window.PO33 && PO33.heldPad && PO33.heldPad()) || null;
 		mediaRec.start();
 		recStart = Date.now();
 		document.getElementById("recBtn").textContent = "■ stop";
@@ -695,7 +698,8 @@
 		var secs = Math.round(audioBuf.duration * 100) / 100;
 		var name = "rec-" + new Date().toISOString().slice(11, 19).replace(/:/g, "");
 
-		var slot = window.PO33Lib ? PO33Lib.currentSlot() : 1;
+		var slot = recTargetSlot || (window.PO33 && PO33.targetSlot ? PO33.targetSlot() : PO33Lib.currentSlot());
+		recTargetSlot = null;
 		if (window.PO33Lib) {
 			PO33Lib.addUserSample(name, url, secs);
 			PO33Lib.assignUrl(slot, url, "recordings/" + name, secs);

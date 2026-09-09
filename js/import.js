@@ -19,6 +19,33 @@
 		if (s) { s.textContent = msg; }
 	}
 
+	/* ---------- hold-a-pad-to-target ----------
+	 * On the real PO-33 you hold the sound key while you sample, so the audio
+	 * lands where your finger is. Same here: hold any pad while you hit record
+	 * or import and it targets that slot instead of the selected one.
+	 */
+	var heldPad = null;
+
+	function wireHold() {
+		if (document.documentElement.dataset.padHold) { return; }
+		document.documentElement.dataset.padHold = "1";
+		document.addEventListener("pointerdown", function (e) {
+			var el = e.target.closest && e.target.closest("[id^='btn']");
+			if (!el) { return; }
+			var m = /^btn([1-9]|1[0-6])$/.exec(el.id);
+			if (m) { heldPad = +m[1]; }
+		}, true);
+		var clear = function () { heldPad = null; };
+		document.addEventListener("pointerup", clear, true);
+		document.addEventListener("pointercancel", clear, true);
+	}
+
+	// where the next sample should land
+	function targetSlot() {
+		if (heldPad) { return heldPad; }
+		return window.PO33Lib ? PO33Lib.currentSlot() : 1;
+	}
+
 	function rawCtx() {
 		try { return (window.Tone && (Tone.context._context || Tone.context)) || new (window.AudioContext || window.webkitAudioContext)(); }
 		catch (e) { return new (window.AudioContext || window.webkitAudioContext)(); }
@@ -106,7 +133,7 @@
 			var secs = Math.round(audio.duration * 100) / 100;
 			var base = (file.name || "import").replace(/\.[^.]+$/, "").slice(0, 18) || "import";
 			var name = base + "-" + String(Date.now()).slice(-4);
-			var slot = window.PO33Lib ? PO33Lib.currentSlot() : 1;
+			var slot = targetSlot();
 
 			if (window.PO33Lib) {
 				PO33Lib.addUserSample(name, url, secs);
@@ -131,6 +158,8 @@
 
 	window.PO33 = window.PO33 || {};
 	window.PO33.importFile = land;
+	window.PO33.heldPad = function () { return heldPad; };
+	window.PO33.targetSlot = targetSlot;
 
 	/* ---------- UI: a file button in the recorder bar ---------- */
 
@@ -178,6 +207,7 @@
 	}
 
 	function boot() {
+		wireHold();
 		var tries = 0;
 		var iv = setInterval(function () {
 			if (build() || ++tries > 80) { clearInterval(iv); }

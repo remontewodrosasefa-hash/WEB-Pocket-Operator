@@ -489,3 +489,15 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 }
 #impBtn:hover { border-color: #9ad0e0; }
 #tvDest { font-weight: 700; }
+#tvPitch { border-style: dashed; }
+
+/* chop count stepper */
+#tvCount {
+	min-width: 20px;
+	text-align: center;
+	font-size: 13px;
+	font-weight: 700;
+}
+#tvGo { font-weight: 700; }
+#tvSlice button[data-tv="less"],
+#tvSlice button[data-tv="more"] { min-width: 24px; font-weight: 700; }

@@ -9,6 +9,13 @@
 	var wrap, canvas, ctx, hStart, hEnd, shadeL, shadeR, label, note;
 	var curChannel = -1, curBufKey = "";
 	var dragging = null;
+	var count = 8;                      // chop into any number of pieces, 1-16
+
+	function setCount(n) {
+		count = Math.max(1, Math.min(16, n));
+		var el = document.getElementById("tvCount");
+		if (el) { el.textContent = count; }
+	}
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
 
@@ -48,9 +55,11 @@
 			'</div>' +
 			'<div id="tvSlice">' +
 				'<span id="tvDest">chop:</span>' +
-				'<button type="button" data-tv="s4">4</button>' +
-				'<button type="button" data-tv="s8">8</button>' +
-				'<button type="button" data-tv="s16">16</button>' +
+				'<button type="button" data-tv="less">&minus;</button>' +
+				'<b id="tvCount">8</b>' +
+				'<button type="button" data-tv="more">+</button>' +
+				'<button type="button" data-tv="go" id="tvGo">chop</button>' +
+				'<button type="button" data-tv="pitch" id="tvPitch">&#9834; pitch</button>' +
 				'<label><input type="checkbox" id="tvLayout" checked> lay out + match tempo</label>' +
 			'</div>' +
 			'<div id="tvNote">drag handles to trim &middot; chop spreads slices across the 16 pads</div>';
@@ -71,7 +80,10 @@
 			var a = e.target.getAttribute("data-tv");
 			if (a === "prev") { preview(); }
 			else if (a === "all") { applyToPattern(); }
-			else if (a && a.charAt(0) === "s") { doSlice(parseInt(a.slice(1), 10)); }
+			else if (a === "pitch") { doPitch(); }
+			else if (a === "less") { setCount(count - 1); }
+			else if (a === "more") { setCount(count + 1); }
+			else if (a === "go") { doSlice(count); }
 		});
 		return true;
 	}
@@ -223,6 +235,25 @@
 		}
 	}
 
+	// load the trimmed region onto a melodic slot so the 16 pads play it at
+	// 16 pitches — what a piano phrase actually wants
+	function doPitch() {
+		if (!window.PO33 || !PO33.slice || !PO33.slice.toPitched) { say("not available"); return; }
+		var ch = g("selectedChannel", 0);
+		var cs;
+		try { cs = window.channelSettingsArr[ch]; } catch (e) {}
+		if (!cs) { say("no sound selected"); return; }
+		var from = (cs.fxTrim || 0) / 1000;
+		var len = (cs.fxLength == null ? 1000 : cs.fxLength) / 1000;
+		var dest = ch < 8 ? ch + 1 : 1;                 // melodic slots only
+		if (PO33.slice.toPitched(dest, { from: from, to: Math.min(1, from + len) })) {
+			curBufKey = "";
+			say("SOUND " + dest + " \u00b7 16 pads now play it at 16 pitches");
+		} else {
+			say("couldn't load it as a pitched sound");
+		}
+	}
+
 	function doSlice(n) {
 		if (!window.PO33 || !PO33.slice) { say("slicer not loaded"); return; }
 		var buf = selectedBuffer();
@@ -236,7 +267,9 @@
 		catch (e) { say("slice failed: " + e.message); return; }
 		if (ok) {
 			curBufKey = "";                       // force a redraw of the new pad buffer
-			say("chopped x" + n + " \u2192 SOUND " + target + " pads" +
+			var mode = (PO33.slice.cutMode && PO33.slice.cutMode() === "transient")
+				? "on transients" : "evenly";
+			say("chopped x" + n + " " + mode + " \u2192 SOUND " + target + " pads" +
 				(opts.layout ? ", laid out on its 16 steps" : "") +
 				(target !== sel ? " (select SOUND " + target + " to play it)" : ""));
 		} else {
@@ -246,8 +279,16 @@
 
 	/* ---------- show / hide loop ---------- */
 
+	var forced = null;                  // set by the TRIM button; null = follow FX mode
+
+	function toggle() {
+		forced = !(forced === null ? (g("fxMode", 0) === 2) : forced);
+		poll();
+	}
+	function close() { forced = false; poll(); }
+
 	function poll() {
-		var active = g("fxMode", 0) === 2;
+		var active = (forced === null) ? (g("fxMode", 0) === 2) : forced;
 		if (!wrap) { if (!build()) { return; } }
 		if (active === !wrap.hidden) {
 			// still open — refresh if the selected sound or its buffer changed
@@ -268,10 +309,20 @@
 		}
 	}
 
+	window.PO33 = window.PO33 || {};
+	window.PO33.trim = { toggle: toggle, close: close };
+
 	function boot() {
 		var tries = 0;
 		var iv = setInterval(function () {
-			if (document.getElementById("lcdHud")) { build(); clearInterval(iv); setInterval(poll, 180); }
+			if (document.getElementById("lcdHud")) {
+				build();
+				var tb = document.getElementById("btnTrim");
+				if (tb) { tb.addEventListener("click", toggle); }
+				setCount(count);
+				clearInterval(iv);
+				setInterval(poll, 180);
+			}
 			else if (++tries > 80) { clearInterval(iv); }
 		}, 150);
 	}
