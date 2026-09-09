@@ -160,10 +160,12 @@
 			if (kids[i].className !== cls) { kids[i].className = cls; }
 		}
 
-		var wantArt = ART_BY_MODE[effState] || "jebena";
-		if (E.art && E.art.dataset.art !== wantArt) {
-			E.art.dataset.art = wantArt;
-			E.art.innerHTML = ART[wantArt];
+		if (!window.__sceneOwnsArt) {
+			var wantArt = ART_BY_MODE[effState] || "jebena";
+			if (E.art && E.art.dataset.art !== wantArt) {
+				E.art.dataset.art = wantArt;
+				E.art.innerHTML = ART[wantArt];
+			}
 		}
 
 		// live hint while FX is held

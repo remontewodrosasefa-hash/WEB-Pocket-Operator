@@ -124,7 +124,9 @@ aside#library {
 	align-items: center;
 	padding: 0 2px;
 }
-.koLabelContainer { height: auto; font-size: 15px; color: #ff7a1a; }
+.head { min-height: 22px; }
+.koLabelContainer { height: auto; font-size: 13px; color: #ff7a1a; }
+#logo, #microphone { display: none; }
 .koLabel, .koItalicLabel { left: 0; }
 .koItalicLabel { transform: rotate(18deg); }
 #logo { position: static; top: auto; left: auto; width: 40px; height: 40px; }

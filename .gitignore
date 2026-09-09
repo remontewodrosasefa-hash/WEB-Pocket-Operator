@@ -4,3 +4,8 @@ PO ALL/
 .DS_Store
 node_modules/
 *.log
+
+# Raw art packs — only the extracted sprites in game/sprites/ are committed
+Sprout Lands - Sprites - Basic pack/
+summer_plains_v1.0_standard/
+/tmp/

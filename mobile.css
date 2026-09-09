@@ -60,14 +60,14 @@
 	.po33 { padding: 2px; }
 
 	/* screen ~30% smaller than before, fixed within the scaled unit */
-	.lcd { height: 186px; }
+	.lcd { height: 232px; }
 	#hudMain { font-size: 19px; }
 	#hudSub  { font-size: 11px; }
 	#lcdHud  { font-size: 11px; }
 
-	.head { min-height: 24px; }
-	#logo { width: 30px; height: 30px; }
-	#microphone { height: 26px; }
+	.head { min-height: 18px; }
+	.koLabelContainer { font-size: 12px; }
+	.controlStrip { margin-top: 6px; }
 
 	.buttonGrid { grid-auto-rows: 64px; row-gap: 4px; }
 	.buttonGridItem,
