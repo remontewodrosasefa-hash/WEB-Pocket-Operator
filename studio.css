@@ -517,3 +517,60 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 }
 #undoBtn:disabled { opacity: 0.3; cursor: default; }
 #undoBtn:active:not(:disabled) { background: #1b2411; color: #c4cdae; }
+
+/* ---------- UTIL panel (LCD overlay) ---------- */
+
+#utilView { display: none; }
+body.utilOpen #utilView { display: flex; }
+#utilView {
+	position: absolute;
+	inset: 0;
+	z-index: 7;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 10px 10px;
+	background: linear-gradient(180deg, #c4cdae, #a3ad8a);
+	color: #1b2411;
+	font-family: ui-monospace, Menlo, monospace;
+}
+.uvHead {
+	flex: 0 0 auto;
+	display: flex; justify-content: space-between; align-items: center;
+	font-weight: 700; font-size: 12px; letter-spacing: 0.08em;
+}
+.uvHead button {
+	border: none; background: #1b2411; color: #c4cdae;
+	width: 22px; height: 22px; border-radius: 4px; font-size: 14px; line-height: 1;
+}
+#uvBody {
+	flex: 1 1 auto; min-height: 0; overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	display: flex; flex-direction: column; gap: 6px;
+}
+.uvSec h4 {
+	margin: 2px 0 3px;
+	font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+	border-bottom: 1px solid rgba(27,36,17,0.25); padding-bottom: 2px;
+}
+.uvSec h4 i { font-weight: 400; opacity: 0.6; text-transform: none; letter-spacing: 0; }
+.uvRow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.uvRow button, .uvRow select {
+	font: inherit; font-size: 11px; padding: 5px 8px;
+	border: 1px solid #1b2411; border-radius: 3px;
+	background: transparent; color: #1b2411;
+	-webkit-appearance: none; appearance: none;
+}
+.uvRow button:active { background: #1b2411; color: #c4cdae; }
+.uvRow label { display: flex; align-items: center; gap: 4px; font-size: 10px; flex: 1 1 96px; }
+.uvRow label input[type="range"] { flex: 1; height: 20px; }
+.uvSec.danger .uvRow button { border-color: #7a2a15; color: #7a2a15; }
+.uvSec.danger .uvRow button:active { background: #7a2a15; color: #c4cdae; }
+#scaleOct { font-size: 11px; min-width: 46px; text-align: center; font-weight: 700; }
+#scaleKeyWrap { font-size: 10px; display: inline-flex; align-items: center; gap: 3px; }
+
+/* the two new mode buttons read differently from sound/pattern/bpm */
+.utilBtn > .buttonBG {
+	background: repeating-linear-gradient(45deg, #e8e8e8, #e8e8e8 2px, #6a6a6a 2px, #6a6a6a 4px);
+}
+.liveBtn > .buttonBG { background: radial-gradient(circle at 35% 30%, #ff8a8a, #d43b3b 75%); }
+.liveBtn > .btnText { color: #ff8a8a; }

@@ -71,8 +71,12 @@
 
 	.buttonGrid { grid-auto-rows: 64px; row-gap: 4px; }
 	.buttonGridItem,
-	.modeRow .buttonGridItem,
 	.hwRow .buttonGridItem { width: 48px; height: 64px; }
+	.modeRow { gap: 4px; padding-left: 2px; }
+	.modeRow .buttonGridItem { width: 46px; height: 62px; }
+	.modeRow .buttonBG { width: 38px; height: 38px; margin-left: -19px; }
+	.modeRow .gridHover { width: 40px; height: 40px; }
+	.modeRow .btnText { font-size: 9px; }
 	.gridHover { width: 48px; height: 48px; }
 	.buttonBG { width: 42px; height: 42px; margin-left: -21px; top: 2px; }
 	.btnText { top: 46px; font-size: 10px; }

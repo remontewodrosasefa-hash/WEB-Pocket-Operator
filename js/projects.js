@@ -163,7 +163,7 @@
 	function esc(s) { return String(s).replace(/[<>&]/g, function (c) { return { "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]; }); }
 
 	function isOpen() { return document.body.classList.contains("projOpen"); }
-	function show() { build(); if (view) { document.body.classList.add("projOpen"); view.hidden = false; render(); } }
+	function show() { build(); if (window.PO33 && PO33.util) { PO33.util.hide(); } if (view) { document.body.classList.add("projOpen"); view.hidden = false; render(); } }
 	function hide() { document.body.classList.remove("projOpen"); if (view) { view.hidden = true; } }
 	function toggle() { if (isOpen()) { hide(); } else { show(); } }
 

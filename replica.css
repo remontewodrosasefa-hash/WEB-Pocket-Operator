@@ -171,8 +171,9 @@ aside#library {
 
 .modeRow {
 	display: flex;
-	gap: 22px;
-	padding-left: 14px;
+	gap: 10px;
+	padding-left: 6px;
+	justify-content: space-between;
 }
 .modeRow .buttonGridItem { width: 40px; height: 40px; }
 

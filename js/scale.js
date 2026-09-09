@@ -92,8 +92,20 @@
 		keys: KEYS
 	};
 
+	// the scale/key selects can live in the info drawer or the UTIL panel —
+	// listen globally so either works
+	function wireSelects() {
+		document.addEventListener("change", function (e) {
+			var id = e.target && e.target.id;
+			if (id !== "scaleSel" && id !== "scaleKey") { return; }
+			var sel = document.getElementById("scaleSel");
+			var key = document.getElementById("scaleKey");
+			set({ scale: sel ? sel.value : state.scale, key: key ? +key.value : state.key });
+		});
+	}
+
 	load();
 	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", syncUi);
-	} else { syncUi(); }
+		document.addEventListener("DOMContentLoaded", function () { syncUi(); wireSelects(); });
+	} else { syncUi(); wireSelects(); }
 })();

@@ -283,6 +283,7 @@
 
 	function toggle() {
 		forced = !(forced === null ? (g("fxMode", 0) === 2) : forced);
+		if (forced && window.PO33 && PO33.util) { PO33.util.hide(); }
 		poll();
 	}
 	function close() { forced = false; poll(); }

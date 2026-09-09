@@ -91,6 +91,7 @@
 		if (!modeEl) { return; }
 		// an overlay covers the LCD — don't churn behind it
 		if (document.body.classList.contains("projOpen") ||
+		    document.body.classList.contains("utilOpen") ||
 		    document.body.classList.contains("trimOpen")) { updateClock(); return; }
 
 		var mode = g("mode", 0), state = g("state", 0), view = g("view", 0);
@@ -368,6 +369,29 @@
 		if (v && v.on) { setLfo({ on: true, rate: v.rate, wave: v.wave, depth: 0.6 }); }
 	}
 	window.PO33.fx = { lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain };
+
+	// LFO controls may live in the info drawer or the UTIL panel — listen globally
+	document.addEventListener("click", function (e) {
+		if (e.target && e.target.id === "lfoBtn") {
+			var st = lfoState();
+			var r = document.getElementById("lfoRate"), d = document.getElementById("lfoDepth"),
+				w = document.getElementById("lfoWave");
+			var now = setLfo({ on: !st.on,
+				rate: r ? (+r.value) / 100 : 4,
+				depth: d ? (+d.value) / 100 : 0.6,
+				wave: w ? w.value : "sine" });
+			e.target.textContent = now.on ? "LFO on" : "LFO off";
+		}
+	});
+	document.addEventListener("input", function (e) {
+		var id = e.target && e.target.id;
+		if (id !== "lfoRate" && id !== "lfoDepth") { return; }
+		var r = document.getElementById("lfoRate"), d = document.getElementById("lfoDepth");
+		setLfo({ rate: r ? (+r.value) / 100 : 4, depth: d ? (+d.value) / 100 : 0.6 });
+	});
+	document.addEventListener("change", function (e) {
+		if (e.target && e.target.id === "lfoWave") { setLfo({ wave: e.target.value }); }
+	});
 
 	var FX_LABELS = ["",
 		"CRUSH", "LO-FI", "FILTER DOWN", "FILTER UP",
