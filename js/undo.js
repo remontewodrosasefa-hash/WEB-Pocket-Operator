@@ -38,10 +38,27 @@
 		try { return { kind: "all", data: JSON.parse(JSON.stringify(window.newChannelArr)) }; }
 		catch (e) { return null; }
 	}
+	function snapChain() {
+		try {
+			return {
+				kind: "chain",
+				data: (window.patternChain || []).slice(),
+				cur: g("currentPattern", 0),
+				count: g("patternCount", 0)
+			};
+		} catch (e) { return null; }
+	}
 
 	function restore(s) {
 		if (!s) { return; }
 		try {
+			if (s.kind === "chain") {
+				window.patternChain = s.data.slice();
+				window.currentPattern = s.cur;
+				window.patternCount = Math.min(s.count, Math.max(0, s.data.length - 1));
+				if (window.updateDisplay) { window.updateDisplay(); }
+				return;
+			}
 			if (s.kind === "all") {
 				window.newChannelArr = JSON.parse(JSON.stringify(s.data));
 			} else {
@@ -71,15 +88,35 @@
 		paint();
 	}
 
+	// Chain edits are marked individually — tapping 3,3,5,3,6,7 and undoing
+	// should drop just the 7, not the whole run.
+	function markChain() {
+		if (busy) { return; }
+		var snap = snapChain();
+		if (!snap) { return; }
+		var prev = past[past.length - 1];
+		// skip if nothing actually changed since the last chain mark
+		if (prev && prev.kind === "chain" && prev.data.join() === snap.data.join()) { return; }
+		snap.label = "chain";
+		past.push(snap);
+		if (past.length > LIMIT) { past.shift(); }
+		future.length = 0;
+		lastPush = 0;              // don't let the next edit coalesce into this
+		paint();
+	}
+
 	function undo() {
 		if (!past.length) { flash("nothing to undo", "warn"); return; }
 		busy = true;
 		var s = past.pop();
-		var back = s.kind === "all" ? snapAll() : snapPattern(s.idx);
+		var back = s.kind === "chain" ? snapChain()
+			: (s.kind === "all" ? snapAll() : snapPattern(s.idx));
 		if (back) { back.label = s.label; future.push(back); }
 		restore(s);
 		busy = false;
-		flash("undo · " + s.label, "tip");
+		flash(s.kind === "chain"
+			? ("undo · chain " + (window.patternChain || []).map(function (n) { return n + 1; }).join(" "))
+			: ("undo · " + s.label), "tip");
 		paint();
 	}
 
@@ -87,7 +124,8 @@
 		if (!future.length) { flash("nothing to redo", "warn"); return; }
 		busy = true;
 		var s = future.pop();
-		var back = s.kind === "all" ? snapAll() : snapPattern(s.idx);
+		var back = s.kind === "chain" ? snapChain()
+			: (s.kind === "all" ? snapAll() : snapPattern(s.idx));
 		if (back) { back.label = s.label; past.push(back); }
 		restore(s);
 		busy = false;
@@ -97,7 +135,7 @@
 
 	window.PO33 = window.PO33 || {};
 	window.PO33.undo = {
-		mark: mark, undo: undo, redo: redo,
+		mark: mark, markChain: markChain, undo: undo, redo: redo,
 		depth: function () { return past.length; },
 		clear: function () { past.length = 0; future.length = 0; paint(); }
 	};
@@ -120,6 +158,17 @@
 		// step toggles + every live-record hit
 		wrap(function () { return window.editPattern; },
 			 function (f) { window.editPattern = f; }, "step");
+
+		// pad presses while in PATTERN mode append to the chain — snapshot first
+		var bf = window.buttonFunction;
+		if (typeof bf === "function" && !bf.__undoChain) {
+			var wrapped = function () {
+				if (g("view", 0) === 3) { markChain(); }
+				return bf.apply(this, arguments);
+			};
+			wrapped.__undoChain = true;
+			window.buttonFunction = wrapped;
+		}
 
 		// the bigger, rarer operations get a full snapshot
 		if (window.PO33.clearPattern) {
