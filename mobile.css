@@ -44,39 +44,43 @@
 		overflow: hidden;
 	}
 
-	/* natural size — fitUnit() applies transform: scale() to fit the screen */
+	/* natural size — fitUnit() applies transform: scale() to fit the screen.
+	 * Every grid item is now TALL ENOUGH to contain its own label (button in the
+	 * top ~46px, label below), so nothing overflows the board box and
+	 * board.offsetHeight is an honest measurement for the scale math. */
 	.circuitBoard {
 		width: 372px;
 		max-width: none;
 		height: auto;
-		gap: 8px;
-		padding: 12px 12px 8px;
+		gap: 6px;
+		padding: 10px 12px 12px;
 		overflow: visible;
 		transform-origin: center center;
 	}
 	.po33 { padding: 2px; }
 
 	/* screen ~30% smaller than before, fixed within the scaled unit */
-	.lcd { height: 188px; }
+	.lcd { height: 186px; }
 	#hudMain { font-size: 19px; }
 	#hudSub  { font-size: 11px; }
 	#lcdHud  { font-size: 11px; }
 
-	.head { min-height: 26px; }
-	#logo { width: 32px; height: 32px; }
-	#microphone { height: 28px; }
+	.head { min-height: 24px; }
+	#logo { width: 30px; height: 30px; }
+	#microphone { height: 26px; }
 
-	.buttonGrid { grid-auto-rows: 52px; row-gap: 18px; }
-	.buttonGridItem, .gridHover,
-	.modeRow .buttonGridItem { width: 48px; height: 48px; }
-	.buttonBG { width: 42px; height: 42px; margin-left: -21px; }
-	.btnText { top: calc(100% + 1px); font-size: 11px; }
-	.btnNumber > .btnText { font-size: 13px; }
+	.buttonGrid { grid-auto-rows: 64px; row-gap: 4px; }
+	.buttonGridItem,
+	.modeRow .buttonGridItem,
+	.hwRow .buttonGridItem { width: 48px; height: 64px; }
+	.gridHover { width: 48px; height: 48px; }
+	.buttonBG { width: 42px; height: 42px; margin-left: -21px; top: 2px; }
+	.btnText { top: 46px; font-size: 10px; }
+	.btnNumber > .btnText { font-size: 12px; }
 	input[type="range"] { height: 30px; }
 
-	.hwRow { display: flex; min-height: 66px; padding: 4px 8px 0; }
-	.hwRow .buttonGridItem { width: 46px; height: 46px; }
-	.hwRow .btnText { top: 48px; font-size: 11px; }
+	.hwRow { display: flex; min-height: 64px; padding: 2px 8px 0; }
+	.hwRow .btnText { top: 46px; font-size: 11px; }
 
 	/* ---- scrim ---- */
 	#drawerScrim {
@@ -248,5 +252,36 @@
 	#lfoWave {
 		font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 6px;
 		background: #26262b; color: #e2e2e2; border: 1px solid #3a3a40;
+	}
+}
+
+/* info-drawer tab nav */
+@media (max-width: 720px), (pointer: coarse) {
+	#infoNav {
+		flex: 0 0 auto;
+		display: flex;
+		gap: 4px;
+		padding: 8px 12px 0;
+		overflow-x: auto;
+	}
+	#infoNav button {
+		flex: 0 0 auto;
+		font: 600 12px/1 ui-monospace, Menlo, monospace;
+		letter-spacing: 0.04em;
+		padding: 8px 12px;
+		border: 1px solid #3a3a40;
+		border-bottom: none;
+		border-radius: 7px 7px 0 0;
+		background: #1c1c20;
+		color: #9a9a9a;
+	}
+	#infoNav button.on { background: #17171a; color: #ff9a4d; border-color: #444; }
+	#infoBody { border-top: 1px solid #2c2c30; }
+	#infoBody section > h3:first-child { margin-top: 8px; }
+	#infoBody p { margin: 6px 0; }
+	#infoBody kbd {
+		display: inline-block; padding: 1px 5px; margin: 0 1px;
+		font: 11px ui-monospace, Menlo, monospace;
+		background: #2a2a2d; border: 1px solid #444; border-bottom-width: 2px; border-radius: 3px;
 	}
 }

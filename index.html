@@ -319,6 +319,61 @@
 	  		<li><kbd>Return</kbd> = PLAY &nbsp;&middot;&nbsp; <kbd>5</kbd> = SOUND &nbsp;&middot;&nbsp; <kbd>6</kbd> = PATTERN &nbsp;&middot;&nbsp; <kbd>7</kbd> = BPM &nbsp;&middot;&nbsp; <kbd>8</kbd> = FX &nbsp;&middot;&nbsp; <kbd>9</kbd> = WRITE</li>
 	  	</ul>
 
+	  	<h2>&#9834; Let's make a song</h2>
+
+	  	<h3>The one idea</h3>
+	  	<p>The 16 pads are <b>two things at once</b>: in play mode they trigger sounds,
+	  	in <b>WRITE</b> mode the same pads are the <b>16 steps</b> of the bar.</p>
+
+	  	<h3>Beat #1 &mdash; boom-bap (beginner)</h3>
+	  	<ol>
+	  		<li><b>Clear</b> the pattern first (info drawer / <code>PO33.clearPattern()</code>).</li>
+	  		<li><b>BPM</b> ~<b>90</b>, swing ~<b>18%</b>.</li>
+	  		<li><b>Kick:</b> SOUND &rarr; pad 9 &rarr; SOUND. Audition pads, land on a deep thump.
+	  			WRITE &rarr; steps <b>1, 7, 11</b> &rarr; WRITE.</li>
+	  		<li><b>Snare</b> (same slot 9): find a crack. WRITE &rarr; steps <b>5, 13</b> &rarr; WRITE.
+	  			Each step remembers its own pad, so one drum slot holds the whole kit.</li>
+	  		<li><b>Hats:</b> a tick sound, WRITE &rarr; steps <b>1,3,5,7,9,11,13,15</b> &rarr; WRITE.</li>
+	  		<li>PLAY. Done.</li>
+	  	</ol>
+
+	  	<h3>Make it groove</h3>
+	  	<ul>
+	  		<li><b>Accent:</b> in WRITE, hold a step to latch it, nudge slider&nbsp;2 up (TONE mode)
+	  			&mdash; louder hit. Off-beat hats = bounce. Pull some down for ghost notes.</li>
+	  		<li><b>Micro-timing:</b> latch the snare, use the on-screen <b>timing &#9664;&#9654;</b>
+	  			(or scroll a step) to push it 6&ndash;12ms late for a laid-back feel.</li>
+	  		<li><b>Swing</b> 15&ndash;22% for hip-hop, 0% for techno. <b>Less is more</b> &mdash; add space, not layers.</li>
+	  	</ul>
+
+	  	<h3>Two more beats</h3>
+	  	<ul>
+	  		<li><b>House ~124, swing 0:</b> kick <b>1,5,9,13</b>; open hat <b>3,7,11,15</b>;
+	  			clap <b>5,13</b>; bass note on <b>1,9</b> + a higher note on <b>7,15</b>
+	  			(write each pitch separately).</li>
+	  		<li><b>Trap ~140 half-time:</b> kick <b>1,11</b>; snare <b>9</b>; hats every step, then
+	  			latch a run and nudge alternate hats for rolls.</li>
+	  	</ul>
+
+	  	<h3>From beat to song</h3>
+	  	<ol>
+	  		<li><b>Pattern 1</b> = the main loop. Get it right.</li>
+	  		<li><b>Pattern 2</b> = a variation. Copy pattern 1 (PATTERN mode &rarr; WRITE &rarr; source &rarr; empty slot),
+	  			then strip it back &mdash; drop the kick, or mute a part (hold its pad in SOUND).</li>
+	  		<li><b>Pattern 3</b> = a fill / turnaround: busy hats, a snare roll, or a tape-stop at the end.</li>
+	  		<li><b>Chain:</b> hold PATTERN and tap e.g. <b>1 1 1 3 &nbsp; 2 2 2 3</b> for an 8-bar loop that breathes.</li>
+	  	</ol>
+	  	<p>Full arrangement: <b>intro</b> (drums, 4 bars) &rarr; <b>groove</b> (all, 8) &rarr;
+	  		<b>break</b> (melody+hats, 4) &rarr; <b>groove</b> (8) &rarr; <b>outro</b> (LFO filter down, 4).</p>
+
+	  	<h3>Advanced</h3>
+	  	<ul>
+	  		<li><b>Fills:</b> latch the last few steps and lock a higher pitch or shorter TRIM length.</li>
+	  		<li><b>Motion-record</b> a filter sweep: utilities &rarr; arm motion rec, PLAY, ride the FILTER slider.</li>
+	  		<li><b>Transitions:</b> hold FX &rarr; <b>12</b> tape stop, <b>16</b> kill, or <b>5</b> delay into the next section.</li>
+	  		<li><b>Chop a break:</b> record 1&ndash;2 bars, <b>&#9986; chop x16</b>, tick <i>lay out + match tempo</i>, re-order the pads.</li>
+	  	</ul>
+
 	  	<h2>Choose a sound</h2>
 	  	<ol>
 	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button>. Lit LEDs show which slots have a sound.</li>
