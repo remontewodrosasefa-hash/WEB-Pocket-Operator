@@ -2,7 +2,7 @@
  * App shell is precached; wav / sample files are cached on first use so the
  * whole 500-file pack isn't downloaded up front.
  */
-var VERSION = "po33-v14";
+var VERSION = "po33-v16";
 var SHELL = VERSION + "-shell";
 var MEDIA = VERSION + "-media";
 
@@ -36,6 +36,10 @@ var SHELL_FILES = [
 	"./TeenageEngineering3.svg",
 	"./mic.svg"
 ];
+
+self.addEventListener("message", function (e) {
+	if (e.data === "skipWaiting") { self.skipWaiting(); }
+});
 
 self.addEventListener("install", function (e) {
 	self.skipWaiting();

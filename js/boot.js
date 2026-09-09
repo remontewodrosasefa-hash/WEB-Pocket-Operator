@@ -43,7 +43,36 @@
 	// (https:// or localhost) — silently skipped otherwise.
 	if ("serviceWorker" in navigator && window.isSecureContext) {
 		window.addEventListener("load", function () {
-			navigator.serviceWorker.register("sw.js").catch(function () { /* ignore */ });
+			navigator.serviceWorker.register("sw.js").then(function (reg) {
+				// a new version is waiting -> offer a one-tap refresh
+				function offer(worker) {
+					if (!worker) { return; }
+					var bar = document.createElement("div");
+					bar.id = "updateBar";
+					bar.innerHTML = "new version ready \u00b7 <button type=\"button\">refresh</button>";
+					bar.querySelector("button").addEventListener("click", function () {
+						worker.postMessage("skipWaiting");
+					});
+					document.body.appendChild(bar);
+				}
+				if (reg.waiting) { offer(reg.waiting); }
+				reg.addEventListener("updatefound", function () {
+					var nw = reg.installing;
+					if (!nw) { return; }
+					nw.addEventListener("statechange", function () {
+						if (nw.state === "installed" && navigator.serviceWorker.controller) { offer(nw); }
+					});
+				});
+				// check for an update whenever the app regains focus
+				window.addEventListener("focus", function () { reg.update().catch(function () {}); });
+			}).catch(function () { /* ignore */ });
+
+			var reloading = false;
+			navigator.serviceWorker.addEventListener("controllerchange", function () {
+				if (reloading) { return; }
+				reloading = true;
+				location.reload();
+			});
 		});
 	}
 })();

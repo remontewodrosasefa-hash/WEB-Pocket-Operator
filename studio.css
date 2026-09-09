@@ -429,3 +429,31 @@ body.trimOpen #trimView { display: flex; }
 /* motion recording armed — pulse the mode tag */
 body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-in-out infinite; }
 @keyframes motionPulse { 50% { opacity: 0.55; } }
+
+/* PWA "new version ready" bar */
+#updateBar {
+	position: fixed;
+	left: 50%;
+	bottom: 14px;
+	transform: translateX(-50%);
+	z-index: 10001;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 14px;
+	font-size: 13px;
+	color: #141410;
+	background: #ffb060;
+	border-radius: 22px;
+	box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+#updateBar button {
+	font: inherit;
+	font-weight: 700;
+	padding: 4px 12px;
+	border: none;
+	border-radius: 14px;
+	background: #141410;
+	color: #ffb060;
+	cursor: pointer;
+}

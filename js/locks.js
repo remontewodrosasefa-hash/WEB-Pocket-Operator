@@ -270,6 +270,14 @@
 
 	/* ---------- pads ---------- */
 
+	function buzz(ms) {
+		try {
+			if (localStorage.getItem("po33.haptics") !== "0" && navigator.vibrate) {
+				navigator.vibrate(ms || 8);
+			}
+		} catch (e) {}
+	}
+
 	function wirePads() {
 		for (var n = 1; n <= 16; n++) {
 			(function (n) {
@@ -279,6 +287,7 @@
 				var step = n - 1;
 
 				el.addEventListener("pointerdown", function () {
+					buzz(8);
 					if (window.fxHeld) { return; }
 					clearTimeout(holdTimer);
 
@@ -393,6 +402,14 @@
 	window.PO33.motion = {
 		toggle: function () { armMotion(!motionArmed); return motionArmed; },
 		isArmed: function () { return motionArmed; }
+	};
+	window.PO33.haptics = {
+		toggle: function () {
+			var off = localStorage.getItem("po33.haptics") === "0";
+			localStorage.setItem("po33.haptics", off ? "1" : "0");
+			flash("haptics " + (off ? "on" : "off"), "info");
+			return !off;
+		}
 	};
 	window.PO33.channels = {
 		state: function (ch) { return chanState[ch] || "on"; },

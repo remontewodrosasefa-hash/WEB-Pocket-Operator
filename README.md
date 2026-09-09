@@ -153,13 +153,12 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
 * **On-screen parameter readout** while dragging any slider
 * **Metronome** (Transport-scheduled), **mute / solo** (hold a pad in SOUND),
   **motion recording** (arm, play, sweep a slider), **micro-timing / nudge**
-  (±60 ms per step)
+  (±60 ms per step), **LFO** → master filter (rate / depth / wave)
 * **Projects** (`js/projects.js`) — save / load / on-screen browser, in
   `localStorage` (survives deploys)
 
 ## Still to do
 
-* **Tier 2 leftovers:** LFO / parameter modulation
 * **Tier 3+:** richer animated screen art, expand button-feedback coverage,
   crop a recorded clip, resample a slot through FX, engine lo-fi character
 * **PWA polish:** "update available" prompt, in-app A2HS hint, haptics on pad

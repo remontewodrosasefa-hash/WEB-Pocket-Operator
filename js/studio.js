@@ -214,6 +214,7 @@
 			var item = e.target.closest("[id^='btn']");
 			if (!item) { return; }
 			var id = item.id;
+			try { if (localStorage.getItem("po33.haptics") !== "0" && navigator.vibrate) { navigator.vibrate(8); } } catch (e) {}
 			if (BTN_INFO[id]) { flash(BTN_INFO[id], "info"); return; }
 			if (/^btn([1-9]|1[0-6])$/.test(id)) {
 				var n = +id.slice(3);
@@ -295,9 +296,14 @@
 			try { wob.start(); } catch (e) {}
 			var trem   = new Tone.Tremolo(13, 0);
 			try { trem.start(); } catch (e) {}
+			// a dedicated, always-in-chain filter driven by an LFO (off by default)
+			var lfoFilt = new Tone.Filter(20000, "lowpass");
+			var lfo     = new Tone.LFO(4, 400, 6000);
+			lfo.type = "sine";
+			try { lfo.connect(lfoFilt.frequency); } catch (e) {}
 			var kill   = new Tone.Gain(1);
 
-			hp.chain(lp, dist, chorus, phaser, delay, pong, pitch, verb, wob, trem, kill, M);
+			hp.chain(lp, dist, chorus, phaser, delay, pong, pitch, verb, wob, trem, lfoFilt, kill, M);
 
 			var rerouted = false;
 			try {
@@ -309,13 +315,56 @@
 			}
 			if (!rerouted) { return; }
 
-			fxNodes = { hp: hp, lp: lp, dist: dist, chorus: chorus, phaser: phaser,
+			fxNodes = { hp: hp, lp: lp, dist: dist, chorus: chorus, phaser: phaser, lfoFilt: lfoFilt, lfo: lfo,
 				delay: delay, pong: pong, pitch: pitch, verb: verb, wob: wob,
 				trem: trem, kill: kill };
 		} catch (e) {
 			fxNodes = null;
 		}
 	}
+
+	/* ---- persistent LFO -> master filter ---- */
+	var lfoOn = false;
+	function setLfo(opts) {
+		opts = opts || {};
+		var toggled = opts.on != null;
+		if (toggled) { lfoOn = !!opts.on; }
+		if (lfoOn) { buildFxChain(); }
+		if (!fxNodes || !fxNodes.lfo) { return lfoState(); }
+		var f = fxNodes;
+		try {
+			if (opts.rate != null) { f.lfo.frequency.value = Math.max(0.05, +opts.rate); }
+			if (opts.wave) { f.lfo.type = opts.wave; }
+			if (opts.depth != null) {
+				var d = Math.max(0, Math.min(1, +opts.depth));   // 0..1
+				var floor = 8000 - d * 7800;                      // deeper = lower floor
+				f.lfo.min = 20 + floor * 0.05;
+				f.lfo.max = Math.max(f.lfo.min + 50, 8000);
+			}
+			if (lfoOn) { f.lfo.start(); }
+			else { f.lfo.stop(); ramp(f.lfoFilt.frequency, 20000, 0.15); }
+		} catch (e) {}
+		persistLfo();
+		if (toggled) { flash("LFO " + (lfoOn ? "on" : "off"), lfoOn ? "warn" : "tip"); }
+		return lfoState();
+	}
+	function lfoState() {
+		var f = fxNodes;
+		return {
+			on: lfoOn,
+			rate: f && f.lfo ? Math.round(f.lfo.frequency.value * 100) / 100 : 4,
+			wave: f && f.lfo ? f.lfo.type : "sine"
+		};
+	}
+	function persistLfo() {
+		try { localStorage.setItem("po33.lfo", JSON.stringify(lfoState())); } catch (e) {}
+	}
+	function restoreLfo() {
+		var v;
+		try { v = JSON.parse(localStorage.getItem("po33.lfo") || "null"); } catch (e) {}
+		if (v && v.on) { setLfo({ on: true, rate: v.rate, wave: v.wave, depth: 0.6 }); }
+	}
+	window.PO33.fx = { lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain };
 
 	var FX_LABELS = ["",
 		"CRUSH", "LO-FI", "FILTER DOWN", "FILTER UP",
@@ -904,6 +953,7 @@
 		}, 250);
 		setTimeout(idbRestore, 1800);
 		setTimeout(function () { if (metroOn()) { setMetro(true); } }, 1200);
+		setTimeout(restoreLfo, 1400);
 	}
 
 	if (document.readyState === "loading") {

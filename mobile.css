@@ -234,3 +234,19 @@
 	}
 	#infoBody .fxGrid b { color: #ffb060; margin-right: 3px; }
 }
+
+/* LFO controls in the info drawer */
+@media (max-width: 720px), (pointer: coarse) {
+	#lfoRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 6px; }
+	#lfoRow label { display: flex; align-items: center; gap: 6px; font-size: 12px; flex: 1 1 130px; }
+	#lfoRow label input[type="range"] { flex: 1; height: 26px; }
+	#lfoBtn {
+		font: inherit; font-size: 13px; padding: 9px 14px; border-radius: 8px;
+		background: #232329; color: #9ad0a0; border: 1px solid #375040;
+	}
+	#lfoBtn:active { background: #2c2c33; }
+	#lfoWave {
+		font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 6px;
+		background: #26262b; color: #e2e2e2; border: 1px solid #3a3a40;
+	}
+}

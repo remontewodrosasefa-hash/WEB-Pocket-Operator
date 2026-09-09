@@ -97,6 +97,17 @@
 				'<button id="clearLocksBtn" type="button">clear locks on this sound</button>' +
 			'</div>' +
 
+			'<h3>LFO (auto filter sweep)</h3>' +
+			'<div id="lfoRow">' +
+				'<button id="lfoBtn" type="button">LFO off</button>' +
+				'<label>rate <input type="range" id="lfoRate" min="1" max="1200" value="400"></label>' +
+				'<label>depth <input type="range" id="lfoDepth" min="0" max="100" value="60"></label>' +
+				'<select id="lfoWave">' +
+					'<option value="sine">sine</option><option value="triangle">triangle</option>' +
+					'<option value="square">square</option><option value="sawtooth">saw</option>' +
+				'</select>' +
+			'</div>' +
+
 			'<h3>Motion recording</h3><ol>' +
 			'<li>Tap <b>arm motion rec</b> below, press <span class="tag">PLAY</span>, ' +
 				'then sweep a <b>slider</b> &mdash; the value is stamped onto each step as the ' +
@@ -117,6 +128,7 @@
 			'<div class="btnRow">' +
 				'<button id="metroBtn" type="button">metronome on / off</button>' +
 				'<button id="unmuteBtn" type="button">un-mute everything</button>' +
+				'<button id="hapticBtn" type="button">haptics on / off</button>' +
 			'</div>' +
 
 			'<h3>Projects</h3>' +
@@ -174,6 +186,21 @@
 		document.addEventListener("keydown", function (e) {
 			if (e.key === "Escape") { close(); }
 		});
+		document.addEventListener("input", function (e) {
+			if (!window.PO33 || !PO33.fx) { return; }
+			var id = e.target && e.target.id;
+			if (id === "lfoRate" || id === "lfoDepth") {
+				PO33.fx.lfo({
+					rate: (+document.getElementById("lfoRate").value) / 100,
+					depth: (+document.getElementById("lfoDepth").value) / 100
+				});
+			}
+		});
+		document.addEventListener("change", function (e) {
+			if (e.target && e.target.id === "lfoWave" && window.PO33 && PO33.fx) {
+				PO33.fx.lfo({ wave: e.target.value });
+			}
+		});
 		// "‹ back" row inside the library (rendered by library.js, so delegate)
 		document.addEventListener("click", function (e) {
 			if (e.target.closest("#libBack")) { close(); }
@@ -183,7 +210,16 @@
 				var on = PO33.motion.toggle();
 				e.target.textContent = on ? "disarm motion rec" : "arm motion rec";
 			}
+			if (e.target.id === "lfoBtn" && window.PO33 && PO33.fx) {
+				var st = PO33.fx.lfoState();
+				var now = PO33.fx.lfo({ on: !st.on,
+					rate: (+document.getElementById("lfoRate").value) / 100,
+					depth: (+document.getElementById("lfoDepth").value) / 100,
+					wave: document.getElementById("lfoWave").value });
+				e.target.textContent = now.on ? "LFO on" : "LFO off";
+			}
 			if (e.target.id === "unmuteBtn" && window.PO33 && PO33.channels) { PO33.channels.clearAll(); }
+			if (e.target.id === "hapticBtn" && window.PO33 && PO33.haptics) { PO33.haptics.toggle(); }
 			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
 			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }
 			if (e.target.id === "projOpenBtn" && window.PO33 && PO33.projects) { close(); PO33.projects.show(); }
