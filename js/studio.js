@@ -110,7 +110,8 @@
 		var slot = sel + 1;
 		var kind = slot <= 8 ? "melodic" : "drum";
 		var name = (window.PO33Lib && PO33Lib.slotName) ? PO33Lib.slotName(slot) : null;
-		var soundLine = "SOUND " + slot + " · " + kind + (name ? "  " + shortName(name) : "  (default)");
+		var sc = (slot <= 8 && window.PO33 && PO33.scale && PO33.scale.enabled()) ? ("  ♪" + PO33.scale.label()) : "";
+		var soundLine = "SOUND " + slot + " · " + kind + (name ? "  " + shortName(name) : "  (default)") + sc;
 
 		if (state === 4) {
 			mainEl.textContent = tempo + " BPM";

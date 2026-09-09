@@ -294,7 +294,7 @@ var keys = new Tone.Players({
 
 						thisSampler.volume.value = vol;
 						var _nt = time + (thisChannel.nudge||0)/1000;
-						thisSampler.triggerAttackExt(noteArray[pitch],_nt,1,offset,duration);
+						thisSampler.triggerAttackExt((window.melodicNote?window.melodicNote(pitch):noteArray[pitch]),_nt,1,offset,duration);
 					}
 
 			}
@@ -731,7 +731,7 @@ var playSound = function(channel,pitch){
 		melodicArr[channel].volume.value = vol;
 
 		melodicArr[channel].releaseAll();
-		melodicArr[channel].triggerAttack(noteArray[pitch]);
+		melodicArr[channel].triggerAttack(window.melodicNote?window.melodicNote(pitch):noteArray[pitch]);
 	}else{
 
 		drumFilterArr[channel-8].frequency.value = filterFreq;

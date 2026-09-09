@@ -285,3 +285,18 @@
 		background: #2a2a2d; border: 1px solid #444; border-bottom-width: 2px; border-radius: 3px;
 	}
 }
+
+/* scale & key row in the info drawer */
+@media (max-width: 720px), (pointer: coarse) {
+	#scaleRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 6px; }
+	#scaleRow select {
+		font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 6px;
+		background: #26262b; color: #e2e2e2; border: 1px solid #3a3a40;
+	}
+	#scaleKeyWrap { font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+	#scaleRow button {
+		font: inherit; font-weight: 700; width: 30px; height: 30px;
+		border-radius: 6px; background: #232329; color: #d8d8d8; border: 1px solid #3a3a40;
+	}
+	#scaleOct { font-size: 12px; min-width: 52px; text-align: center; color: #ffb060; }
+}

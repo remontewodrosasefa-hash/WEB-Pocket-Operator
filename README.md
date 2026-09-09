@@ -146,6 +146,11 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
   latch it, move a slider to lock note / volume / cutoff / res / trim to that
   step; accent & ghost render on the step bar
 
+**Melodic engine**
+* **Key / scale / octave** (`js/scale.js`) — melodic slots play through a
+  chosen scale so the 16 pads span 2–4 octaves; "16-pad classic" keeps the
+  original layout. Patterns unchanged (still a 0–15 index per step).
+
 **Performance (Tier 2)**
 * **16 punch-in effects** — crush · lo-fi · filter down/up · delay · stutter ·
   pitch up/down · reverb · wide 6/9 · phaser · tape stop · roll · ping-pong ·
@@ -156,13 +161,17 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
   (±60 ms per step), **LFO** → master filter (rate / depth / wave)
 * **Projects** (`js/projects.js`) — save / load / on-screen browser, in
   `localStorage` (survives deploys)
+* **Version chip + "update ready"** prompt at the top of the screen
+* **4-tab in-app guide** (play / make music / sound design / utilities) with a
+  full "let's make a song" walkthrough
 
 ## Still to do
 
-* **Tier 3+:** richer animated screen art, expand button-feedback coverage,
-  crop a recorded clip, resample a slot through FX, engine lo-fi character
-* **PWA polish:** "update available" prompt, in-app A2HS hint, haptics on pad
-  press, landscape tuning
+* **Next big one:** hum → melodic pattern (pitch detection) — now unblocked by
+  the scale engine
+* **Tier 3:** animated screen art, crop a recorded clip, resample through FX,
+  engine lo-fi toggle, expand button-feedback coverage
+* **PWA polish:** in-app "Add to Home Screen" hint, landscape tuning
 * **Housekeeping:** history still carries `PO ALL/` (~65 MB `.git`) — optional
   `git filter-repo`/BFG + force-push to purge
 

@@ -72,6 +72,28 @@
 		/* ============ MAKE MUSIC ============ */
 		'<section data-view="music" hidden>',
 
+			'<h3>Scale &amp; key</h3>',
+			'<p>Melodic slots (1&ndash;8) play through a key + scale, so the 16 pads become ',
+				'2&ndash;4 musical octaves. <b>16-pad classic</b> is the original fixed layout.</p>',
+			'<div id="scaleRow">',
+				'<select id="scaleSel">',
+					'<option value="classic">16-pad classic</option>',
+					'<option value="major">major</option><option value="minor">minor</option>',
+					'<option value="dorian">dorian</option><option value="penta maj">penta maj</option>',
+					'<option value="penta min">penta min</option><option value="blues">blues</option>',
+					'<option value="chromatic">chromatic</option>',
+				'</select>',
+				'<span id="scaleKeyWrap">key <select id="scaleKey">',
+					'<option value="0">C</option><option value="1">C#</option><option value="2">D</option>',
+					'<option value="3">D#</option><option value="4">E</option><option value="5">F</option>',
+					'<option value="6">F#</option><option value="7">G</option><option value="8">G#</option>',
+					'<option value="9">A</option><option value="10">A#</option><option value="11">B</option>',
+				'</select></span>',
+				'<button id="scaleOctDn" type="button">&minus;</button>',
+				'<span id="scaleOct">oct +0</span>',
+				'<button id="scaleOctUp" type="button">+</button>',
+			'</div>',
+
 			'<h3>Before you start</h3>',
 			'<p>Open <b>utilities &rarr; clear this pattern</b> so you have a blank bar. ',
 				'The unit ships with 16 sounds loaded (1&ndash;8 melodic, 9&ndash;16 drum kits), ',
@@ -313,8 +335,15 @@
 			}
 		});
 		document.addEventListener("change", function (e) {
-			if (e.target && e.target.id === "lfoWave" && window.PO33 && PO33.fx) {
+			var id = e.target && e.target.id;
+			if (id === "lfoWave" && window.PO33 && PO33.fx) {
 				PO33.fx.lfo({ wave: e.target.value });
+			}
+			if ((id === "scaleSel" || id === "scaleKey") && window.PO33 && PO33.scale) {
+				PO33.scale.set({
+					scale: document.getElementById("scaleSel").value,
+					key: +document.getElementById("scaleKey").value
+				});
 			}
 		});
 		// "‹ back" row inside the library (rendered by library.js, so delegate)
@@ -336,6 +365,8 @@
 			}
 			if (e.target.id === "unmuteBtn" && window.PO33 && PO33.channels) { PO33.channels.clearAll(); }
 			if (e.target.id === "hapticBtn" && window.PO33 && PO33.haptics) { PO33.haptics.toggle(); }
+			if (e.target.id === "scaleOctUp" && window.PO33 && PO33.scale) { PO33.scale.octave(1); }
+			if (e.target.id === "scaleOctDn" && window.PO33 && PO33.scale) { PO33.scale.octave(-1); }
 			if (e.target.id === "clearPtnBtn" && window.PO33) { PO33.clearPattern(); }
 			if (e.target.id === "clearAllBtn" && window.PO33) { PO33.clearAll(e.target); }
 			if (e.target.id === "projOpenBtn" && window.PO33 && PO33.projects) { close(); PO33.projects.show(); }
