@@ -185,3 +185,138 @@ aside#library { color: #e2e2e2; }
 @media screen and (max-width: 720px) {
 	#libList { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
+
+/* ================================================================
+ * LCD SKIN
+ * On a phone the library is displayed *inside* the screen, so it has to
+ * look like something the screen could actually draw: dark green ink on
+ * the same green glass, monospace, flat, no glow. Everything here is
+ * scoped to #lcdLibSlot, so the desktop panel keeps its dark theme.
+ * ================================================================ */
+#lcdLibSlot {
+	--ink: #1c2413;
+	--ink-soft: rgba(28, 36, 19, 0.62);
+	--ink-faint: rgba(28, 36, 19, 0.3);
+	--glass: rgba(28, 36, 19, 0.07);
+}
+#lcdLibSlot #library,
+#lcdLibSlot #libHead,
+#lcdLibSlot #libList { background: transparent; color: var(--ink); }
+
+#lcdLibSlot,
+#lcdLibSlot button,
+#lcdLibSlot input,
+#lcdLibSlot select {
+	font-family: ui-monospace, Menlo, "SF Mono", monospace;
+	color: var(--ink);
+}
+
+#lcdLibSlot #libHead {
+	border-bottom: 1px solid var(--ink-faint);
+	padding-bottom: 7px;
+}
+#lcdLibSlot #libHead h2,
+#lcdLibSlot #libTarget b,
+#lcdLibSlot .slotRow .idx { color: var(--ink); }
+#lcdLibSlot #libHead h2 {
+	font: 700 13px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+#lcdLibSlot #libTarget,
+#lcdLibSlot .libDur,
+#lcdLibSlot .slotRow .role { color: var(--ink-soft); }
+
+/* controls: outlined, filled when active — the way a segment display works */
+#lcdLibSlot button,
+#lcdLibSlot input,
+#lcdLibSlot select {
+	background: var(--glass);
+	border: 1px solid var(--ink-faint);
+	border-radius: 3px;
+	box-shadow: none;
+}
+#lcdLibSlot .libTab.active,
+#lcdLibSlot .libPlay.playing,
+#lcdLibSlot #libSurprise {
+	background: var(--ink);
+	color: #c4cdae;
+	border-color: var(--ink);
+}
+#lcdLibSlot input::placeholder { color: var(--ink-faint); }
+
+/* rows read as list lines on a screen, not as cards */
+#lcdLibSlot .libRow {
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid var(--ink-faint);
+	border-radius: 0;
+	box-shadow: none;
+}
+#lcdLibSlot .libRow.loaded {
+	background: var(--glass);
+	box-shadow: inset 3px 0 0 var(--ink);
+}
+#lcdLibSlot .libPlay {
+	background: transparent;
+	border: 1px solid var(--ink-soft);
+	color: var(--ink);
+}
+#lcdLibSlot .libName { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+#lcdLibSlot .slotRow .val.empty { color: var(--ink-faint); }
+#lcdLibSlot .slotRow { border-bottom: 1px solid var(--ink-faint); }
+#lcdLibSlot #libBack {
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid var(--ink-faint);
+	color: var(--ink);
+	letter-spacing: 0.08em;
+}
+#lcdLibSlot #libToast {
+	background: var(--ink);
+	color: #c4cdae;
+	border: none;
+}
+/* the scanline texture the rest of the screen has */
+#lcdLibSlot::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: repeating-linear-gradient(0deg,
+		rgba(28,36,19,0.05) 0 1px, rgba(0,0,0,0) 1px 3px);
+	border-radius: inherit;
+}
+
+
+/* Compact metrics for the on-screen version. The desktop panel has a whole
+ * window to breathe in; inside the LCD every row costs screen, so the same
+ * markup is packed tighter and more samples are visible at once. */
+#lcdLibSlot #libHead { padding: 7px 10px; gap: 5px 7px; }
+#lcdLibSlot #libList { padding: 2px 10px 14px; gap: 0; }
+#lcdLibSlot .libRow {
+	padding: 0 4px;
+	min-height: 30px;          /* a comfortable finger target, still compact */
+	font-size: 12px;
+	gap: 8px;
+	align-items: center;
+}
+#lcdLibSlot .libPlay {
+	width: 22px; height: 22px;
+	flex: none;
+	font-size: 10px;
+	border-radius: 3px;
+	padding: 0;
+}
+#lcdLibSlot .libDur { font-size: 10px; }
+#lcdLibSlot .libAssign, #lcdLibSlot .libTab, #lcdLibSlot .libFill {
+	padding: 4px 7px;
+	font-size: 10px;
+}
+#lcdLibSlot #libControls { gap: 5px; }
+#lcdLibSlot #libHead select,
+#lcdLibSlot #libHead input,
+#lcdLibSlot #libHead button { padding: 4px 7px; font-size: 11px; }
+#lcdLibSlot #libTarget { font-size: 11px; }
+#lcdLibSlot #libBack { padding: 6px 10px; font-size: 12px; }
+#lcdLibSlot .slotRow { padding: 5px 4px; font-size: 12px; }

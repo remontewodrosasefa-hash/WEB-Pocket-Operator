@@ -396,6 +396,26 @@
 		try { f.lp.Q.value = 0.7 + ny * 12; f.hp.Q.value = 0.7 + ny * 12; } catch (e) {}
 	}
 
+	// XY "space" mode: throw echo and reverb over whatever is playing.
+	// x = how much echo (and how long it keeps repeating), y = size of the room.
+	function space(nx, ny, on) {
+		buildFxChain();
+		if (!fxNodes) { return; }
+		var f = fxNodes;
+		if (!on) {
+			ramp(f.delay.wet, 0, 0.25);
+			ramp(f.verb.wet, 0, 0.35);
+			return;
+		}
+		nx = Math.max(0, Math.min(1, nx));
+		ny = Math.max(0, Math.min(1, ny));
+		try { f.delay.feedback.value = 0.15 + nx * 0.65; } catch (e) {}
+		try { f.delay.delayTime.value = 0.12 + (1 - nx) * 0.22; } catch (e) {}
+		ramp(f.delay.wet, nx * 0.7, 0.05);
+		try { f.verb.roomSize.value = 0.4 + ny * 0.55; } catch (e) {}
+		ramp(f.verb.wet, ny * 0.75, 0.08);
+	}
+
 	// one-shot access to the punch-in effects from anywhere
 	function punch(n, on) {
 		buildFxChain();
@@ -404,7 +424,7 @@
 
 	window.PO33.fx = {
 		lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain,
-		xy: xy, punch: punch,
+		xy: xy, space: space, punch: punch,
 		labels: function () { return FX_LABELS; },
 		help: function () { return FX_HELP; }
 	};

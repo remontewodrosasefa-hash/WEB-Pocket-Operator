@@ -373,7 +373,8 @@
 		position: absolute;
 		inset: 0;
 		z-index: 8;
-		background: #14140f;
+		/* the LCD's own glass, not a black panel dropped over it */
+		background: linear-gradient(180deg, #c4cdae 0%, #b3bd9b 45%, #a3ad8a 100%);
 		border-radius: inherit;
 	}
 	body.lib-lcd #lcdLibSlot > aside#library {

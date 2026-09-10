@@ -698,3 +698,71 @@ body.utilOpen #utilView { display: flex; }
 }
 /* mute + keys stay two compact rows at the top of the panel */
 .perfCells.mute, .perfCells.keys { align-content: start; }
+
+/* ================================================================
+ * Breathing room: the pad labels used to sit right on top of the
+ * performance strip's tabs.
+ * ================================================================ */
+.perfStrip { margin-top: 16px; }
+
+/* Hold-to-use cells must own the gesture completely. With
+ * touch-action: manipulation the browser could still read a small finger
+ * wobble as the start of a scroll, fire pointercancel, and cut the effect
+ * off mid-performance. */
+.perfCells.fx button,
+.perfCells.keys button { touch-action: none; }
+
+/* ---- XY pad mode chip ---- */
+#xyMode {
+	position: absolute;
+	top: 5px; left: 6px;
+	z-index: 2;
+	font: 700 9px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.12em;
+	color: #141410;
+	background: #ff7a1a;
+	border: none;
+	border-radius: 4px;
+	padding: 4px 7px;
+	cursor: pointer;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+#xyPad[data-mode="synth"] #xyMode { background: #6fd1ff; }
+#xyPad[data-mode="space"] #xyMode { background: #b58cff; }
+#xyPad[data-mode="synth"] { border-color: #2c4a58; }
+#xyPad[data-mode="space"] { border-color: #40325a; }
+
+/* ---- keyboard tab ---- */
+.keysBar {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 5px;
+}
+.keysBar button {
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.06em;
+	padding: 6px 9px;
+	background: #232329;
+	color: #cfcfcf;
+	border: 1px solid #3a3a40;
+	border-radius: 5px;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+.keysBar .keysVoice { color: #ffb060; border-color: #6a5335; }
+.keysBar .keysFit.on { background: #ff7a1a; color: #141410; border-color: #ff7a1a; }
+.keysScale {
+	margin-left: auto;
+	font: 500 9px/1 ui-monospace, Menlo, monospace;
+	color: #8a8a8a;
+	letter-spacing: 0.06em;
+}
+.perfCells.keys button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 1px;
+}
+.perfCells.keys button b { font-size: 9px; font-weight: 600; }
