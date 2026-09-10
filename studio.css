@@ -574,3 +574,97 @@ body.utilOpen #utilView { display: flex; }
 }
 .liveBtn > .buttonBG { background: radial-gradient(circle at 35% 30%, #ff8a8a, #d43b3b 75%); }
 .liveBtn > .btnText { color: #ff8a8a; }
+
+/* ================================================================
+ * performance strip — XY pad + switchable panel
+ * ================================================================ */
+
+.perfStrip {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-top: 4px;
+	box-sizing: border-box;
+}
+
+#xyPad {
+	position: relative;
+	height: 84px;
+	border: 1px solid #3a3d33;
+	border-radius: 8px;
+	background: linear-gradient(160deg, #1a1b16, #101008);
+	overflow: hidden;
+	touch-action: none;
+}
+#xyPad.latched { border-color: #ff7a1a; box-shadow: 0 0 10px rgba(255,122,26,0.28); }
+#xyCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#xyLabel {
+	position: absolute;
+	left: 8px; bottom: 5px;
+	font: 700 9px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.1em;
+	color: #ff9a4d;
+	background: rgba(13,13,15,0.65);
+	padding: 3px 6px;
+	border-radius: 4px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.perfTabs { display: flex; gap: 4px; }
+.perfTabs button {
+	flex: 1;
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.08em;
+	padding: 6px 0;
+	background: #1c1c20;
+	color: #8a8a8a;
+	border: 1px solid #3a3a40;
+	border-radius: 5px;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+.perfTabs button.on { background: #ff7a1a; color: #141410; border-color: #ff7a1a; }
+
+#perfPanel { min-height: 54px; }
+.perfCells {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	gap: 3px;
+}
+.perfCells.fx { grid-template-columns: repeat(4, 1fr); }
+.perfCells button {
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	padding: 9px 2px;
+	background: #232329;
+	color: #cfcfcf;
+	border: 1px solid #3a3a40;
+	border-radius: 5px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}
+.perfCells button.hot { background: #ff7a1a; color: #141410; border-color: #ff7a1a; }
+.perfCells.mute button.mute { background: #3a1e1e; color: #ff6b6b; border-color: #6a3535; }
+.perfCells.mute button.solo { background: #2a3a1e; color: #9ad06b; border-color: #4a6a35; }
+.perfCells.keys button { background: #26262b; color: #ffb060; }
+.perfNote { font-size: 11px; line-height: 1.4; color: #9a9a9a; padding: 4px 2px; }
+
+/* ---- a slider takes the whole row while you hold it ---- */
+.sliderRow .sliderWrap {
+	transition: flex-grow 0.14s ease, opacity 0.14s ease;
+}
+.sliderRow.expanded .sliderWrap:not(.active) {
+	flex: 0 0 0;
+	opacity: 0;
+	pointer-events: none;
+	overflow: hidden;
+}
+.sliderRow.expanded .sliderWrap.active { flex: 1 1 100%; }
+.sliderRow.expanded .sliderWrap.active .sliderLabel { font-size: 11px; color: #ffb060; }
+.sliderRow.expanded .sliderWrap.active input[type="range"] { height: 34px; }
+.sliderRow.expanded .sliderWrap.active input[type="range"]::-webkit-slider-runnable-track { height: 12px; border-radius: 6px; }
+.sliderRow.expanded .sliderWrap.active input[type="range"]::-webkit-slider-thumb { width: 26px; height: 34px; margin-top: -11px; }
+.sliderRow.expanded .sliderWrap.active input[type="range"]::-moz-range-thumb { width: 26px; height: 34px; }

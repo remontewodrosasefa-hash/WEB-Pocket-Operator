@@ -368,7 +368,44 @@
 		try { v = JSON.parse(localStorage.getItem("po33.lfo") || "null"); } catch (e) {}
 		if (v && v.on) { setLfo({ on: true, rate: v.rate, wave: v.wave, depth: 0.6 }); }
 	}
-	window.PO33.fx = { lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain };
+	/* ---- hooks for the performance strip ---- */
+
+	// XY pad: x = filter cutoff (low->high), y = resonance
+	function xy(nx, ny, on) {
+		buildFxChain();
+		if (!fxNodes) { return; }
+		var f = fxNodes;
+		if (!on) {
+			ramp(f.lp.frequency, 20000, 0.15);
+			ramp(f.hp.frequency, 20, 0.15);
+			try { f.lp.Q.value = 1; } catch (e) {}
+			return;
+		}
+		nx = Math.max(0, Math.min(1, nx));
+		ny = Math.max(0, Math.min(1, ny));
+		// left half sweeps a lowpass down, right half opens a highpass up
+		if (nx < 0.5) {
+			var lo = Math.exp(Math.log(180) + (Math.log(20000) - Math.log(180)) * (nx / 0.5));
+			ramp(f.lp.frequency, lo, 0.03);
+			ramp(f.hp.frequency, 20, 0.03);
+		} else {
+			var hi = Math.exp(Math.log(20) + (Math.log(4000) - Math.log(20)) * ((nx - 0.5) / 0.5));
+			ramp(f.hp.frequency, hi, 0.03);
+			ramp(f.lp.frequency, 20000, 0.03);
+		}
+		try { f.lp.Q.value = 0.7 + ny * 12; f.hp.Q.value = 0.7 + ny * 12; } catch (e) {}
+	}
+
+	// one-shot access to the punch-in effects from anywhere
+	function punch(n, on) {
+		buildFxChain();
+		if (on) { fxOn(n); } else { fxOff(); }
+	}
+
+	window.PO33.fx = {
+		lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain,
+		xy: xy, punch: punch, labels: function () { return FX_LABELS; }
+	};
 
 	// LFO controls may live in the info drawer or the UTIL panel — listen globally
 	document.addEventListener("click", function (e) {
@@ -936,6 +973,34 @@
 		isOn: metroOn
 	};
 
+	/* ---- grab a slider and it takes the whole row ----
+	 * Three sliders side by side on a phone is far too fine for swing or tempo.
+	 * While you're holding one, the others collapse and it gets the full width.
+	 * You never need two at once — dialFunction only handles one anyway.
+	 */
+	function wireSliderExpand() {
+		var row = document.querySelector(".sliderRow");
+		if (!row || row.dataset.expand) { return; }
+		row.dataset.expand = "1";
+		var active = null;
+		var grab = function (e) {
+			var w = e.target.closest(".sliderWrap");
+			if (!w) { return; }
+			active = w;
+			row.classList.add("expanded");
+			w.classList.add("active");
+		};
+		var release = function () {
+			if (!active) { return; }
+			active.classList.remove("active");
+			row.classList.remove("expanded");
+			active = null;
+		};
+		row.addEventListener("pointerdown", grab, true);
+		window.addEventListener("pointerup", release, true);
+		window.addEventListener("pointercancel", release, true);
+	}
+
 	function wireVolume() {
 		var el = document.getElementById("sliderVol");
 		if (!el || el.dataset.wired) { return; }
@@ -1000,6 +1065,7 @@
 		wireSlider(1);
 		wireSlider(2);
 		wireVolume();
+		wireSliderExpand();
 		wireTouchShims();
 		wireFxPads();
 		// FX chain is built lazily on the first FX hold — nothing to do here

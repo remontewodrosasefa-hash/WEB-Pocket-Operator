@@ -65,7 +65,7 @@
 	#hudSub  { font-size: 11px; }
 	#lcdHud  { font-size: 11px; }
 
-	.head { min-height: 18px; }
+	.topRow { min-height: 18px; }
 	.koLabelContainer { font-size: 12px; }
 	.controlStrip { margin-top: 6px; }
 
@@ -316,4 +316,22 @@
 		font-size: 13px;
 	}
 	#infoBody .callout ol { margin: 6px 0; }
+}
+
+/* top row + performance strip on a phone */
+@media (max-width: 720px), (pointer: coarse) {
+	.topRow { padding: 0 2px; }
+	.topBtns { gap: 6px; }
+	.topBtn { width: 46px; height: 60px; }
+	.topRow .buttonBG { width: 38px; height: 38px; margin-left: -19px; }
+	.topRow .gridHover { width: 40px; height: 40px; }
+	.topRow .btnText { top: 44px; font-size: 9px; }
+	.koLabelContainer { font-size: 14px; }
+
+	#xyPad { height: 92px; }
+	.perfTabs button { padding: 8px 0; font-size: 11px; }
+	.perfCells button { padding: 11px 2px; font-size: 11px; }
+	.perfCells.fx button { font-size: 9px; }
+	#perfPanel { min-height: 60px; }
+	.hwRow { display: none; }
 }

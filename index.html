@@ -40,10 +40,27 @@
 	  <article>
 	<div class="po33">
 		<div class="circuitBoard">
-			<div class="head">
+			<div class="topRow">
 				<div class="koLabelContainer">
 					<div class="koLabel">K.O</div>
 					<div class="koItalicLabel">!</div>
+				</div>
+				<div class="topBtns">
+					<div id="fabInfo" class="buttonGridItem topBtn">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">info</div>
+					</div>
+					<div id="btnUtil" class="buttonGridItem topBtn utilBtn">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">util</div>
+					</div>
+					<div id="fabLib" class="buttonGridItem topBtn">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">library</div>
+					</div>
 				</div>
 			</div>
 			<div class="lcd">
@@ -82,11 +99,6 @@
 						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
 						<div class="gridHover"></div>
 						<div class="btnText">trim</div>
-					</div>
-					<div id="btnUtil" class="buttonGridItem utilBtn">
-						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
-						<div class="gridHover"></div>
-						<div class="btnText">util</div>
 					</div>
 					<div id="btnLive" class="buttonGridItem liveBtn">
 						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
@@ -313,6 +325,16 @@
 				</div>
 			</div>
 			</div>
+			<div class="perfStrip">
+				<div id="xyPad"><canvas id="xyCanvas"></canvas><span id="xyLabel">FILTER / RES</span></div>
+				<div class="perfTabs">
+					<button data-perf="mute" class="on">mute</button>
+					<button data-perf="fx">fx</button>
+					<button data-perf="keys">keys</button>
+					<button data-perf="xyset">xy</button>
+				</div>
+				<div id="perfPanel"></div>
+			</div>
 		</div>
 	</div>
 	</article>
@@ -467,5 +489,6 @@
 <script src="js/trim.js"></script>
 <script src="js/locks.js"></script>
 <script src="js/util.js"></script>
+<script src="js/perf.js"></script>
 <script src="js/mobile.js"></script>
 </body>
