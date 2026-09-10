@@ -60,7 +60,7 @@
 	.po33 { padding: 2px; }
 
 	/* screen ~30% smaller than before, fixed within the scaled unit */
-	.lcd { height: 232px; }
+	.lcd { height: 197px; }
 	#hudMain { font-size: 19px; }
 	#hudSub  { font-size: 11px; }
 	#lcdHud  { font-size: 11px; }

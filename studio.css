@@ -668,3 +668,13 @@ body.utilOpen #utilView { display: flex; }
 .sliderRow.expanded .sliderWrap.active input[type="range"]::-webkit-slider-runnable-track { height: 12px; border-radius: 6px; }
 .sliderRow.expanded .sliderWrap.active input[type="range"]::-webkit-slider-thumb { width: 26px; height: 34px; margin-top: -11px; }
 .sliderRow.expanded .sliderWrap.active input[type="range"]::-moz-range-thumb { width: 26px; height: 34px; }
+
+/* the panel is capped and scrolls — it can never push the unit off-screen */
+#perfPanel {
+	max-height: 190px;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+#xyPad[hidden] { display: none; }
+#perfViews[hidden] { display: none; }
+.perfCells.fx button { font-size: 9px; padding: 8px 2px; }

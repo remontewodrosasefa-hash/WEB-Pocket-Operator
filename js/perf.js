@@ -13,8 +13,8 @@
 (function () {
 	"use strict";
 
-	var xyEl, xyCv, xyCtx, xyLabel, panel, W = 0, H = 0, DPR = 1;
-	var xyOn = false, xyX = 0.5, xyY = 0.2, tab = "mute";
+	var xyEl, xyCv, xyCtx, xyLabel, panel, panelTarget, W = 0, H = 0, DPR = 1;
+	var xyOn = false, xyX = 0.5, xyY = 0.2, tab = "xy";
 	var latched = false;
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
@@ -129,7 +129,7 @@
 			var st = P ? P.state(i) : "on";
 			h += '<button data-mute="' + i + '" class="' + st + '">' + (i + 1) + '</button>';
 		}
-		panel.innerHTML = h + '</div>';
+		panelTarget.innerHTML = h + '</div>';
 	}
 
 	function renderFx() {
@@ -139,28 +139,31 @@
 			var name = (labels[i] || i).toString().toLowerCase().replace(" ", " ");
 			h += '<button data-fx="' + i + '">' + name + '</button>';
 		}
-		panel.innerHTML = h + '</div>';
+		panelTarget.innerHTML = h + '</div>';
 	}
 
 	function renderKeys() {
 		var h = '<div class="perfCells keys">';
 		for (var i = 0; i < 16; i++) { h += '<button data-key="' + i + '">' + (i + 1) + '</button>'; }
-		panel.innerHTML = h + '</div>';
-	}
-
-	function renderXySet() {
-		panel.innerHTML =
-			'<div class="perfNote">Drag the pad above for a live filter sweep — ' +
-			'left half closes a lowpass, right half opens a highpass, up adds resonance. ' +
-			'Tap the label to latch it on. Arm <b>motion rec</b> and it bakes into your steps.</div>';
+		panelTarget.innerHTML = h + '</div>';
 	}
 
 	function render() {
 		if (!panel) { return; }
+		var slot = document.getElementById("perfViews");
+		if (!slot) {
+			slot = document.createElement("div");
+			slot.id = "perfViews";
+			panel.appendChild(slot);
+		}
+		var showXy = tab === "xy";
+		if (xyEl) { xyEl.hidden = !showXy; }
+		slot.hidden = showXy;
+		if (showXy) { setTimeout(xyResize, 0); return; }
+		panelTarget = slot;
 		if (tab === "mute") { renderMute(); }
 		else if (tab === "fx") { renderFx(); }
-		else if (tab === "keys") { renderKeys(); }
-		else { renderXySet(); }
+		else { renderKeys(); }
 	}
 
 	function wirePanel() {

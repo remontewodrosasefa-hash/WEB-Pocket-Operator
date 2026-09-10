@@ -290,7 +290,9 @@
 	].join('');
 
 	function build() {
-		if (document.getElementById("fabInfo")) { return; }
+		// NB: #fabInfo lives in the markup now, so it can't be the "already built"
+		// sentinel — the drawer is.
+		if (document.getElementById("infoDrawer")) { return; }
 
 		var scrim = document.createElement("div");
 		scrim.id = "drawerScrim";

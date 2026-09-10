@@ -91,11 +91,18 @@ aside#library {
 	flex-direction: column;
 	gap: 10px;
 	box-sizing: border-box;
-	/* the case is gone — the controls sit straight on the page */
-	background: none;
+	/* no case border, but keep the board's texture and depth */
 	border: none;
-	border-radius: 0;
-	box-shadow: none;
+	border-radius: 14px;
+	background:
+		radial-gradient(120% 55% at 50% 0%, rgba(255,255,255,0.05), rgba(255,255,255,0) 60%),
+		repeating-linear-gradient(90deg, rgba(255,255,255,0.014) 0 2px, rgba(0,0,0,0) 2px 24px),
+		repeating-linear-gradient(0deg, rgba(255,255,255,0.014) 0 2px, rgba(0,0,0,0) 2px 24px),
+		linear-gradient(160deg, #24261f 0%, #1c1d18 45%, #141410 100%);
+	box-shadow:
+		inset 0 1px 0 rgba(255,255,255,0.05),
+		inset 0 0 40px rgba(0,0,0,0.45),
+		0 16px 36px rgba(0,0,0,0.5);
 }
 
 .circuitBoard::before,
@@ -111,8 +118,18 @@ aside#library {
 	gap: 8px;
 	padding: 0 2px;
 }
-.topBtns { display: flex; gap: 10px; }
+.topBtns { display: flex; gap: 14px; align-items: center; }
 .topBtn { width: 40px; height: 40px; }
+/* label sits beside the cap instead of under it — saves ~14px of height */
+.topBtn > .btnText {
+	top: 50%;
+	left: auto;
+	right: calc(100% + 4px);
+	width: auto;
+	transform: translateY(-50%);
+	font-size: 9px;
+	text-align: right;
+}
 .koLabelContainer { height: auto; font-size: 13px; color: #ff7a1a; }
 #logo, #microphone { display: none; }
 .koLabel, .koItalicLabel { left: 0; }
@@ -128,7 +145,7 @@ aside#library {
 .lcd {
 	position: relative;
 	width: 100%;
-	height: 200px;
+	height: 170px;
 	margin: 0;
 	padding: 8px 12px;
 	overflow: hidden;
