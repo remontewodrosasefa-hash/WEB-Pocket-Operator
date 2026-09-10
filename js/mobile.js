@@ -389,16 +389,14 @@
 		var art = document.querySelector("article");
 		if (!board || !art || fitting) { return; }
 		if (!mq.matches) { board.style.transform = ""; board.style.width = ""; return; }
+		// The mobile layout is FLUID now: CSS sizes the unit to the viewport width
+		// and the LCD absorbs the leftover height. The old transform: scale()
+		// shrank the width whenever height was the binding constraint, which is
+		// exactly why it never filled the screen. Just clear any stale inline
+		// transform/width an older build may have left pinned on the board.
 		fitting = true;
-		board.style.transform = "none";
-		board.style.width = "372px";
-		// +12 slack for sub-pixel / any label descenders; a touch of margin all round
-		var nh = (board.offsetHeight || 700) + 12;
-		var aw = art.clientWidth - 8;
-		var ah = art.clientHeight - 10;
-		var s = Math.min(aw / 372, ah / nh);
-		s = Math.max(0.3, Math.min(s, 1.25));
-		board.style.transform = "scale(" + s + ")";
+		board.style.transform = "";
+		board.style.width = "";
 		setTimeout(function () { fitting = false; }, 0);
 	}
 	function scheduleFit() {
@@ -419,16 +417,43 @@
 		}
 	}
 
+	/* ------------------------------------------------------------------
+	 * On a phone the library doesn't slide in from the side any more — it
+	 * takes over the screen itself, the way a mode change does on the real
+	 * unit. The <aside> is MOVED into a slot inside .lcd rather than being
+	 * duplicated, so library.js keeps addressing the same nodes by id.
+	 * ------------------------------------------------------------------ */
+	var libHome = null;
+
+	function dockLibrary(on) {
+		var lib = document.getElementById("library");
+		var slot = document.getElementById("lcdLibSlot");
+		if (!lib || !slot) { return; }
+		if (on) {
+			if (!libHome) { libHome = { parent: lib.parentNode, next: lib.nextSibling }; }
+			if (lib.parentNode !== slot) { slot.appendChild(lib); }
+			document.body.classList.add("lib-lcd");
+		} else {
+			if (libHome && lib.parentNode === slot) {
+				libHome.parent.insertBefore(lib, libHome.next);
+			}
+			document.body.classList.remove("lib-lcd");
+		}
+	}
+
 	function toggle(which) {
 		var b = document.body;
 		var open = which === "info" ? "drawer-info" : "drawer-lib";
 		var other = which === "info" ? "drawer-lib" : "drawer-info";
 		b.classList.remove(other);
+		if (other === "drawer-lib") { dockLibrary(false); }
 		var isOpen = b.classList.toggle(open);
 		b.classList.toggle("drawer-open", isOpen);
+		if (which === "lib") { dockLibrary(isOpen && mq.matches); }
 	}
 
 	function close() {
+		dockLibrary(false);
 		document.body.classList.remove("drawer-info", "drawer-lib", "drawer-open");
 	}
 

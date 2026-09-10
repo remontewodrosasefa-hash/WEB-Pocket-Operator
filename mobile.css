@@ -44,23 +44,24 @@
 		overflow: hidden;
 	}
 
-	/* natural size — fitUnit() applies transform: scale() to fit the screen.
-	 * Every grid item is now TALL ENOUGH to contain its own label (button in the
-	 * top ~46px, label below), so nothing overflows the board box and
-	 * board.offsetHeight is an honest measurement for the scale math. */
+	/* FLUID, not scaled. The unit fills the width and the LCD absorbs whatever
+	 * height is left over, so it fits any phone without letterboxing. (The old
+	 * transform: scale() approach shrank the width whenever height was the
+	 * binding constraint — which is why it never filled the screen.) */
 	.circuitBoard {
-		width: 372px;
-		max-width: none;
-		height: auto;
-		gap: 6px;
-		padding: 10px 12px 12px;
-		overflow: visible;
-		transform-origin: center center;
+		width: 100%;
+		max-width: 520px;
+		height: 100%;
+		gap: 5px;
+		padding: 6px 10px 8px;
+		overflow: hidden;
+		transform: none !important;
 	}
-	.po33 { padding: 2px; }
+	.po33 { padding: 0; align-items: stretch; }
 
-	/* screen ~30% smaller than before, fixed within the scaled unit */
-	.lcd { height: 197px; }
+	/* the screen takes the slack instead of a fixed height */
+	.lcd { flex: 1 1 auto; height: auto; min-height: 110px; max-height: 30vh; }
+	.topRow, .controlStrip, .gridArea, .perfStrip { flex: 0 0 auto; }
 	#hudMain { font-size: 19px; }
 	#hudSub  { font-size: 11px; }
 	#lcdHud  { font-size: 11px; }
@@ -334,4 +335,59 @@
 	.perfCells.fx button { font-size: 9px; }
 	#perfPanel { min-height: 60px; }
 	.hwRow { display: none; }
+}
+
+/* fluid-layout sizing: keep the fixed blocks compact so the LCD keeps some slack */
+@media (max-width: 720px), (pointer: coarse) {
+	.buttonGrid { --padRow: 58px; row-gap: 2px; }
+	.buttonGridItem { width: 48px; height: 58px; }
+	.btnText { top: 44px; }
+	.controlStrip { gap: 8px; margin-top: 2px; }
+	.modeRow .buttonGridItem { width: 46px; height: 56px; }
+	.topBtn { width: 40px; height: 40px; }
+	.topRow .btnText { top: 50%; right: calc(100% + 4px); left: auto; width: auto;
+		transform: translateY(-50%); text-align: right; font-size: 9px; }
+	.perfStrip { gap: 4px; margin-top: 2px; }
+	#xyPad { height: 100%; }
+	.gridArea { padding-left: 0; }
+	.gridGutter { width: 10px; }
+}
+
+/* ================================================================
+ * Library takes over the screen instead of sliding in from the side.
+ * Everything below the screen steps aside, the screen grows into the
+ * space, and the library renders inside the bezel — so browsing samples
+ * feels like a mode of the device, not a separate panel.
+ * ================================================================ */
+@media (max-width: 720px), (pointer: coarse) {
+	body.lib-lcd main { transform: none !important; }
+	body.lib-lcd #drawerScrim { opacity: 0; pointer-events: none; }
+	body.lib-lcd .controlStrip,
+	body.lib-lcd .gridArea,
+	body.lib-lcd .perfStrip { display: none; }
+	body.lib-lcd .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
+
+	#lcdLibSlot { display: none; }
+	body.lib-lcd #lcdLibSlot {
+		display: flex;
+		position: absolute;
+		inset: 0;
+		z-index: 8;
+		background: #14140f;
+		border-radius: inherit;
+	}
+	body.lib-lcd #lcdLibSlot > aside#library {
+		position: static !important;
+		transform: none !important;
+		width: 100%;
+		height: 100%;
+		max-height: none;
+		margin: 0;
+		border: none;
+		border-radius: 0;
+		background: transparent;
+		z-index: auto;
+	}
+	/* the screen chrome would otherwise show through the library */
+	body.lib-lcd .lcd > :not(#lcdLibSlot) { visibility: hidden; }
 }

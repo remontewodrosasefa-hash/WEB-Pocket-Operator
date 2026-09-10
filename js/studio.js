@@ -31,7 +31,7 @@
 		btnSound: "SOUND — pick the active sound slot, then a pad",
 		btnPattern: "PATTERN — hold to select / chain patterns",
 		btnBPM: "BPM — sliders set swing & tempo · double-tap = presets",
-		btnFX: "FX — cycles slider target: TONE / FILTER / TRIM",
+		btnFX: "FX — hold for the 16 punch-in effects; tap to cycle slider target",
 		btnPlay: "PLAY — start / stop the sequencer",
 		btnWrite: "WRITE — edit steps · hold 3s while playing = live record",
 		btnRecord: "RECORD — sample the mic / a browser tab onto this slot"
@@ -209,7 +209,7 @@
 		if (!haveSample && sel < 8) { return "open LIBRARY to load a sound onto this slot"; }
 		if (!play && patternHasSteps(pat)) { return "press PLAY"; }
 		if (!play) { return "SOUND + a pad to choose a sound, then WRITE to sequence"; }
-		return "hold FX + pads 1-8 for effects";
+		return "hold FX + any pad = punch-in effect";
 	}
 
 	// screen reacts to every control: show what it does, or that it did nothing
@@ -404,7 +404,9 @@
 
 	window.PO33.fx = {
 		lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain,
-		xy: xy, punch: punch, labels: function () { return FX_LABELS; }
+		xy: xy, punch: punch,
+		labels: function () { return FX_LABELS; },
+		help: function () { return FX_HELP; }
 	};
 
 	// LFO controls may live in the info drawer or the UTIL panel — listen globally
@@ -430,60 +432,150 @@
 		if (e.target && e.target.id === "lfoWave") { setLfo({ wave: e.target.value }); }
 	});
 
-	var FX_LABELS = ["",
-		"CRUSH", "LO-FI", "FILTER DOWN", "FILTER UP",
-		"DELAY", "STUTTER", "PITCH UP", "PITCH DOWN",
-		"REVERB", "WIDE 6/9", "PHASER", "TAPE STOP",
-		"ROLL", "PING-PONG", "WOBBLE", "KILL"];
+	/* ============================================================
+	 * The sixteen punch-in effects, matched to the real PO-33 KO II.
+	 *
+	 * Most of them are NOT audio effects at all on the hardware — they bend
+	 * the sequencer: they shorten the loop, reverse the step pointer, stutter
+	 * it or pin the pattern chain. So they are split in two:
+	 *
+	 *   step  – remaps the step the sequencer reads (js/po33.js calls
+	 *           window.po33Fx.mapStep on every 16th) and can pin the chain
+	 *   audio – the master FX chain (unison / octave / scratch)
+	 *
+	 * Both are momentary: they last exactly as long as the pad is held.
+	 * ============================================================ */
 
-	var tapeTimer = null;
+	var FX_LABELS = ["",
+		"LOOP 16", "LOOP 12", "LOOP SHORT", "LOOP SHORTER",
+		"UNISON", "UNISON LOW", "OCTAVE UP", "OCTAVE DOWN",
+		"STUTTER 4", "STUTTER 3", "SCRATCH", "SCRATCH FAST",
+		"6/8 QUANTIZE", "RETRIGGER", "REVERSED", "NO EFFECT"];
+
+	var FX_HELP = ["",
+		"loops the whole 16-step bar and stops the chain moving on",
+		"loops the first 12 steps — the bar limps, everything shifts",
+		"loops 4 steps around where you are",
+		"loops 2 steps — near-machine-gun",
+		"thickens the whole beat into one wide layer",
+		"unison with the low end pushed, good under drums",
+		"whole beat an octave up",
+		"whole beat an octave down",
+		"holds each step across a group of 4",
+		"holds each step across a group of 3 — 3-against-4",
+		"pitch-bends the held step like a hand on a record",
+		"the same scratch, twice the speed",
+		"forces a triplet 6/8 shuffle onto the grid",
+		"re-fires the pattern from step 1 every 4 steps",
+		"plays the bar backwards",
+		"bypass — the safe pad, kills whatever was running"];
+
+	/* ---- step-pointer side ---- */
+
+	// LOOP / RETRIGGER / REVERSE pin the chain so the same pattern repeats
+	// instead of walking on to the next link.
+	var CHAIN_PINNED = { 1: 1, 2: 1, 3: 1, 4: 1, 11: 1, 12: 1, 14: 1, 15: 1 };
+
+	var stepFx = 0;      // 0 = no step effect
+	var stepAnchor = 0;  // raw step the effect was engaged on
+	var lastRaw = 0;
+
+	function mapStep(raw) {
+		lastRaw = raw;
+		switch (stepFx) {
+			case 1:  return raw;                                  // loop 16 (chain pinned)
+			case 2:  return raw % 12;                             // loop 12
+			case 3:  return (stepAnchor & ~3) + (raw % 4);         // loop short  (4 steps)
+			case 4:  return (stepAnchor & ~1) + (raw % 2);         // loop shorter (2 steps)
+			case 9:  return Math.floor(raw / 4) * 4;               // stutter 4
+			case 10: return (Math.floor(raw / 3) * 3) % 16;        // stutter 3
+			case 11:
+			case 12: return stepAnchor;                            // scratch: one step, bent
+			case 14: return raw % 4;                               // retrigger from the top
+			case 15: return 15 - raw;                              // reversed
+			default: return raw;
+		}
+	}
+	function holdChain() { return !!CHAIN_PINNED[stepFx]; }
+
+	window.po33Fx = { mapStep: mapStep, holdChain: holdChain };
+
+	/* ---- scratch: a hand rocking the record back and forth ---- */
+	var scratchTimer = null;
+	function scratch(periodMs, depth) {
+		clearInterval(scratchTimer);
+		var t0 = Date.now();
+		scratchTimer = setInterval(function () {
+			var ph = ((Date.now() - t0) % periodMs) / periodMs;      // 0..1
+			var tri = ph < 0.5 ? (ph * 4 - 1) : (3 - ph * 4);         // -1..1..-1
+			pitchTo(tri * depth);
+		}, 24);
+	}
+	function scratchOff() { clearInterval(scratchTimer); scratchTimer = null; pitchTo(0); }
+
+	/* ---- 6/8: a triplet shuffle forced onto the 16ths ---- */
+	var swingSaved = null;
+	function sixEight(on) {
+		if (!window.Tone || !Tone.Transport) { return; }
+		try {
+			if (on) {
+				if (swingSaved == null) {
+					swingSaved = { s: Tone.Transport.swing, d: Tone.Transport.swingSubdivision };
+				}
+				Tone.Transport.swingSubdivision = "8n";
+				Tone.Transport.swing = 0.62;
+			} else if (swingSaved) {
+				Tone.Transport.swing = swingSaved.s;
+				Tone.Transport.swingSubdivision = swingSaved.d;
+				swingSaved = null;
+			}
+		} catch (e) {}
+	}
 
 	function fxOn(n) {
 		window.fxWasUsed = true;
-		flash("FX " + n + " · " + (FX_LABELS[n] || ""), "warn");
+		flash((FX_LABELS[n] || ("FX " + n)) + " — " + (FX_HELP[n] || ""), "warn");
+
+		// every press starts from a clean slate so pads never stack up
+		clearStep();
+		if (fxNodes) { audioOff(); }
+
+		stepAnchor = lastRaw;
+		if (n !== 16) { stepFx = n; }
+
 		if (!fxNodes) { return; }
 		var f = fxNodes;
 		switch (n) {
-			case 1:  distTo(0.92); ramp(f.lp.frequency, 3500, 0.05); break;
-			case 2:  ramp(f.lp.frequency, 900, 0.05); distTo(0.45); break;
-			case 3:  ramp(f.lp.frequency, 240, 0.12); break;
-			case 4:  ramp(f.hp.frequency, 1800, 0.12); break;
-			case 5:  ramp(f.delay.wet, 0.55, 0.04); break;
-			case 6:  try { f.trem.frequency.value = 13; } catch (e) {}
-			         ramp(f.trem.depth, 1, 0.02); break;
-			case 7:  pitchTo(7); break;
-			case 8:  pitchTo(-5); break;
-			case 9:  ramp(f.verb.wet, 0.6, 0.05); break;
-			case 10: ramp(f.chorus.wet, 1, 0.05); break;
-			case 11: ramp(f.phaser.wet, 1, 0.05); break;
-			case 12: tapeStop(); break;
-			case 13: try { f.trem.frequency.value = 26; } catch (e) {}
-			         ramp(f.trem.depth, 1, 0.02); break;
-			case 14: ramp(f.pong.wet, 0.6, 0.04); break;
-			case 15: ramp(f.wob.wet, 1, 0.05); break;
-			case 16: ramp(f.kill.gain, 0, 0.015); break;
+			case 5:  // unison — wide, slow chorus plus a touch of drive for glue
+				try { f.chorus.frequency.value = 0.8; f.chorus.depth = 0.75; } catch (e) {}
+				ramp(f.chorus.wet, 1, 0.03);
+				distTo(0.18);
+				break;
+			case 6:  // unison low — same, weighted to the bottom
+				try { f.chorus.frequency.value = 0.6; f.chorus.depth = 0.9; } catch (e) {}
+				ramp(f.chorus.wet, 1, 0.03);
+				ramp(f.lp.frequency, 2200, 0.05);
+				distTo(0.3);
+				break;
+			case 7:  pitchTo(12); break;
+			case 8:  pitchTo(-12); break;
+			case 11: scratch(300, 10); break;
+			case 12: scratch(130, 7); break;
+			case 13: sixEight(true); break;
+			case 16: break;   // no effect: the bypass pad
 		}
 	}
 
-	// slow the "tape" down: pitch drops and the top end closes over ~0.6s
-	function tapeStop() {
-		var f = fxNodes;
-		if (!f) { return; }
-		clearTimeout(tapeTimer);
-		var t0 = Date.now();
-		var step = function () {
-			var k = Math.min(1, (Date.now() - t0) / 600);
-			pitchTo(-12 * k);
-			ramp(f.lp.frequency, 20000 - (19700 * k), 0.05);
-			if (k < 1) { tapeTimer = setTimeout(step, 40); }
-		};
-		step();
+	function clearStep() {
+		stepFx = 0;
+		scratchOff();
+		sixEight(false);
 	}
 
-	function fxOff() {
-		clearTimeout(tapeTimer);
-		if (!fxNodes) { return; }
+	// reset only the audio chain — used both on release and between presses
+	function audioOff() {
 		var f = fxNodes;
+		if (!f) { return; }
 		ramp(f.lp.frequency, 20000, 0.12);
 		ramp(f.hp.frequency, 20, 0.12);
 		ramp(f.delay.wet, 0, 0.12);
@@ -496,6 +588,11 @@
 		ramp(f.kill.gain, 1, 0.02);
 		pitchTo(0);
 		distTo(0);
+	}
+
+	function fxOff() {
+		clearStep();
+		audioOff();
 	}
 
 	function wireFxPads() {

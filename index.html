@@ -46,21 +46,8 @@
 					<div class="koItalicLabel">!</div>
 				</div>
 				<div class="topBtns">
-					<div id="fabInfo" class="buttonGridItem topBtn">
-						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
-						<div class="gridHover"></div>
-						<div class="btnText">info</div>
-					</div>
-					<div id="btnUtil" class="buttonGridItem topBtn utilBtn">
-						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
-						<div class="gridHover"></div>
-						<div class="btnText">util</div>
-					</div>
-					<div id="fabLib" class="buttonGridItem topBtn">
-						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
-						<div class="gridHover"></div>
-						<div class="btnText">library</div>
-					</div>
+					<a href="#" id="fabInfo" class="topLink" role="button">info</a>
+					<a href="#" id="fabLib" class="topLink" role="button">library</a>
 				</div>
 			</div>
 			<div class="lcd">
@@ -77,6 +64,8 @@
 				<div class="levelMeter">
 					<!-- <div class="levelMeterSegment"></div> -->
 				</div>
+				<!-- the library docks in here on phones so it reads as part of the screen -->
+				<div id="lcdLibSlot"></div>
 			</div>
 			<div class="controlStrip">
 				<div class="modeRow">
@@ -99,6 +88,11 @@
 						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
 						<div class="gridHover"></div>
 						<div class="btnText">trim</div>
+					</div>
+					<div id="btnUtil" class="buttonGridItem utilBtn">
+						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
+						<div class="gridHover"></div>
+						<div class="btnText">util</div>
 					</div>
 					<div id="btnLive" class="buttonGridItem liveBtn">
 						<div class="buttonBG"><div class="square"><div class="circle"></div></div></div>
@@ -406,7 +400,7 @@
 	  	<ul>
 	  		<li><b>Fills:</b> latch the last few steps and lock a higher pitch or shorter TRIM length.</li>
 	  		<li><b>Motion-record</b> a filter sweep: utilities &rarr; arm motion rec, PLAY, ride the FILTER slider.</li>
-	  		<li><b>Transitions:</b> hold FX &rarr; <b>12</b> tape stop, <b>16</b> kill, or <b>5</b> delay into the next section.</li>
+	  		<li><b>Transitions:</b> hold FX &rarr; <b>4</b> loop shorter to build, <b>15</b> reversed to flip the bar, <b>16</b> to drop back clean.</li>
 	  		<li><b>Chop a break:</b> record 1&ndash;2 bars, <b>&#9986; chop x16</b>, tick <i>lay out + match tempo</i>, re-order the pads.</li>
 	  	</ul>
 
@@ -466,8 +460,35 @@
 	  	<h2>Record &amp; effects</h2>
 	  	<ol>
 	  		<li>While playing, hold <button onclick="writeButtonFunction()">WRITE</button> for 3 seconds to live-record what you play into the pattern.</li>
-	  		<li>In performance mode press <button onclick="fxButtonFunction()">FX</button> to reach FLT; the dials apply a filter you can then write into a pattern.</li>
+	  		<li>Tap <button onclick="fxButtonFunction()">FX</button> to switch what the two sliders do (TONE / FILTER / TRIM). <b>Hold</b> it instead and the 16 pads become punch-in effects.</li>
 	  		<li>In Pattern-select mode press <button onclick="writeButtonFunction()">WRITE</button> to copy a pattern, then choose an empty slot to paste it.</li>
+	  	</ol>
+
+	  	<h2>The 16 punch-in effects</h2>
+	  	<p>Same set, same order as the hardware. <b>Hold FX + a pad</b>, or use the
+	  		<b>fx</b> tab in the performance strip under the screen. They are momentary:
+	  		they last exactly as long as you hold, and they never change your pattern &mdash;
+	  		so you can lean on them while recording the master out.</p>
+	  	<p>Most of them are not audio effects at all. They bend the sequencer: they
+	  		shorten the loop, reverse the step pointer or stutter it, and they pin the
+	  		pattern chain so the bar repeats instead of moving on.</p>
+	  	<ol class="fxList">
+	  		<li><b>loop 16</b> &mdash; loops the whole 16-step bar and stops the chain moving on</li>
+	  		<li><b>loop 12</b> &mdash; loops the first 12 steps, so the bar limps and everything shifts</li>
+	  		<li><b>loop short</b> &mdash; loops 4 steps around where you are</li>
+	  		<li><b>loop shorter</b> &mdash; loops 2 steps, near machine-gun</li>
+	  		<li><b>unison</b> &mdash; thickens the whole beat into one wide layer</li>
+	  		<li><b>unison low</b> &mdash; unison with the low end pushed, good under drums</li>
+	  		<li><b>octave up</b> &mdash; whole beat an octave up</li>
+	  		<li><b>octave down</b> &mdash; whole beat an octave down</li>
+	  		<li><b>stutter 4</b> &mdash; holds each step across a group of 4</li>
+	  		<li><b>stutter 3</b> &mdash; holds each step across a group of 3, three-against-four</li>
+	  		<li><b>scratch</b> &mdash; pitch-bends the held step like a hand on a record</li>
+	  		<li><b>scratch fast</b> &mdash; the same scratch at twice the speed</li>
+	  		<li><b>6/8 quantize</b> &mdash; forces a triplet shuffle onto the grid</li>
+	  		<li><b>retrigger</b> &mdash; re-fires the pattern from step 1 every 4 steps</li>
+	  		<li><b>reversed</b> &mdash; plays the bar backwards</li>
+	  		<li><b>no effect</b> &mdash; bypass. The safe pad: it kills whatever was running</li>
 	  	</ol>
 	  </nav>
 	</main>
@@ -492,4 +513,4 @@
 <script src="js/util.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/mobile.js"></script>
-</body>
+</body></html>

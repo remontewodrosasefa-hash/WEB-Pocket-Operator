@@ -670,11 +670,31 @@ body.utilOpen #utilView { display: flex; }
 .sliderRow.expanded .sliderWrap.active input[type="range"]::-moz-range-thumb { width: 26px; height: 34px; }
 
 /* the panel is capped and scrolls — it can never push the unit off-screen */
+/* The panel is a FIXED height on phones. If it grew and shrank per tab the
+ * LCD (which absorbs the leftover height) would jump every time you switched
+ * between xy / mute / fx / keys. */
 #perfPanel {
-	max-height: 190px;
-	overflow-y: auto;
-	-webkit-overflow-scrolling: touch;
+	height: 150px;
+	overflow: hidden;
 }
 #xyPad[hidden] { display: none; }
 #perfViews[hidden] { display: none; }
-.perfCells.fx button { font-size: 9px; padding: 8px 2px; }
+#xyPad, #perfViews { height: 100%; }
+
+/* the 4x4 fx grid fills the panel exactly — no clipped bottom row */
+.perfCells.fx {
+	height: 100%;
+	grid-auto-rows: 1fr;
+	align-content: stretch;
+}
+.perfCells.fx button {
+	font-size: 9.5px;
+	padding: 0 2px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+}
+/* mute + keys stay two compact rows at the top of the panel */
+.perfCells.mute, .perfCells.keys { align-content: start; }

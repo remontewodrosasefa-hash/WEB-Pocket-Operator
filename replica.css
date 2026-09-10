@@ -514,3 +514,112 @@ nav code { font-size: 11px; background: #2a2a2d; padding: 0 3px; border-radius: 
 @media (display-mode: standalone) {
 	header { padding-top: env(safe-area-inset-top, 0); }
 }
+
+/* ================================================================
+ * No text selection / callout anywhere on the controls. A long press on
+ * a pad used to pop the iOS copy bubble and select the label underneath,
+ * which ate the press. Inputs stay selectable.
+ * ================================================================ */
+.circuitBoard, .buttonGridItem, .btnText, .modeRow, .topRow, .controlStrip,
+.gridArea, .perfStrip, .perfCells, .perfTabs, .lcd, nav button, .libRow,
+#recBtn, .gridGutter, .koLabelContainer {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	-webkit-tap-highlight-color: transparent;
+}
+input, textarea, select, #infoDrawer p, #infoDrawer li { -webkit-user-select: auto; user-select: auto; }
+
+/* FX cells show their pad number above the effect name */
+.perfCells.fx button { line-height: 1.15; }
+.perfCells.fx button b {
+	display: block;
+	font-size: 8px;
+	font-weight: 700;
+	opacity: 0.5;
+	letter-spacing: 0.06em;
+}
+
+/* numbered effect list in the guide */
+.fxList { counter-reset: fxn; list-style: none; padding-left: 0; }
+.fxList li { counter-increment: fxn; padding: 2px 0 2px 30px; position: relative; }
+.fxList li::before {
+	content: counter(fxn);
+	position: absolute; left: 0; top: 2px;
+	width: 20px; text-align: right;
+	color: #ff7a1a; font-size: 11px; font-variant-numeric: tabular-nums;
+}
+
+/* ================================================================
+ * info / library as plain links
+ * They are navigation, not instrument controls, so they read as text
+ * rather than pretending to be hardware buttons.
+ * ================================================================ */
+.topLink {
+	font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	color: #6fb3ff;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	padding: 8px 4px;              /* keeps a 44px-ish tap target without looking big */
+	cursor: pointer;
+	white-space: nowrap;
+	-webkit-tap-highlight-color: transparent;
+}
+.topLink:active { color: #a9d3ff; }
+body.drawer-info #fabInfo,
+body.drawer-lib  #fabLib { color: #ff9a4d; }
+.topBtns { align-items: center; gap: 16px; }
+
+/* ================================================================
+ * the pad grid is exactly four rows — an implicit fifth row used to
+ * open up a dead band above the performance strip
+ * ================================================================ */
+.buttonGrid {
+	/* exactly four rows. 1fr is wrong here: the grid sits in a column flexbox
+	 * with no definite height, so fr tracks blow up to fill the board. */
+	grid-template-rows: repeat(4, var(--padRow, 44px));
+	grid-auto-rows: 0;
+	align-content: start;
+}
+.buttonGridItem { box-sizing: border-box; }
+
+/* MELODIC / DRUM sit against the half of the grid they actually name:
+ * rows 1-2 are pads 1-8, rows 3-4 are pads 9-16. They stay absolutely
+ * positioned — as flex items in vertical writing mode they fed their own
+ * text length back into the grid's height and blew the board open. */
+.gridGutter { position: relative; align-self: stretch; }
+.gridGutter span {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: auto;
+	height: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.gutMelodic { top: 0; }
+.gutDrum { top: 50%; }
+
+/* record label: readable chip instead of dark-grey on orange */
+#btnRecord > .btnText {
+	background: #17170f;
+	color: #ffb347;
+	border: 1px solid rgba(255,150,40,0.55);
+	border-radius: 8px;
+	height: auto;
+	line-height: 1.5;
+	padding: 0 6px;
+	width: auto;
+	left: 50%;
+	transform: translateX(-50%);
+	font-weight: 600;
+	letter-spacing: 0.03em;
+}
+
+/* the util pad is deliberately unlike the transport pads */
+.utilBtn > .buttonBG {
+	background: radial-gradient(circle at 35% 30%, #cfd6ff, #9aa6e0 70%, #7b87c4);
+}
+.utilBtn > .btnText { color: #b9c4ff; }

@@ -252,7 +252,14 @@ var keys = new Tone.Players({
 		var noteArray = ["G#4","A4","B4","C5","C#4","D#4","E4","F#4","G#3","A3","B3","C4","C#3","D#3","E3","F#3"];
 
 		//TONE.JS SEQUENCE USED TO LOOP AND TRIGGER EVENTS ACCURATELY
-		var loop = new Tone.Sequence(function(time, beat){
+		var loop = new Tone.Sequence(function(time, rawBeat){
+			//PUNCH-IN FX CAN REMAP THE STEP POINTER (loop / reverse / stutter / retrigger).
+			//Without FX engaged mapStep is the identity, so this is a no-op.
+			var beat = rawBeat;
+			if(window.po33Fx && window.po33Fx.mapStep){
+				try { beat = window.po33Fx.mapStep(rawBeat, time); } catch(e){ beat = rawBeat; }
+				if(!(beat >= 0 && beat <= 15)) beat = rawBeat;
+			}
 			beatCount = beat;
 			updateDisplay();
 			$("#beatCount").html(beatCount);
@@ -350,7 +357,10 @@ var keys = new Tone.Players({
 
 
 
-			if(beat==15){
+			//THE CHAIN ADVANCES ON THE REAL STEP 15, NOT THE REMAPPED ONE, SO FX
+			//THAT REVERSE OR SHORTEN THE POINTER STILL LAND ON THE BAR LINE.
+			//LOOP / RETRIGGER FX PIN THE CHAIN SO THE SAME PATTERN REPEATS.
+			if(rawBeat==15 && !(window.po33Fx && window.po33Fx.holdChain && window.po33Fx.holdChain())){
 				patternCount++;
 
 				if(patternCount>patternChain.length-1){

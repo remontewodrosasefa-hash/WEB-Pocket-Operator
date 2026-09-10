@@ -132,12 +132,16 @@
 		panelTarget.innerHTML = h + '</div>';
 	}
 
+	// The 16 punch-in effects in pad order, so the grid doubles as a
+	// cheat-sheet for hold-FX + pad on the hardware layout.
 	function renderFx() {
 		var labels = (window.PO33.fx && PO33.fx.labels) ? PO33.fx.labels() : [];
+		var help = (window.PO33.fx && PO33.fx.help) ? PO33.fx.help() : [];
 		var h = '<div class="perfCells fx">';
 		for (var i = 1; i <= 16; i++) {
-			var name = (labels[i] || i).toString().toLowerCase().replace(" ", " ");
-			h += '<button data-fx="' + i + '">' + name + '</button>';
+			var name = (labels[i] || i).toString().toLowerCase();
+			var tip = (help[i] || name).replace(/"/g, "");
+			h += '<button data-fx="' + i + '" title="' + tip + '"><b>' + i + '</b>' + name + '</button>';
 		}
 		panelTarget.innerHTML = h + '</div>';
 	}
