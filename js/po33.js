@@ -746,8 +746,21 @@ var playSound = function(channel,pitch){
 		melodicFilterArr[channel].Q.value = filterRes;
 		melodicArr[channel].volume.value = vol;
 
+		//RESPECT TRIM / LENGTH ON A LIVE PAD TAP, NOT JUST DURING SEQUENCER PLAYBACK.
+		//Without this, dragging the trim handles did nothing until you chopped the
+		//sample (which works because a chop makes a brand new, already-trimmed
+		//buffer) — a plain pad tap always played the untrimmed sample underneath.
 		melodicArr[channel].releaseAll();
-		melodicArr[channel].triggerAttack(window.melodicNote?window.melodicNote(pitch):noteArray[pitch]);
+		var mTrim = (chan.fxTrim||0)/1000;
+		var mLen = (chan.fxLength==null?1000:chan.fxLength)/1000;
+		var noteName = window.melodicNote?window.melodicNote(pitch):noteArray[pitch];
+		try{
+			var mSampleLen = melodicArr[channel].buffers.get(61).duration;
+			melodicArr[channel].triggerAttackExt(noteName, Tone.now(), 1,
+				mSampleLen*mTrim, mSampleLen*mLen);
+		}catch(e){
+			melodicArr[channel].triggerAttack(noteName);
+		}
 	}else{
 
 		drumFilterArr[channel-8].frequency.value = filterFreq;

@@ -47,7 +47,7 @@
 		wrap.innerHTML =
 			'<div class="tvHead"><span id="tvLabel">TRIM</span>' +
 				'<span><button type="button" data-tv="prev">&#9654; preview</button>' +
-				'<button type="button" data-tv="all">apply trim to steps</button></span></div>' +
+				'<button type="button" data-tv="all" title="steps already placed in this pattern keep the OLD trim until you press this">apply trim to steps</button></span></div>' +
 			'<div id="tvWave">' +
 				'<canvas id="tvCanvas"></canvas>' +
 				'<div class="tvShade" id="tvShadeL"></div><div class="tvShade" id="tvShadeR"></div>' +
@@ -62,7 +62,9 @@
 				'<button type="button" data-tv="pitch" id="tvPitch">&#9834; pitch</button>' +
 				'<label><input type="checkbox" id="tvLayout" checked> lay out + match tempo</label>' +
 			'</div>' +
-			'<div id="tvNote">drag handles to trim &middot; chop spreads slices across the 16 pads</div>';
+			'<div id="tvNote">drag handles &mdash; the pads now preview the trimmed sound live &middot; ' +
+				'“apply trim to steps” re-trims steps you already placed &middot; ' +
+				'chop spreads slices across the 16 pads</div>';
 		hud.appendChild(wrap);
 
 		canvas = wrap.querySelector("#tvCanvas");
