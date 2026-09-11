@@ -168,18 +168,23 @@
 		var slices = makeSlices(buf, n, opts.region, opts.smart);
 		if (!slices.length) { flash("sample too short to slice", "warn"); return false; }
 
-		// spread N slices over the 16 pads (16 -> 1:1, 8 -> each twice, 4 -> each 4x)
+		// N chops -> pads 1..N, each one a DISTINCT piece. Pads beyond N are left
+		// untouched (not silenced, not repeated) — if this slot already had a
+		// kit loaded, those pads keep whatever was already there; if the slot
+		// is brand new, ensureDrumSlot already left them silent.
+		//
+		// This used to repeat pieces to fill all 16 pads (8 chops -> every pad
+		// paired up with its neighbour playing the identical piece), which is
+		// exactly the "certain buttons played the same chopped bit" bug: two
+		// different-looking pads making the same sound reads as broken, not
+		// as a feature.
 		try {
 			var m = slices.length;
-			for (var pad = 0; pad < 16; pad++) {
-				// pads beyond the slice count repeat the last piece
-				var s = slices[Math.min(m - 1, Math.floor(pad * m / 16))];
-				window.drumArr[di].add(window.noteArray[pad], s);
-			}
-			// drum pads are one-shots: force playbackRate 1 so a chop can never
-			// come out transposed, whatever the pad's note name implies
-			for (var q = 0; q < 16; q++) {
-				try { window.drumArr[di].get(window.noteArray[q]).playbackRate = 1; } catch (e2) {}
+			for (var pad = 0; pad < m && pad < 16; pad++) {
+				window.drumArr[di].add(window.noteArray[pad], slices[pad]);
+				// drum pads are one-shots: force playbackRate 1 so a chop can
+				// never come out transposed, whatever the pad's note implies
+				try { window.drumArr[di].get(window.noteArray[pad]).playbackRate = 1; } catch (e2) {}
 			}
 		} catch (e) { flash("slice load failed", "warn"); return false; }
 
@@ -194,7 +199,8 @@
 		if (opts.matchTempo) { matchTempo(buf.duration); }
 		if (opts.layout) { layoutSteps(slot - 1, Math.min(16, slices.length)); }
 
-		flash("sliced into " + n + " -> SOUND " + slot + " pads", "tip");
+		var padTxt = m < 16 ? ("pads 1-" + m + " (" + (m + 1) + "-16 unchanged)") : "all 16 pads";
+		flash("sliced into " + n + " -> SOUND " + slot + ", " + padTxt, "tip");
 		if (window.PO33Lib && PO33Lib.toast) { PO33Lib.toast("sliced x" + n + " onto SOUND " + slot); }
 		return true;
 	}
@@ -211,17 +217,27 @@
 		} catch (e) {}
 	}
 
-	// write the slices back out in order across the 16 steps
+	// Write the N distinct slices back across the bar, spread as evenly as
+	// their count allows, one hit per piece — NOT one hit per step. The old
+	// version filled every one of the 16 steps regardless of N, which for an
+	// 8-way chop meant every consecutive PAIR of steps played the identical
+	// piece back to back — audibly the same bug as the pad-doubling above,
+	// just happening in time instead of across the grid.
 	function layoutSteps(ch, n) {
 		var pat = g("currentPattern", 0);
 		n = Math.max(1, Math.min(16, n || 16));
 		try {
 			var cs = window.channelSettingsArr[ch];
-			for (var step = 0; step < 16; step++) {
+			var used = [];
+			for (var step = 0; step < 16; step++) { window.newChannelArr[ch][pat][step].noteOn = 0; }
+			for (var i = 0; i < n; i++) {
+				var step = Math.min(15, Math.round(i * 16 / n));
+				// guard against two pieces rounding onto the same step
+				while (used.indexOf(step) !== -1 && step < 15) { step++; }
+				used.push(step);
 				var beat = window.newChannelArr[ch][pat][step];
-				// with fewer than 16 slices, lay them out repeating across the bar
 				beat.noteOn = 1;
-				beat.notePitch = Math.floor(step * n / 16);   // pad -> slice
+				beat.notePitch = i;              // this step plays ITS OWN piece, never a repeat
 				beat.fxPitch = cs.fxPitch;
 				beat.fxVolume = cs.fxVolume;
 				beat.fxTrim = 0;

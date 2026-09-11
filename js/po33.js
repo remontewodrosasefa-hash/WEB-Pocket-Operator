@@ -1318,15 +1318,19 @@ var buttonFunction = function(buttonNumber){
 
 		case 4: //BPM
 
-
-			//SET MAIN VOLUME TO BUTTON NUMBER
-			//VOLUME 0-15 FOR LEDS
-			volume =(btnNum);
-
-			//TONE.JS VOLUME IN dB
-			mainVolume = (volume-16)*2;
-
-			Tone.Master.volume.value =mainVolume;
+			//PREVIEW THE SELECTED SOUND AT THIS PAD'S PITCH, SAME AS THE PERF
+			//SCREEN — so you can tap through pads while dragging the tempo/swing
+			//sliders and judge how the sound sits at that speed by ear, which is
+			//what was actually being asked for here.
+			//
+			//This used to set the master volume instead (16 steps, one per pad).
+			//That's redundant now: the always-visible MASTER slider in the
+			//control strip sets this exact same Tone.Master.volume, at a finer
+			//0-100% resolution, on every screen, all the time — so nothing is
+			//lost by freeing the pads up on this one screen.
+			selectedPitch = btnNum;
+			channelSettingsArr[selectedChannel].notePitch = selectedPitch;
+			playSound(selectedChannel,selectedPitch);
 
 			break;
 	}

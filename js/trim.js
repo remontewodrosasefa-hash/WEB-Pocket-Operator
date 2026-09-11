@@ -9,7 +9,12 @@
 	var wrap, canvas, ctx, hStart, hEnd, shadeL, shadeR, label, note, bpmRow, bpmText;
 	var curChannel = -1, curBufKey = "";
 	var dragging = null;
-	var count = 8;                      // chop into any number of pieces, 1-16
+	// The real hardware's CHOP is fixed at 16 — it's an automatic 16-way split
+	// across all 16 pads, no count to pick. 16 is the faithful default here too.
+	// The stepper below still lets you choose fewer, larger pieces if you want
+	// them — that's an addition beyond the original device, not a recreation
+	// of it, and it's honest now that each piece lands on its own pad.
+	var count = 16;                     // chop into any number of pieces, 1-16
 
 	function setCount(n) {
 		count = Math.max(1, Math.min(16, n));
@@ -58,7 +63,7 @@
 			'<div id="tvSlice">' +
 				'<span id="tvDest">chop:</span>' +
 				'<button type="button" data-tv="less">&minus;</button>' +
-				'<b id="tvCount">8</b>' +
+				'<b id="tvCount">16</b>' +
 				'<button type="button" data-tv="more">+</button>' +
 				'<button type="button" data-tv="go" id="tvGo">chop</button>' +
 				'<button type="button" data-tv="pitch" id="tvPitch">&#9834; pitch</button>' +
