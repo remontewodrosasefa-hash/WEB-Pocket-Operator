@@ -22,7 +22,8 @@
 	window.PO33 = window.PO33 || {};
 
 	var SRC = "game/sprites/";
-	var FRAME = 32, IDLE_F = 4, WALK_F = 6, ROW_SIDE = 2;
+	var FRAME = 32, IDLE_F = 4, WALK_F = 6;
+	var ROW_DOWN = 0, ROW_UP = 1, ROW_SIDE = 2;
 	// light warm grey: he has to read against the dark circuit board, where
 	// the LCD's dark-green ink would be invisible
 	var INK = [214, 210, 198];
@@ -35,10 +36,23 @@
 	var guy = {
 		x: 0, y: 0, vx: 0, vy: 0,
 		dir: 1, onGround: false, ledge: null,
-		state: "fall", t: 0, target: null
+		state: "fall", t: 0, target: null,
+		row: 2,              // 0 faces you, 1 faces away, 2 is the side profile
+		bob: 0,              // beat bounce while dancing
+		jumped: false,       // one hop per hop, not one per frame
+		lastPoke: 0          // when you last pressed something
 	};
 
-	var GRAV = 0.0016, WALK = 0.028, JUMP = -0.62;
+	/* is the sequencer running? he dances when it is */
+	function playing() {
+		return !!(window.Tone && Tone.Transport && Tone.Transport.state === "started");
+	}
+	var lastBeat = -1, wasPlaying = false;
+
+	// Slow and deliberate. The old JUMP (-0.62) threw him ~120px in the air,
+	// and the hop state re-fired it on every grounded frame, so he pogo-sticked
+	// across the interface. One hop now, and only as high as the next row up.
+	var GRAV = 0.0016, WALK = 0.017, JUMP = -0.40;
 
 	/* ---------- sprites ---------- */
 
@@ -115,22 +129,59 @@
 
 	/* ---------- behaviour ---------- */
 
+	// Is there floor ahead of him? Used so he turns at an edge instead of
+	// constantly walking off into space.
+	function floorAhead() {
+		var size = FRAME * scale;
+		var probe = guy.x + size / 2 + guy.dir * (size * 0.55);
+		return !!ledgeUnder(probe, guy.y + size + 2);
+	}
+
 	function pickIdea() {
 		guy.t = 0;
+		guy.jumped = false;
+		guy.row = ROW_SIDE;
+
+		// while the beat is running he'd rather dance than do anything else
+		if (playing() && guy.onGround && Math.random() < 0.55) {
+			guy.state = "dance";
+			guy.row = ROW_DOWN;
+			guy.target = 4000 + Math.random() * 6000;
+			return;
+		}
+
+		// if you just pressed something he looks over at it
+		if (Date.now() - guy.lastPoke < 1200 && Math.random() < 0.5) {
+			guy.state = "idle";
+			guy.row = ROW_DOWN;
+			guy.target = 900 + Math.random() * 900;
+			return;
+		}
+
 		var led = blinkingLed();
-		// mostly he just potters about; chasing a light is the rarer treat
-		if (led && Math.random() < 0.35) {
+		if (led && Math.random() < 0.25) {
 			guy.state = "chase";
 			guy.target = led.x;
 			return;
 		}
+
 		var r = Math.random();
-		if (r < 0.42) { guy.state = "idle"; guy.target = 600 + Math.random() * 2600; }
-		else if (r < 0.82) {
+		if (r < 0.34) {
+			// stand about, mostly looking out at you
+			guy.state = "idle";
+			guy.row = Math.random() < 0.6 ? ROW_DOWN : ROW_SIDE;
+			guy.target = 1400 + Math.random() * 3400;
+		} else if (r < 0.78) {
 			guy.state = "walk";
 			guy.dir = Math.random() < 0.5 ? -1 : 1;
-			guy.target = 700 + Math.random() * 1800;
-		} else { guy.state = "hop"; }
+			guy.target = 1600 + Math.random() * 3200;
+		} else if (r < 0.9) {
+			guy.state = "sit";
+			guy.row = ROW_DOWN;
+			guy.target = 2500 + Math.random() * 4000;
+		} else {
+			guy.state = "hop";
+		}
 	}
 
 	function step(dt) {
@@ -138,36 +189,86 @@
 
 		if (Date.now() - ledgeAt > 700) { readLedges(); }
 
+		// the moment you hit PLAY he drops what he's doing and dances
+		var now = playing();
+		if (now && !wasPlaying && guy.onGround) {
+			guy.state = "dance";
+			guy.row = ROW_DOWN;
+			guy.t = 0;
+			guy.target = 6000 + Math.random() * 8000;
+		}
+		wasPlaying = now;
+
+		// the beat bounce, whatever he's doing
+		if (playing()) {
+			var bt = window.beatCount;
+			if (typeof bt === "number" && bt !== lastBeat) {
+				lastBeat = bt;
+				guy.bob = (bt % 4 === 0) ? 1 : 0.55;
+			}
+		} else { lastBeat = -1; }
+		guy.bob = Math.max(0, guy.bob - dt * 0.005);
+
 		switch (guy.state) {
 			case "idle":
 				guy.vx = 0;
 				if (guy.t > guy.target) { pickIdea(); }
 				break;
 
+			case "sit":
+				guy.vx = 0;
+				if (guy.t > guy.target || (playing() && Math.random() < 0.01)) { pickIdea(); }
+				break;
+
+			case "dance":
+				// stays put and shuffles: a little side-step every half bar,
+				// facing you, bouncing on the beat
+				guy.vx = 0;
+				if (Math.floor(guy.t / 900) % 2 === 0) { guy.row = ROW_DOWN; }
+				else { guy.row = ROW_SIDE; guy.dir = (Math.floor(guy.t / 900) % 4 === 1) ? 1 : -1; }
+				if (!playing() || guy.t > guy.target) { pickIdea(); }
+				break;
+
 			case "walk":
 				guy.vx = guy.dir * WALK;
+				// turn at an edge rather than stroll off it — though once in a
+				// while he misjudges it, which is half the charm
+				if (guy.onGround && !floorAhead()) {
+					if (Math.random() < 0.85) { guy.dir *= -1; }
+					else { guy.state = "fall"; }
+				}
 				if (guy.t > guy.target) { pickIdea(); }
 				break;
 
 			case "chase":
 				var d = guy.target - (guy.x + FRAME * scale / 2);
 				guy.dir = d > 0 ? 1 : -1;
-				if (Math.abs(d) < 10) {
-					// arrived — stand and watch it for a moment
+				if (Math.abs(d) < 12) {
 					guy.vx = 0;
 					guy.state = "idle";
+					guy.row = ROW_UP;          // looking up at the light
 					guy.t = 0;
-					guy.target = 900 + Math.random() * 1400;
+					guy.target = 1200 + Math.random() * 1600;
 				} else {
-					guy.vx = guy.dir * WALK * 1.35;
-					if (guy.t > 5000) { pickIdea(); }   // gave up
+					guy.vx = guy.dir * WALK * 1.2;
+					if (guy.onGround && !floorAhead()) { guy.dir *= -1; guy.target = guy.x; }
+					if (guy.t > 6000) { pickIdea(); }
 				}
 				break;
 
 			case "hop":
-				if (guy.onGround) { guy.vy = JUMP; guy.onGround = false; }
-				guy.vx = guy.dir * WALK * 0.9;
-				if (guy.onGround && guy.t > 300) { pickIdea(); }
+				// ONE jump, on the frame he leaves the ground
+				if (guy.onGround && !guy.jumped) {
+					guy.vy = JUMP;
+					guy.onGround = false;
+					guy.jumped = true;
+				}
+				guy.vx = guy.dir * WALK * 1.1;
+				if (guy.jumped && guy.onGround) { pickIdea(); }
+				break;
+
+			case "fall":
+				guy.vx *= 0.98;
 				break;
 		}
 
@@ -214,13 +315,16 @@
 
 	function draw(now) {
 		ctx.clearRect(0, 0, W, H);
-		var moving = Math.abs(guy.vx) > 0.004 || !guy.onGround;
+		var dancing = guy.state === "dance";
+		var moving = dancing || Math.abs(guy.vx) > 0.004 || !guy.onGround;
 		var sh = sheets[moving ? "hero_walk" : "hero_idle"];
 		if (!sh) { return; }
 		var nf = moving ? WALK_F : IDLE_F;
-		var f = Math.floor(now / (1000 / (moving ? 10 : 4))) % nf;
+		var fps = dancing ? 12 : (moving ? 8 : 3);
+		var f = Math.floor(now / (1000 / fps)) % nf;
 		var size = FRAME * scale;
-		var mirror = guy.dir < 0;
+		var mirror = guy.row === ROW_SIDE && guy.dir < 0;
+		var lift = Math.round(guy.bob * (dancing ? 6 : 2));
 
 		// a soft shadow so he doesn't look pasted on
 		if (guy.onGround) {
@@ -230,9 +334,9 @@
 			ctx.fill();
 		}
 		ctx.save();
-		ctx.translate(Math.round(guy.x + (mirror ? size : 0)), Math.round(guy.y));
+		ctx.translate(Math.round(guy.x + (mirror ? size : 0)), Math.round(guy.y) - lift);
 		ctx.scale(mirror ? -1 : 1, 1);
-		ctx.drawImage(sh, f * FRAME, ROW_SIDE * FRAME, FRAME, FRAME, 0, 0, size, size);
+		ctx.drawImage(sh, f * FRAME, guy.row * FRAME, FRAME, FRAME, 0, 0, size, size);
 		ctx.restore();
 	}
 
@@ -310,5 +414,30 @@
 		}
 	}, true);
 
-	window.PO33.escape = { release: release, goHome: goHome, isOut: isOut };
+	/* He notices you. Pressing a pad makes him look over, and if you press one
+	 * near him he'll wander towards it — the interface is his world, so things
+	 * happening in it should register. Passive listener, capture phase, never
+	 * interferes with the press itself. */
+	document.addEventListener("pointerdown", function (e) {
+		if (!out || !e.target.closest) { return; }
+		var el = e.target.closest("[id^='btn'], .perfCells button, .perfTabs button");
+		if (!el) { return; }
+		guy.lastPoke = Date.now();
+		var r = el.getBoundingClientRect();
+		var mid = r.left + r.width / 2;
+		var size = FRAME * scale;
+		// look towards it, and if it's close by, go and have a look
+		guy.dir = mid > guy.x + size / 2 ? 1 : -1;
+		if (guy.state !== "dance" && Math.abs(mid - (guy.x + size / 2)) < 160 && Math.random() < 0.4) {
+			guy.state = "chase";
+			guy.target = mid;
+			guy.t = 0;
+		}
+	}, true);
+
+	window.PO33.escape = {
+		release: release, goHome: goHome, isOut: isOut,
+		state: function () { return { state: guy.state, row: guy.row, bob: +guy.bob.toFixed(2),
+			x: Math.round(guy.x), y: Math.round(guy.y), onGround: guy.onGround }; }
+	};
 })();
