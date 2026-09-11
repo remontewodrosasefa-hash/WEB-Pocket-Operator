@@ -139,24 +139,106 @@ body[data-skin="op1"] #tvBpmBtn { background: var(--op1-accent); border-color: v
  * OP-1 at a glance, so the round cap is squared off here.
  */
 
+/* ---------------------------------------------------------------
+ * THE KEY, REBUILT FROM THE FIGMA COMPONENT
+ *
+ * The real OP-1 button is not a rounded rectangle. Taken apart, the
+ * component (node 1:283) is three stacked layers:
+ *
+ *   base    rect 92x92 rx5 #F6F3F2, inner shadow dy-1.5 rgb(178,168,165)/0.5
+ *                            plus inner highlight dy 1.5 white
+ *   slope   circle r=39, a conic-gradient sheen at 0.95 opacity, blurred 1.5
+ *   center  circle r=32 #F6F3F2 — a RAISED CAP, with a big soft drop shadow
+ *           (dx5 dy5 blur10 rgb(178,168,165)) and inner shadows on both
+ *           diagonals: dx-1 dy-1 rgb(178,168,165)/0.5 and dx1.5 dy1.5 white
+ *
+ * So it's a square key face with a raised round cap sitting proud of it —
+ * which is why the first pass, a flat rounded rect, looked wrong. Every
+ * number below is lifted from that SVG, scaled to our pad size (the radii
+ * are kept as percentages so they hold at any size: 39/46 and 32/46).
+ *
+ * The conic gradient is Figma's foreignObject trick, which does not render
+ * inside a background image — CSS conic-gradient does the same job natively
+ * and more accurately, so that is what's used here.
+ * --------------------------------------------------------------- */
+
+body[data-skin="op1"] .buttonGridItem { border-radius: 5px; }
+
+/* the square key face */
 body[data-skin="op1"] .buttonBG,
 body[data-skin="op1"] .modeRow .buttonBG,
 body[data-skin="op1"] .topRow .buttonBG {
-	background: linear-gradient(180deg, var(--op1-key-hi), var(--op1-key) 60%, #EFEBE9);
-	border-radius: 7px;
-	width: calc(100% - 4px);
-	height: calc(100% - 4px);
-	left: 2px;
-	top: 2px;
+	position: absolute;
+	/* The device's button is a perfect 92x92 square. Our grid cells are
+	 * taller than they are wide, so the face is squared off and centred —
+	 * otherwise the cap and the sheen render as ellipses. */
+	left: 50%;
+	top: 0;
+	transform: translateX(-50%);
 	margin-left: 0;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	height: auto;
+	max-height: 100%;
+	max-width: 100%;
+	border-radius: 5px;
+	background: #F6F3F2;
 	box-shadow:
-		inset 0 1px 0 #fff,
-		0 1px 2px rgba(0,0,0,0.16),
-		0 0 0 1px var(--op1-key-edge);
+		inset 0 -1.5px 0.5px rgba(178, 168, 165, 0.5),
+		inset 0 1.5px 1px #fff;
+	overflow: visible;
 }
-body[data-skin="op1"] .buttonGridItem { border-radius: 8px; }
+
+/* the conic sheen — circle r=39 of 46, blurred */
+body[data-skin="op1"] .buttonBG::before {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 84.8%;
+	height: 84.8%;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	opacity: 0.95;
+	filter: blur(1.5px);
+	background: conic-gradient(from 221deg,
+		#FEFEFE 0deg,
+		#F3EFEE 72.7deg,
+		#F6F3F2 277.5deg,
+		#FFFFFF 358.2deg,
+		#FEFEFE 360deg);
+	pointer-events: none;
+}
+
+/* the raised cap — circle r=32 of 46 */
+body[data-skin="op1"] .buttonBG::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 69.6%;
+	height: 69.6%;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	background: #F6F3F2;
+	box-shadow:
+		2.6px 2.6px 5.2px rgba(178, 168, 165, 1),
+		0.5px 0.5px 1.5px rgba(246, 243, 242, 0.3),
+		inset -0.5px -0.5px 0 rgba(178, 168, 165, 0.5),
+		inset 0.8px 0.8px 0 #fff;
+	pointer-events: none;
+}
+
 body[data-skin="op1"] .buttonGridItem .square,
 body[data-skin="op1"] .buttonGridItem .circle { display: none; }
+
+/* the LED sits on the face, above the cap, as it does on the device */
+body[data-skin="op1"] .led {
+	z-index: 3;
+	width: 4px;
+	height: 4px;
+	background: #D8D4D2;
+}
 
 /* No fake black keys. A checkerboard of sharps across a 4x4 pad grid reads as
  * arbitrary rather than as a piano — the OP-1's keyboard is a different
@@ -165,11 +247,13 @@ body[data-skin="op1"] .buttonGridItem .circle { display: none; }
 
 body[data-skin="op1"] .buttonGrid .btnText,
 body[data-skin="op1"] .modeRow .btnText {
-	top: 50%;
+	z-index: 4;
+	/* centred on the round cap, which is where the device prints its glyphs */
+	top: 24%;
 	left: 0;
 	right: 0;
 	width: 100%;
-	transform: translateY(-50%);
+	transform: none;
 	color: var(--op1-ink);
 	font-weight: 500;
 	letter-spacing: 0.04em;
@@ -177,7 +261,7 @@ body[data-skin="op1"] .modeRow .btnText {
 	pointer-events: none;
 }
 /* the mode row carries an encoder cap in the middle, so its label drops under it */
-body[data-skin="op1"] .modeRow .btnText { top: auto; bottom: 5px; transform: none; }
+body[data-skin="op1"] .modeRow .btnText { top: auto; bottom: 2px; transform: none; }
 body[data-skin="op1"] .btnText { color: var(--op1-ink); text-shadow: none; }
 body[data-skin="op1"] #btnRecord > .btnText {
 	background: transparent;
@@ -193,26 +277,28 @@ body[data-skin="op1"] .soundBtn > .btnText { color: var(--op1-accent); }
 body[data-skin="op1"] .liveBtn > .btnText { color: #C0392B; }
 body[data-skin="op1"] .utilBtn > .btnText { color: var(--op1-navy); }
 
-/* the four encoder colours land on the mode row, left to right */
-body[data-skin="op1"] #btnSound > .buttonBG::after,
-body[data-skin="op1"] #btnPattern > .buttonBG::after,
-body[data-skin="op1"] #btnBPM > .buttonBG::after,
-body[data-skin="op1"] #btnTrim > .buttonBG::after {
+/* the four encoder colours land on the mode row, left to right. They ride on
+ * top of the raised cap, so they need a layer above ::after. */
+body[data-skin="op1"] .modeRow .buttonGridItem::after {
 	content: "";
 	position: absolute;
 	left: 50%;
-	top: 50%;
-	width: 44%;
-	height: 44%;
+	top: 38%;
+	width: 40%;
+	height: 40%;
 	transform: translate(-50%, -50%);
 	border-radius: 50%;
-	box-shadow: inset 0 -1px 2px rgba(0,0,0,0.35), 0 1px 1px rgba(255,255,255,0.6);
+	z-index: 2;
+	box-shadow: inset 0 -1px 2px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+	pointer-events: none;
 }
-body[data-skin="op1"] #btnSound > .buttonBG::after   { background: var(--op1-navy); }
-body[data-skin="op1"] #btnPattern > .buttonBG::after { background: var(--op1-tan); }
-body[data-skin="op1"] #btnBPM > .buttonBG::after     { background: var(--op1-grey); }
-body[data-skin="op1"] #btnTrim > .buttonBG::after    { background: var(--op1-accent); }
-body[data-skin="op1"] .modeRow .buttonBG { position: relative; }
+body[data-skin="op1"] #btnSound::after   { background: var(--op1-navy); }
+body[data-skin="op1"] #btnPattern::after { background: var(--op1-tan); }
+body[data-skin="op1"] #btnBPM::after     { background: var(--op1-grey); }
+body[data-skin="op1"] #btnTrim::after    { background: var(--op1-accent); }
+body[data-skin="op1"] #btnUtil::after,
+body[data-skin="op1"] #btnLive::after    { display: none; }
+body[data-skin="op1"] .modeRow .buttonGridItem { position: relative; }
 
 /* lit / held states in the OP-1's orange */
 body[data-skin="op1"] .gridHover:hover,
