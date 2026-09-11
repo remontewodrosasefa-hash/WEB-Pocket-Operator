@@ -175,13 +175,18 @@
 		return b;
 	}
 
-	function record(pad) {
+	function recordNote(n, voice) {
 		if (!armed) { return false; }
 		var L = lane(curPattern());
-		L[writeStep()] = { note: note(pad), voice: voiceName };
+		var st = writeStep();
+		// a slide can cross several notes inside one step; the last one wins,
+		// which is what you hear anyway
+		L[st] = { note: n, voice: voice || voiceName };
 		save();
 		return true;
 	}
+
+	function record(pad) { return recordNote(note(pad), voiceName); }
 
 	// called by the sequencer once per sixteenth
 	function step(beat, time) {
@@ -189,12 +194,18 @@
 		if (!L) { return; }
 		var e = L[beat];
 		if (!e) { return; }
+		var when = time != null ? time : Tone.now();
+		var len = Tone.Time("8n").toSeconds();
+		// notes captured from the XY pad replay on the same lead voice
+		if (e.voice === "lead") {
+			var Lv = leadRig();
+			if (!Lv) { return; }
+			try { Lv.triggerAttackRelease(e.note, len, when, 0.75); } catch (err) {}
+			return;
+		}
 		var v = make(e.voice || voiceName);
 		if (!v) { return; }
-		try {
-			v.triggerAttackRelease(e.note, Tone.Time("8n").toSeconds(),
-				time != null ? time : Tone.now(), 0.8);
-		} catch (err) {}
+		try { v.triggerAttackRelease(e.note, len, when, 0.8); } catch (err) {}
 	}
 
 	function saveKey() { return "po33.keys.track"; }
@@ -292,12 +303,15 @@
 		return note(pad);
 	}
 
+	var lastXyNote = null;
+
 	function xySynth(nx, ny, on) {
 		var L = leadRig();
 		if (!L) { return; }
 		try {
 			if (!on) {
 				if (leadOn) { L.triggerRelease(Tone.now()); leadOn = false; }
+				lastXyNote = null;
 				return;
 			}
 			var n = xyNote(nx);
@@ -305,6 +319,18 @@
 			leadFilt.frequency.rampTo(cutoff, 0.04);
 			if (!leadOn) { L.triggerAttack(n, Tone.now(), 0.8); leadOn = true; }
 			else { L.setNote(n, Tone.now()); }
+
+			/* Recording a sliding finger.
+			 *
+			 * The pad is continuous, but a pattern only has sixteen slots, so
+			 * what gets written is the note you are ON each time you cross onto
+			 * a new one. Holding still writes once, not sixteen times; sliding
+			 * across writes the notes you passed through. That turns a gesture
+			 * into something the sequencer can replay. */
+			if (n !== lastXyNote) {
+				lastXyNote = n;
+				recordNote(n, "lead");
+			}
 		} catch (e) {}
 	}
 

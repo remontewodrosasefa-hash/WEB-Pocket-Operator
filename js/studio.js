@@ -97,6 +97,7 @@
 				if (hudEl) { hudEl.classList.toggle("songOn", songOpen); }
 				songSig = "";
 				if (songOpen) { drawSong(); }
+				else if (window.PO33.scene && PO33.scene.dance) { PO33.scene.dance(null); }
 			});
 		}
 		tick();
@@ -118,29 +119,61 @@
 	 * empty screen rather than sixteen blank lines.
 	 * ============================================================ */
 
-	var songOpen = false, songSig = "";
+	var songOpen = false, songSig = "", songAnimEl = null;
 
 	function songRows() {
 		var pat = g("currentPattern", 0);
 		var rows = [];
 		for (var ch = 0; ch < 16; ch++) {
-			var hits = [], any = false;
+			var hits = [], any = false, locks = 0, loud = 0, soft = 0;
 			for (var i = 0; i < 16; i++) {
 				var on = false;
-				try { on = !!(window.newChannelArr[ch][pat][i].noteOn); } catch (e) {}
+				try {
+					var bt = window.newChannelArr[ch][pat][i];
+					on = !!bt.noteOn;
+					if (on) {
+						if (bt.locked) { locks++; }
+						var bv = (bt.fxVolume == null ? -12 : bt.fxVolume);
+						if (bv > -8) { loud++; } else if (bv < -18) { soft++; }
+					}
+				} catch (e) {}
 				hits.push(on);
 				if (on) { any = true; }
 			}
-			if (any) { rows.push({ label: String(ch + 1), hits: hits, kind: ch < 8 ? "mel" : "drm" }); }
+			if (!any) { continue; }
+			var name = null;
+			try { name = window.PO33Lib && PO33Lib.slotName ? PO33Lib.slotName(ch + 1) : null; } catch (e) {}
+			var st = "on";
+			try { st = (window.PO33 && PO33.channels) ? PO33.channels.state(ch) : "on"; } catch (e) {}
+			rows.push({
+				label: String(ch + 1), hits: hits, kind: ch < 8 ? "mel" : "drm",
+				name: name ? shortName(name) : null, locks: locks, loud: loud, soft: soft,
+				state: st
+			});
 		}
 		// the keyboard's own track, if anything has been played onto it
 		var kt = (window.PO33 && PO33.keys && PO33.keys.track) ? PO33.keys.track() : null;
 		if (kt) {
-			var kh = [], kany = false;
-			for (var j = 0; j < 16; j++) { kh.push(!!kt[j]); if (kt[j]) { kany = true; } }
-			if (kany) { rows.push({ label: "\u266a", hits: kh, kind: "key" }); }
+			var kh = [], kany = false, voices = {};
+			for (var j = 0; j < 16; j++) {
+				kh.push(!!kt[j]);
+				if (kt[j]) { kany = true; voices[kt[j].voice] = 1; }
+			}
+			if (kany) {
+				rows.push({ label: "\u266a", hits: kh, kind: "key", state: "on",
+					name: Object.keys(voices).join("+"), locks: 0, loud: 0, soft: 0 });
+			}
 		}
 		return rows;
+	}
+
+	// How busy is the bar? A pattern with a hit on every sixteenth of every part
+	// is 100%. Handy for spotting "this is getting cluttered" at a glance.
+	function density(rows) {
+		if (!rows.length) { return 0; }
+		var hits = 0;
+		rows.forEach(function (r) { r.hits.forEach(function (h) { if (h) { hits++; } }); });
+		return Math.round((hits / (rows.length * 16)) * 100);
 	}
 
 	function drawSong() {
@@ -154,17 +187,37 @@
 		rows.forEach(function (r) { r.hits.forEach(function (h) { if (h) { filled++; } }); });
 
 		// only rebuild when something actually changed
+		var swing = g("swing", 0);
+		var dens = density(rows);
+		var muted = rows.filter(function (r) { return r.state === "mute"; }).length;
+		var soloed = rows.filter(function (r) { return r.state === "solo"; }).length;
+		var locks = rows.reduce(function (a, r) { return a + r.locks; }, 0);
+		// a 16-step bar at this tempo, in seconds
+		var barSecs = tempo > 0 ? (60 / tempo) * 4 : 0;
+		var loopSecs = barSecs * chain.length;
+
 		var sig = rows.map(function (r) {
-			return r.label + r.hits.map(function (h) { return h ? 1 : 0; }).join("");
-		}).join("|") + "#" + pat + "#" + tempo + "#" + chain.join(",") + "#" + scaleTxt;
+			return r.label + r.state + r.locks + (r.name || "") +
+				r.hits.map(function (h) { return h ? 1 : 0; }).join("");
+		}).join("|") + "#" + pat + "#" + tempo + "#" + swing + "#" +
+			chain.join(",") + "#" + scaleTxt;
 		if (sig !== songSig) {
 			songSig = sig;
 			var h = '<div class="songHead">' +
 				"<b>PAT " + (pat + 1) + "</b>" +
 				"<span>" + tempo + " BPM</span>" +
+				(swing ? "<span>swing " + swing + "%</span>" : "") +
 				"<span>" + scaleTxt + "</span>" +
+				"</div>";
+			h += '<div class="songHead songHead2">' +
 				"<span>" + rows.length + " part" + (rows.length === 1 ? "" : "s") + "</span>" +
 				"<span>" + filled + " hits</span>" +
+				"<span>" + dens + "% full</span>" +
+				(locks ? "<span>" + locks + " locked</span>" : "") +
+				(muted ? "<span class='warnTxt'>" + muted + " muted</span>" : "") +
+				(soloed ? "<span class='warnTxt'>" + soloed + " solo</span>" : "") +
+				"<span class='songLen'>" + barSecs.toFixed(1) + "s bar \u00b7 " +
+					loopSecs.toFixed(1) + "s loop</span>" +
 				"</div>";
 			if (!rows.length) {
 				h += '<div class="songEmpty">nothing on this pattern yet &mdash; ' +
@@ -172,23 +225,32 @@
 			} else {
 				h += '<div class="songGrid">';
 				rows.forEach(function (r) {
-					h += '<div class="songRow" data-kind="' + r.kind + '">' +
+					h += '<div class="songRow" data-kind="' + r.kind +
+						'" data-state="' + r.state + '">' +
 						'<i class="songLbl">' + r.label + "</i>";
 					for (var i = 0; i < 16; i++) {
 						h += '<i class="songCell' + (r.hits[i] ? " on" : "") +
 							(i % 4 === 0 ? " beat" : "") + '"></i>';
 					}
+					h += '<i class="songName">' + (r.name || "") + "</i>";
 					h += "</div>";
 				});
 				h += "</div>";
 			}
-			h += '<div class="songChain">chain ' +
+			h += '<div class="songFoot">' +
+				'<span class="songChain">chain ' +
 				chain.map(function (n, i) {
 					return '<i' + (n === pat && i === g("patternCount", 0) ? ' class="on"' : "") +
 						">" + (n + 1) + "</i>";
-				}).join("") + "</div>";
+				}).join("") + "</span>" +
+				'<canvas id="songAnim"></canvas>' +
+				"</div>";
 			E.song.innerHTML = h;
+			songAnimEl = document.getElementById("songAnim");
 		}
+
+		// hand the footer canvas to scene.js, which owns the sprites
+		if (songAnimEl && window.PO33.scene && PO33.scene.dance) { PO33.scene.dance(songAnimEl); }
 
 		// the playhead column is cheap to move, so it updates every tick
 		var beat = g("beatCount", 0), play = g("play", false);

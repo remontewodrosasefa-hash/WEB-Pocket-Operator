@@ -2,7 +2,7 @@
  * App shell is precached; wav / sample files are cached on first use so the
  * whole 500-file pack isn't downloaded up front.
  */
-var VERSION = "po33-v39";
+var VERSION = "po33-v40";
 var SHELL = VERSION + "-shell";
 var MEDIA = VERSION + "-media";
 
@@ -28,6 +28,9 @@ var SHELL_FILES = [
 	"./js/import.js",
 	"./js/undo.js",
 	"./game/sprites/hen.png",
+	"./game/sprites/mush_idle.png",
+	"./game/sprites/mush_run.png",
+	"./game/sprites/mush_hit.png",
 	"./game/sprites/chick.png",
 	"./game/sprites/hero_idle.png",
 	"./game/sprites/hero_walk.png",

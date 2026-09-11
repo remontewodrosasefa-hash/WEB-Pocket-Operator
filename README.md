@@ -183,3 +183,9 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
 * Tileset: **Summer Plains 32×32** by *Schwarnhild*.
   https://schwarnhild.itch.io/summer-plains-tileset-and-asset-pack-32x32-pixels
 * Original PO-33 web clone by [James Benson](https://github.com/jjbenson85).
+
+### Mushroom sprite pack
+An animated mushroom character (idle / run / hit) used on the LCD scene and in
+the song view's footer. The raw pack lives in `Mushroom/` and is **gitignored**;
+only the cropped frames in `game/sprites/mush_*.png` are committed. Check the
+pack's own licence on its store page before shipping this anywhere commercial.

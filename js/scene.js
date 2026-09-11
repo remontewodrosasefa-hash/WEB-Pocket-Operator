@@ -26,15 +26,19 @@
 	"use strict";
 
 	var SRC = "game/sprites/";
-	var SHEETS = ["hero_idle", "hero_walk", "hen", "chick"];
+	var SHEETS = ["hero_idle", "hero_walk", "hen", "chick", "mush_idle", "mush_run", "mush_hit"];
 	var INK = [27, 36, 17];
 
 	var HERO = 32, IDLE_F = 4, WALK_F = 6;
 	var BIRD = 16, BIRD_F = 4;
+	// measured off the sheets after cropping away the padding: 39x35 frames,
+	// 7 idle / 8 run / 5 hit
+	var MUSH_W = 39, MUSH_H = 35;
+	var MUSH_F = { mush_idle: 7, mush_run: 8, mush_hit: 5 };
 	var ROW_DOWN = 0, ROW_UP = 1, ROW_SIDE = 2;
 
 	var sheet = {}, host, cv, ctx, W = 0, H = 0, DPR = 1;
-	var heroS = 2.4, birdS = 1.6;
+	var heroS = 2.4, birdS = 1.6, mushS = 1.4;
 	var last = 0, booted = false;
 	var xp = 0, excited = 0;
 
@@ -70,7 +74,7 @@
 		if (typeof b !== "number" || b === lastBeat) { return; }
 		lastBeat = b;
 		beatPulse = 1;
-		if (b % 4 === 0) { barPulse = 1; }
+		if (b % 4 === 0) { barPulse = 1; mush.bang = 1; }
 		// a loud step throws a note into the air above the figure
 		if (level > 0.35 && notes.length < 14) {
 			notes.push({
@@ -105,14 +109,78 @@
 		{ sheet: "chick", back: 52, peck: 0 }
 	];
 
+	/* The mushroom keeps to itself: it wanders its own path and headbangs on
+	 * the downbeat rather than following anyone. It gives the scene a second
+	 * thing to watch that is doing its own thing. */
+	var mush = { x: 0, y: 0, tx: null, ty: null, dir: 1, moving: false, restT: 1200, bang: 0 };
+
 	function loadXp() { try { xp = parseInt(localStorage.getItem("po33.scene.xp"), 10) || 0; } catch (e) { xp = 0; } }
 	function saveXp() { try { localStorage.setItem("po33.scene.xp", String(xp)); } catch (e) {} }
 
 	window.PO33 = window.PO33 || {};
+	/* A second, tiny render target. The song view has spare room in its footer,
+	 * so the same sprites (already loaded and re-inked) get drawn there too: a
+	 * mushroom that headbangs on the downbeat next to a chicken. Nothing is
+	 * loaded twice — this just paints the existing sheets onto another canvas. */
+	var danceCv = null, danceCtx = null, danceW = 0, danceH = 0;
+
+	function setDanceCanvas(cv) {
+		if (!cv) { danceCv = null; danceCtx = null; return; }
+		if (cv === danceCv) { return; }
+		danceCv = cv;
+		danceCtx = cv.getContext("2d");
+		danceCtx.imageSmoothingEnabled = false;
+		sizeDance();
+	}
+
+	function sizeDance() {
+		if (!danceCv || !danceCtx) { return; }
+		var r = danceCv.getBoundingClientRect();
+		danceW = Math.max(20, Math.floor(r.width));
+		danceH = Math.max(14, Math.floor(r.height));
+		var d = Math.min(2, window.devicePixelRatio || 1);
+		danceCv.width = danceW * d; danceCv.height = danceH * d;
+		danceCtx.setTransform(d, 0, 0, d, 0, 0);
+		danceCtx.imageSmoothingEnabled = false;
+	}
+
+	function drawDance(now) {
+		if (!danceCv || !danceCtx) { return; }
+		if (!danceCv.isConnected) { danceCv = null; danceCtx = null; return; }
+		if (danceCv.getBoundingClientRect().width !== danceW) { sizeDance(); }
+		danceCtx.clearRect(0, 0, danceW, danceH);
+
+		var sc = Math.max(0.5, (danceH - 2) / MUSH_H);
+		var mw = MUSH_W * sc, mh = MUSH_H * sc;
+
+		// the mushroom, headbanging on the downbeat
+		var name = mush.bang > 0 ? "mush_hit" : (playing() ? "mush_run" : "mush_idle");
+		var sh = sheet[name];
+		if (sh) {
+			var nf = MUSH_F[name] || 1;
+			var fps = name === "mush_hit" ? 16 : (playing() ? 11 : 6);
+			var f = Math.floor(now / (1000 / fps)) % nf;
+			danceCtx.drawImage(sh, f * MUSH_W, 0, MUSH_W, MUSH_H,
+				Math.round(danceW - mw - 2), Math.round(danceH - mh), mw, mh);
+		}
+
+		// a hen alongside, hopping on the bar
+		var hen = sheet.hen;
+		if (hen) {
+			var bs = Math.max(0.6, (danceH - 4) / BIRD * 0.8);
+			var bw = BIRD * bs;
+			var hop = -Math.round(barPulse * 2);
+			var bf = Math.floor(now / (1000 / 8)) % BIRD_F;
+			danceCtx.drawImage(hen, bf * BIRD, 0, BIRD, BIRD,
+				Math.round(danceW - mw - bw - 6), Math.round(danceH - bw) + hop, bw, bw);
+		}
+	}
+
 	window.PO33.scene = {
 		xp: function () { return xp; },
 		add: function (n) { bump(n || 1); },
-		reset: function () { xp = 0; saveXp(); }
+		reset: function () { xp = 0; saveXp(); },
+		dance: setDanceCanvas
 	};
 
 	/* ---------- the walkable area ---------- */
@@ -197,6 +265,51 @@
 		ctx.restore();
 	}
 
+	function drawMush(now) {
+		// the headbang beats standing still, which beats walking
+		var name = mush.bang > 0 ? "mush_hit" : (mush.moving ? "mush_run" : "mush_idle");
+		var sh = sheet[name];
+		if (!sh) { return; }
+		var nf = MUSH_F[name] || 1;
+		var fps = name === "mush_hit" ? 16 : (mush.moving ? 11 : 6);
+		var f = Math.floor(now / (1000 / fps)) % nf;
+		var w = MUSH_W * mushS, h = MUSH_H * mushS;
+		var mirror = mush.dir < 0;
+		ctx.save();
+		ctx.translate(Math.round(mush.x + (mirror ? w : 0)), Math.round(mush.y));
+		ctx.scale(mirror ? -1 : 1, 1);
+		ctx.drawImage(sh, f * MUSH_W, 0, MUSH_W, MUSH_H, 0, 0, w, h);
+		ctx.restore();
+	}
+
+	function moveMush(dt, b) {
+		if (mush.bang > 0) { mush.bang -= dt * 0.004; }
+		var w = MUSH_W * mushS, h = MUSH_H * mushS;
+		var maxX = Math.max(4, W - w - 4);
+		var maxY = Math.max(b.minY, H - h - 2);
+		if (!mush.x) { mush.x = W * 0.75; mush.y = (b.minY + maxY) / 2; }
+		if (mush.moving && mush.tx != null) {
+			var dx = mush.tx - mush.x, dy = mush.ty - mush.y;
+			var d = Math.sqrt(dx * dx + dy * dy);
+			if (d < 4) { mush.moving = false; mush.restT = 1400 + Math.random() * 3200; }
+			else {
+				var sp = 0.03 * dt;
+				mush.x += (dx / d) * sp * 1.5;
+				mush.y += (dy / d) * sp;
+				if (Math.abs(dx) > 1) { mush.dir = dx > 0 ? 1 : -1; }
+			}
+		} else {
+			mush.restT -= dt;
+			if (mush.restT <= 0) {
+				mush.tx = 4 + Math.random() * (maxX - 4);
+				mush.ty = b.minY + Math.random() * (maxY - b.minY);
+				mush.moving = true;
+			}
+		}
+		mush.x = Math.max(4, Math.min(maxX, mush.x));
+		mush.y = Math.max(b.minY, Math.min(maxY, mush.y));
+	}
+
 	function frame(now) {
 		requestAnimationFrame(frame);
 		if (!ctx || !W) { return; }
@@ -268,6 +381,8 @@
 			order.push({ y: f.y, draw: function () { drawBird(f, now); } });
 		});
 		order.push({ y: hero.y, draw: function () { drawHero(now); } });
+		moveMush(dt, b);
+		order.push({ y: mush.y, draw: function () { drawMush(now); } });
 
 		// whoever is further down the screen is nearer, so draw them last
 		order.sort(function (a, c) { return a.y - c.y; });
@@ -282,6 +397,8 @@
 			if (n.life <= 0 || n.y < -12) { notes.splice(i, 1); continue; }
 			drawNote(n);
 		}
+
+		drawDance(now);
 	}
 
 	/* ---------- setup ---------- */
@@ -294,6 +411,7 @@
 		DPR = Math.min(2, window.devicePixelRatio || 1);
 		heroS = Math.max(1.3, Math.min(2.6, (H * 0.52) / HERO));
 		birdS = Math.max(1, heroS * 0.62);
+		mushS = Math.max(0.9, heroS * 0.6);
 		cv.width = W * DPR; cv.height = H * DPR;
 		cv.style.width = W + "px"; cv.style.height = H + "px";
 		ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
