@@ -1029,3 +1029,9 @@ body.buildOpen #buildView { display: flex; }
 body.buildOpen #hudFlash,
 body.utilOpen #hudFlash { bottom: 0; }
 #bdBody { padding-bottom: 22px; }
+
+/* what the last build actually did — so it is never silent */
+.bdLog ul { margin: 4px 0 0; padding-left: 1.1rem; }
+.bdLog li { font-size: 10px; line-height: 1.5; margin-bottom: 2px; }
+.bdLog h4 { color: var(--bd-log, #7a3a00); }
+#buildView .bdLog { border-left: 3px solid #b3402a; padding-left: 8px; }
