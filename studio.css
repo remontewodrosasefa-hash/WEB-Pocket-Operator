@@ -1261,3 +1261,15 @@ body.utilOpen #hudFlash { bottom: 0; }
 .chainTools button[data-chainmove]:active { background: #ff7a1a; color: #141410; }
 .chainTools button.del { color: #ff8a7a; border-color: #5a3330; }
 .chainTools button.done { margin-left: auto; color: #9ad06b; border-color: #3f5a35; }
+
+/* the little guy, loose in the interface (js/escape.js).
+ * pointer-events: none is not optional — this sits over the whole UI and must
+ * never intercept a tap meant for a pad. */
+#escapeCanvas {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	pointer-events: none;
+	display: none;
+}
+#escapeCanvas.on { display: block; }

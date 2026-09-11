@@ -104,6 +104,7 @@
 	// where the figure is, where it's heading, and the breadcrumb trail the
 	// birds walk along behind it
 	var hero = { x: 0, y: 0, tx: null, ty: null, dir: 1, row: ROW_SIDE, moving: false, restT: 0 };
+	var away = false;        // true while he's loose in the interface (js/escape.js)
 	var trail = [];
 	var TRAIL_MAX = 90;
 	var FOLLOWERS = [
@@ -182,7 +183,21 @@
 		xp: function () { return xp; },
 		add: function (n) { bump(n || 1); },
 		reset: function () { xp = 0; saveXp(); },
-		dance: setDanceCanvas
+		dance: setDanceCanvas,
+		// where he is on screen right now, in page coordinates — used to aim
+		// the tap that lets him out, and handy for testing it
+		heroRect: function () {
+			if (!cv || away) { return null; }
+			var r = cv.getBoundingClientRect();
+			var size = HERO * heroS;
+			return { x: r.left + hero.x, y: r.top + hero.y, w: size, h: size };
+		},
+		// escape.js calls this when he lets himself back in
+		comeHome: function () {
+			away = false;
+			hero.moving = false;
+			hero.restT = 400;
+		}
 	};
 
 	/* ---------- the walkable area ---------- */
@@ -315,7 +330,7 @@
 		hero.y = Math.max(b.minY, Math.min(b.maxY, hero.y));
 
 		/* --- breadcrumbs: the birds walk where the figure walked --- */
-		trail.unshift({ x: hero.x, y: hero.y, moving: hero.moving });
+		if (!away) { trail.unshift({ x: hero.x, y: hero.y, moving: hero.moving }); }
 		if (trail.length > TRAIL_MAX) { trail.length = TRAIL_MAX; }
 
 		var heroSize = HERO * heroS, birdSize = BIRD * birdS;
@@ -337,7 +352,7 @@
 				: Math.max(0, f.peck - dt * 0.006);
 			order.push({ y: f.y, draw: function () { drawBird(f, now); } });
 		});
-		order.push({ y: hero.y, draw: function () { drawHero(now); } });
+		if (!away) { order.push({ y: hero.y, draw: function () { drawHero(now); } }); }
 
 		// whoever is further down the screen is nearer, so draw them last
 		order.sort(function (a, c) { return a.y - c.y; });
@@ -389,9 +404,24 @@
 		// tap the screen and the figure sets off somewhere new
 		cv.addEventListener("pointerdown", function (e) {
 			var r = cv.getBoundingClientRect();
+			var lx = e.clientX - r.left, ly = e.clientY - r.top;
+			var size = HERO * heroS;
+
+			// Tap HIM and he climbs out of the screen; tap anywhere else and he
+			// just walks over to it, as before.
+			if (!away && lx >= hero.x && lx <= hero.x + size &&
+				ly >= hero.y && ly <= hero.y + size) {
+				try {
+					if (PO33.escape && PO33.escape.release(r.left + hero.x, r.top + hero.y, heroS)) {
+						away = true;
+						return;
+					}
+				} catch (err) {}
+			}
+
 			var bb = bounds();
-			hero.tx = Math.max(bb.minX, Math.min(bb.maxX, e.clientX - r.left - HERO * heroS / 2));
-			hero.ty = Math.max(bb.minY, Math.min(bb.maxY, e.clientY - r.top - HERO * heroS / 2));
+			hero.tx = Math.max(bb.minX, Math.min(bb.maxX, lx - size / 2));
+			hero.ty = Math.max(bb.minY, Math.min(bb.maxY, ly - size / 2));
 			hero.moving = true;
 			bump(1);
 		});
