@@ -61,7 +61,11 @@
 
 	/* the screen takes the slack instead of a fixed height */
 	.lcd { flex: 1 1 auto; height: auto; min-height: 110px; max-height: 30vh; }
-	.topRow, .controlStrip, .gridArea, .perfStrip { flex: 0 0 auto; }
+	.topRow, .controlStrip, .gridArea { flex: 0 0 auto; }
+	/* The perform strip GROWS. The LCD is capped at 30vh, so on a tall phone
+	 * (Pixel 9a and friends) it stops growing and the leftover height used to
+	 * just sit there as dead space under the pads. Now the strip takes it. */
+	.perfStrip { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 	#hudMain { font-size: 19px; }
 	#hudSub  { font-size: 11px; }
 	#lcdHud  { font-size: 11px; }

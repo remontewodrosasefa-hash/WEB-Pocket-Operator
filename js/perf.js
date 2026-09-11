@@ -36,6 +36,8 @@
 	var xyLockBtn;
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
+	// chain edits are undoable one link at a time, same as tapping them in
+	function markChain() { try { PO33.undo.markChain(); } catch (e) {} }
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "info"); } }
 
 	/* ================= XY pad ================= */
@@ -286,14 +288,64 @@
 
 	/* ================= the switchable panel ================= */
 
+	/* The MIX tab: what's playing, and in what order.
+	 *
+	 * Mute/solo used to be sixteen anonymous numbers with no indication of
+	 * which ones even had anything on them, and the pattern chain could only
+	 * be built by holding PATTERN and tapping — with no way to see it, fix a
+	 * wrong tap, or remove one link. Both belong on the same screen: this is
+	 * the "what is my arrangement actually doing" view.
+	 */
+	function chanHasContent(ch) {
+		var pat = g("currentPattern", 0);
+		for (var i = 0; i < 16; i++) {
+			try { if (window.newChannelArr[ch][pat][i].noteOn) { return true; } } catch (e) {}
+		}
+		return false;
+	}
+
 	function renderMute() {
 		var P = window.PO33.channels;
-		var h = '<div class="perfCells mute">';
+		var chain = g("patternChain", [0]);
+		var pos = g("patternCount", 0);
+		var cur = g("currentPattern", 0);
+
+		var h = '<div class="mixHead"><span>MUTE &amp; SOLO</span>' +
+			'<button data-mix="unmute">all on</button></div>';
+
+		h += '<div class="perfCells mute">';
 		for (var i = 0; i < 16; i++) {
 			var st = P ? P.state(i) : "on";
-			h += '<button data-mute="' + i + '" class="' + st + '">' + (i + 1) + '</button>';
+			// a slot with nothing on it this pattern is dimmed, so you can see
+			// at a glance what you are actually muting
+			var empty = chanHasContent(i) ? "" : " empty";
+			h += '<button data-mute="' + i + '" class="' + st + empty + '">' + (i + 1) + '</button>';
 		}
-		panelTarget.innerHTML = h + '</div>';
+		h += '</div>';
+
+		h += '<div class="mixHead"><span>CHAIN</span>' +
+			'<button data-mix="chainclear">reset</button></div>';
+		h += '<div class="chainRow">';
+		if (!chain.length) {
+			h += '<span class="chainEmpty">empty</span>';
+		} else {
+			chain.forEach(function (n, idx) {
+				h += '<button class="chainLink' + (idx === pos ? " playing" : "") +
+					'" data-chaindel="' + idx + '" title="tap to remove this one">' +
+					(n + 1) + '</button>';
+			});
+		}
+		h += '</div>';
+		h += '<div class="chainAdd"><span>add</span>';
+		for (var q = 0; q < 8; q++) {
+			h += '<button data-chainadd="' + q + '"' + (q === cur ? ' class="cur"' : "") +
+				'>' + (q + 1) + '</button>';
+		}
+		h += '</div>';
+		h += '<p class="perfNote">tap a link to remove it \u00b7 ' +
+			'the lit one is playing now</p>';
+
+		panelTarget.innerHTML = h;
 	}
 
 	// The 16 punch-in effects in pad order, so the grid doubles as a
@@ -301,7 +353,15 @@
 	function renderFx() {
 		var labels = (window.PO33.fx && PO33.fx.labels) ? PO33.fx.labels() : [];
 		var help = (window.PO33.fx && PO33.fx.help) ? PO33.fx.help() : [];
-		var h = '<div class="perfCells fx">';
+		var fr = window.PO33.fxRec;
+		var h = '<div class="keysBar keysBar2">' +
+			'<button class="keysRec' + (fr && fr.info().ownArm ? " on" : "") +
+				'" data-fxrec="1">rec</button>' +
+			'<button class="keysClear" data-fxclear="1">clear</button>' +
+			'<span class="keysScale">' +
+				(fr ? (fr.info().steps + " steps recorded") : "") +
+			'</span></div>';
+		h += '<div class="perfCells fx">';
 		for (var i = 1; i <= 16; i++) {
 			var name = (labels[i] || i).toString().toLowerCase();
 			var tip = (help[i] || name).replace(/"/g, "");
@@ -328,6 +388,15 @@
 			h += '<button class="keysVoice' + (v === cur ? " on" : "") +
 				'" data-keysvoice="' + v + '">' + v + '</button>';
 		});
+		h += '</div><div class="keysBar keysBar3">';
+		var dk = window.PO33.drumkit;
+		if (dk) {
+			h += '<span class="keysScale kitLabel">drum kit →</span>';
+			dk.names().forEach(function (k) {
+				h += '<button class="keysKit" data-kit="' + k + '" title="' + dk.blurb(k) +
+					'">' + k + '</button>';
+			});
+		}
 		h += '</div><div class="keysBar keysBar2">' +
 			'<button class="keysFit' + (K.fit() ? " on" : "") + '" data-keysfit="1">in time</button>' +
 			'<button class="keysRec' + (K.armed() ? " on" : "") + '" data-keysrec="1">rec</button>' +
@@ -371,10 +440,44 @@
 			});
 		});
 
-		// mute cells
+		// mute cells + chain editing
 		panel.addEventListener("click", function (e) {
-			var m = e.target.getAttribute("data-mute");
-			if (m != null && window.PO33.channels) { PO33.channels.cycle(+m); renderMute(); }
+			var t = e.target.closest("[data-mute],[data-mix],[data-chaindel],[data-chainadd]");
+			if (!t) { return; }
+
+			var m = t.getAttribute("data-mute");
+			if (m != null && window.PO33.channels) { PO33.channels.cycle(+m); renderMute(); return; }
+
+			var mix = t.getAttribute("data-mix");
+			if (mix === "unmute" && window.PO33.channels) { PO33.channels.clearAll(); renderMute(); return; }
+			if (mix === "chainclear") {
+				markChain();
+				window.patternChain = [g("currentPattern", 0)];
+				window.patternCount = 0;
+				flash("chain reset to pattern " + (g("currentPattern", 0) + 1), "tip");
+				renderMute();
+				return;
+			}
+
+			var del = t.getAttribute("data-chaindel");
+			if (del != null) {
+				var chain = g("patternChain", [0]);
+				if (chain.length <= 1) { flash("a chain needs at least one pattern", "warn"); return; }
+				markChain();
+				chain.splice(+del, 1);
+				if (window.patternCount >= chain.length) { window.patternCount = 0; }
+				flash("chain: " + chain.map(function (n) { return n + 1; }).join(" "), "tip");
+				renderMute();
+				return;
+			}
+
+			var add = t.getAttribute("data-chainadd");
+			if (add != null) {
+				markChain();
+				g("patternChain", [0]).push(+add);
+				flash("chain: " + g("patternChain", [0]).map(function (n) { return n + 1; }).join(" "), "tip");
+				renderMute();
+			}
 		});
 
 		// keyboard settings
@@ -385,7 +488,25 @@
 			if (v) { K.setVoice(v.getAttribute("data-keysvoice")); renderKeys(); return; }
 			if (e.target.closest("[data-keysfit]")) { K.toggleFit(); renderKeys(); return; }
 			if (e.target.closest("[data-keysrec]")) { K.toggleArm(); renderKeys(); return; }
-			if (e.target.closest("[data-keysclear]")) { K.clearTrack(); renderKeys(); }
+			if (e.target.closest("[data-keysclear]")) { K.clearTrack(); renderKeys(); return; }
+			var kit = e.target.closest("[data-kit]");
+			if (kit && window.PO33.drumkit) {
+				// drop it on the selected slot if that's a drum slot, else 9
+				var sel = g("selectedChannel", 0) + 1;
+				var target = sel >= 9 ? sel : 9;
+				kit.disabled = true;
+				PO33.drumkit.load(target, kit.getAttribute("data-kit")).then(function () {
+					renderKeys();
+				});
+			}
+		});
+
+		// fx lane rec / clear
+		panel.addEventListener("click", function (e) {
+			var fr = window.PO33.fxRec;
+			if (!fr) { return; }
+			if (e.target.closest("[data-fxrec]")) { fr.toggleArm(); renderFx(); }
+			else if (e.target.closest("[data-fxclear]")) { fr.clear(); renderFx(); }
 		});
 
 		/* FX and keys are hold-to-use, so they need press and release.

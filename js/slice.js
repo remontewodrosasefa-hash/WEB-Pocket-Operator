@@ -186,6 +186,10 @@
 				// never come out transposed, whatever the pad's note implies
 				try { window.drumArr[di].get(window.noteArray[pad]).playbackRate = 1; } catch (e2) {}
 			}
+			// chopped audio only exists in memory until this writes it to
+			// IndexedDB — without it the pattern survives a reload but the
+			// sound it points at doesn't
+			try { window.PO33.chops.saveSlot(slot, slices.slice(0, 16)); } catch (e3) {}
 		} catch (e) { flash("slice load failed", "warn"); return false; }
 
 		// slices are already cut - clear any inherited trim on this channel
@@ -346,6 +350,7 @@
 
 	window.PO33 = window.PO33 || {};
 	window.PO33.slice = {
+		ensureSlot: ensureDrumSlot,
 		toSlot: sliceToSlot,
 		current: sliceCurrent,
 		target: chopTarget,

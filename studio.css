@@ -700,8 +700,12 @@ body.utilOpen #utilView { display: flex; }
 /* The panel is a FIXED height on phones. If it grew and shrank per tab the
  * LCD (which absorbs the leftover height) would jump every time you switched
  * between xy / mute / fx / keys. */
+/* Fills whatever the strip has left rather than a fixed 150px, but never
+ * collapses below a usable size. Still stable across tabs, because its height
+ * comes from the available space, not from whichever view is showing. */
 #perfPanel {
-	height: 150px;
+	flex: 1 1 auto;
+	min-height: 150px;
 	overflow: hidden;
 }
 #xyPad[hidden] { display: none; }
@@ -1062,3 +1066,85 @@ body.utilOpen #hudFlash { bottom: 0; }
 .bdLog li { font-size: 10px; line-height: 1.5; margin-bottom: 2px; }
 .bdLog h4 { color: var(--bd-log, #7a3a00); }
 #buildView .bdLog { border-left: 3px solid #b3402a; padding-left: 8px; }
+
+/* ---------- MIX tab: mute/solo + the pattern chain ---------- */
+.mixHead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font: 700 9px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.14em;
+	color: #8a8a8a;
+	margin: 6px 0 4px;
+}
+.mixHead:first-child { margin-top: 0; }
+.mixHead button {
+	font: 600 9px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.06em;
+	padding: 4px 8px;
+	background: #232329;
+	color: #cfcfcf;
+	border: 1px solid #3a3a40;
+	border-radius: 4px;
+	touch-action: manipulation;
+}
+/* a slot with nothing on it in this pattern reads as unavailable, not broken */
+.perfCells.mute button.empty { opacity: 0.32; }
+
+.chainRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	align-items: center;
+	min-height: 26px;
+}
+.chainEmpty { font-size: 10px; color: #6a6a6a; }
+.chainLink {
+	min-width: 26px;
+	font: 700 11px/1 ui-monospace, Menlo, monospace;
+	padding: 6px 5px;
+	background: #232329;
+	color: #cfcfcf;
+	border: 1px solid #3a3a40;
+	border-radius: 4px;
+	touch-action: manipulation;
+}
+.chainLink.playing { background: #ff7a1a; color: #141410; border-color: #ff7a1a; }
+.chainAdd {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	align-items: center;
+	margin-top: 5px;
+}
+.chainAdd span {
+	font: 700 9px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.12em;
+	color: #8a8a8a;
+	margin-right: 3px;
+}
+.chainAdd button {
+	min-width: 24px;
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	padding: 5px 4px;
+	background: transparent;
+	color: #9a9a9a;
+	border: 1px dashed #3a3a40;
+	border-radius: 4px;
+	touch-action: manipulation;
+}
+.chainAdd button.cur { color: #ffb060; border-color: #6a5335; border-style: solid; }
+
+/* ---------- drum kit row on the keys tab ---------- */
+.keysBar3 { margin-top: -2px; }
+.keysKit {
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	padding: 6px 9px;
+	background: #232329;
+	color: #9ad06b;
+	border: 1px solid #3f5a35;
+	border-radius: 5px;
+	touch-action: manipulation;
+}
+.keysKit:disabled { opacity: 0.5; }
+.kitLabel { margin-left: 0 !important; }

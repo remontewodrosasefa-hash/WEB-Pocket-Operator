@@ -23,7 +23,7 @@
 
 	window.PO33 = window.PO33 || {};
 
-	var VOICES = ["e.piano", "pad", "pluck", "bass"];
+	var VOICES = ["e.piano", "pad", "pluck", "bass", "organ", "bells", "lead", "sub"];
 	var voiceName = "e.piano";
 	var inTime = false;
 	var built = {};          // voiceName -> Tone instrument
@@ -78,6 +78,46 @@
 					envelope: { attack: 0.001, decay: 0.28, sustain: 0.02, release: 0.35 }
 				});
 				v.volume.value = -10;
+			} else if (name === "organ") {
+				// stacked sines, no decay — the drawbar trick
+				v = new Tone.PolySynth(6, Tone.FMSynth);
+				v.set({
+					harmonicity: 2, modulationIndex: 3,
+					oscillator: { type: "sine" },
+					envelope: { attack: 0.01, decay: 0.05, sustain: 0.9, release: 0.12 },
+					modulation: { type: "sine" },
+					modulationEnvelope: { attack: 0.01, decay: 0.05, sustain: 1, release: 0.1 }
+				});
+				v.volume.value = -14;
+			} else if (name === "bells") {
+				// high harmonicity + long decay = struck metal
+				v = new Tone.PolySynth(6, Tone.FMSynth);
+				v.set({
+					harmonicity: 5.1, modulationIndex: 22,
+					oscillator: { type: "sine" },
+					envelope: { attack: 0.001, decay: 2.4, sustain: 0, release: 1.6 },
+					modulation: { type: "sine" },
+					modulationEnvelope: { attack: 0.001, decay: 0.6, sustain: 0, release: 0.4 }
+				});
+				v.volume.value = -14;
+			} else if (name === "lead") {
+				v = new Tone.PolySynth(4, Tone.MonoSynth);
+				v.set({
+					oscillator: { type: "square" },
+					filter: { Q: 4, type: "lowpass", rolloff: -24 },
+					envelope: { attack: 0.005, decay: 0.12, sustain: 0.7, release: 0.25 },
+					filterEnvelope: { attack: 0.005, decay: 0.18, sustain: 0.45,
+						release: 0.3, baseFrequency: 320, octaves: 3 }
+				});
+				v.volume.value = -14;
+			} else if (name === "sub") {
+				// pure low sine, nothing above the fundamental to clash with
+				v = new Tone.PolySynth(2, Tone.Synth);
+				v.set({
+					oscillator: { type: "sine" },
+					envelope: { attack: 0.02, decay: 0.2, sustain: 0.85, release: 0.3 }
+				});
+				v.volume.value = -6;
 			} else {
 				v = new Tone.PolySynth(3, Tone.MonoSynth);
 				v.set({

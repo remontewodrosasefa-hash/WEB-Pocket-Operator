@@ -315,17 +315,38 @@
 	 * pattern. If they are all busy we fall back to `pref` and overwrite it,
 	 * because doing nothing at all is the worse answer — and undo is one press.
 	 */
+	/* A slot you chopped a sample onto is YOUR material — the whole point of
+	 * chopping is the arrangement of pieces across its pads. BUILD writing a
+	 * generic kick pattern over it would throw that away, so chopped slots are
+	 * skipped entirely unless there is genuinely nowhere else to go.
+	 */
+	function isChopped(ch) {
+		try { return !!(window.PO33.chops && PO33.chops.isChopped && PO33.chops.isChopped(ch + 1)); }
+		catch (e) { return false; }
+	}
+
 	function pickSlot(kind, taken, patIdx) {
 		var from = kind === "drum" ? 8 : 0, to = kind === "drum" ? 16 : 8;
-		var pref = -1;
-		for (var ch = from; ch < to; ch++) {
-			if (!slotLoaded(ch)) { continue; }
+		var pref = -1, ch, c2;
+		// first choice: loaded, free in this pattern, and not something you chopped
+		for (ch = from; ch < to; ch++) {
+			if (!slotLoaded(ch) || isChopped(ch)) { continue; }
 			if (pref < 0) { pref = ch; }
 			if (taken.indexOf(ch) !== -1) { continue; }
 			if (!hasAny(ch, patIdx)) { return { ch: ch, fresh: true }; }
 		}
-		for (var c2 = from; c2 < to; c2++) {
-			if (slotLoaded(c2) && taken.indexOf(c2) === -1) { return { ch: c2, fresh: false }; }
+		// second: any non-chopped loaded slot, even if it has something on it
+		for (c2 = from; c2 < to; c2++) {
+			if (slotLoaded(c2) && !isChopped(c2) && taken.indexOf(c2) === -1) {
+				return { ch: c2, fresh: false };
+			}
+		}
+		// last resort: everything is chopped, so take a free one anyway rather
+		// than silently doing nothing
+		for (c2 = from; c2 < to; c2++) {
+			if (slotLoaded(c2) && taken.indexOf(c2) === -1 && !hasAny(c2, patIdx)) {
+				return { ch: c2, fresh: true };
+			}
 		}
 		return pref >= 0 ? { ch: pref, fresh: false } : null;
 	}
@@ -443,14 +464,20 @@
 	// Prefer empty patterns; if there are none, take the ones after this and
 	// say so. Refusing to act is the worse outcome, and undo covers it.
 	function findPatterns(n) {
-		var out = [], reused = false;
-		for (var q = 0; q < 16 && out.length < n; q++) {
+		var out = [], reused = false, q;
+		for (q = 0; q < 16 && out.length < n; q++) {
 			if (q !== cur() && patternEmpty(q)) { out.push(q); }
 		}
+		// Nothing empty left: walk forward from the current pattern, skipping
+		// anything already taken. The old loop could hand back the SAME index
+		// twice on a second press (it only nudged once past a collision), which
+		// is why pressing build repeatedly produced patterns that overwrote
+		// each other.
 		var next = cur();
-		while (out.length < n) {
+		var guard = 0;
+		while (out.length < n && guard++ < 64) {
 			next = (next + 1) % 16;
-			if (next === cur() || out.indexOf(next) !== -1) { next = (next + 1) % 16; }
+			if (next === cur() || out.indexOf(next) !== -1) { continue; }
 			out.push(next);
 			reused = true;
 		}
@@ -639,7 +666,15 @@
 			}).join("") + "</div>";
 		s += '<p class="bdNote">' + (missing.length
 			? "missing: <b>" + missing.join(", ") + "</b>"
-			: "all three jobs are covered.") + "</p></div>";
+			: "all three jobs are covered.") + "</p>";
+		var chopped = [];
+		for (var cc = 0; cc < 16; cc++) { if (isChopped(cc)) { chopped.push(cc + 1); } }
+		if (chopped.length) {
+			s += '<p class="bdNote">slot' + (chopped.length > 1 ? "s" : "") + " <b>" +
+				chopped.join(", ") + "</b> " + (chopped.length > 1 ? "hold" : "holds") +
+				" chopped audio &mdash; left alone.</p>";
+		}
+		s += "</div>";
 
 		s += '<div class="uvSec"><h4>style</h4><div class="uvRow">' +
 			Object.keys(STYLES).map(function (k) {

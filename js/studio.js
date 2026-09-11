@@ -762,6 +762,7 @@
 
 	function fxOn(n) {
 		window.fxWasUsed = true;
+		try { PO33.fxRec.down(n); } catch (e) {}
 		flash((FX_LABELS[n] || ("FX " + n)) + " — " + (FX_HELP[n] || ""), "warn");
 
 		// every press starts from a clean slate so pads never stack up
@@ -819,6 +820,7 @@
 	}
 
 	function fxOff() {
+		try { PO33.fxRec.up(); } catch (e) {}
 		clearStep();
 		audioOff();
 	}

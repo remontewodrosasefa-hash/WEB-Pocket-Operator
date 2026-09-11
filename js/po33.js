@@ -363,6 +363,12 @@ var keys = new Tone.Players({
 				try { window.po33Keys.step(beat, time); } catch(e){}
 			}
 
+			//THE EFFECTS LANE (js/fxrec.js): write down whatever effect is being
+			//held right now, then let the lane drive any effect recorded earlier.
+			if(window.PO33 && window.PO33.fxRec){
+				try { window.PO33.fxRec.stamp(beat); window.PO33.fxRec.step(beat); } catch(e){}
+			}
+
 			//THE CHAIN ADVANCES ON THE REAL STEP 15, NOT THE REMAPPED ONE, SO FX
 			//THAT REVERSE OR SHORTEN THE POINTER STILL LAND ON THE BAR LINE.
 			//LOOP / RETRIGGER FX PIN THE CHAIN SO THE SAME PATTERN REPEATS.

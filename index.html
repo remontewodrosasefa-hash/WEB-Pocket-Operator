@@ -322,7 +322,7 @@
 			<div class="perfStrip">
 				<div class="perfTabs">
 					<button data-perf="xy" class="on">xy</button>
-					<button data-perf="mute">mute</button>
+					<button data-perf="mute">mix</button>
 					<button data-perf="fx">fx</button>
 					<button data-perf="keys">keys</button>
 				</div>
@@ -531,6 +531,29 @@
 	  			giving up, and the panel lists exactly what it did and where.</li>
 	  		<li>Any build is <b>one undo</b> away &mdash; the button is right there.</li>
 	  	</ul>
+	  	<h3>What BUILD is actually doing</h3>
+	  	<p>It is not listening to your music. It reads your pattern data &mdash;
+	  		which of the 16 slots have steps on them, and roughly how high or low
+	  		the notes sit &mdash; and decides from that which of the three jobs
+	  		(drums, bass, melody) nothing is covering yet. Then it writes a part
+	  		for each missing job, using the rules of whichever style is selected,
+	  		into the first slot that is free and has a sound loaded.</p>
+	  	<ul>
+	  		<li><b>It leaves chopped slots alone.</b> If you chopped a sample onto
+	  			a slot, the arrangement of pieces across its pads is your work and
+	  			the whole point of chopping &mdash; writing a generic kick pattern
+	  			over it would throw that away. The panel lists any slots it is
+	  			skipping for this reason.</li>
+	  		<li><b>Press it as many times as you like.</b> Every press rolls new
+	  			numbers inside the style's rules, and repeated presses now walk
+	  			forward to genuinely unused patterns instead of landing on the
+	  			same ones twice.</li>
+	  		<li>It only ever touches <b>slots with a sound loaded</b> &mdash; by
+	  			default 1&ndash;4 and 9&ndash;12. Load samples into the others and
+	  			it will use them too.</li>
+	  		<li>Undo covers a whole build in one press.</li>
+	  	</ul>
+
 	  	<h3>What makes the beats sound played rather than programmed</h3>
 	  	<p>Three things, and none of them are the notes:</p>
 	  	<ul>
@@ -555,6 +578,39 @@
 	  		isn't a scale at all &mdash; the pads don't even run in pitch order &mdash;
 	  		so a melody written across it comes out closer to noise than a tune. If
 	  		you've picked your own key, BUILD leaves it alone.</p>
+
+	  	<h2>Recording the effects</h2>
+	  	<p>The effects have their own lane now, the same as the keyboard. In the
+	  		<b>fx</b> tab press <b>rec</b> (or arm the device's LIVE REC, which
+	  		does both), press PLAY, and hold an effect &mdash; every step the
+	  		playhead crosses while you hold it is written down. Let go and it
+	  		stops recording there, so a two-bar reverse comes back as a two-bar
+	  		reverse rather than a single blip.</p>
+	  	<p>On playback the lane engages and releases the effect for you. Touching
+	  		a pad always overrides it, so you can play over your own recording
+	  		without the two fighting. <b>clear</b> wipes the lane on this pattern.</p>
+
+	  	<h2>Drum kits</h2>
+	  	<p>The <b>keys</b> tab has a <b>drum kit</b> row: <b>808</b>, <b>909</b> and
+	  		<b>lo-fi</b>. These are built out of maths rather than loaded from
+	  		files, so they add nothing to the download, and they load onto the
+	  		selected drum slot's 16 pads as real audio &mdash; meaning you can
+	  		trim them, chop them, lock them per step and everything else, exactly
+	  		like a sample. Kick, snare, hats, clap, toms, rim and cowbell, in that
+	  		order across the pads.</p>
+
+	  	<h2>The MIX tab</h2>
+	  	<p>Mute and solo, plus the pattern chain, on one screen &mdash; the "what
+	  		is my arrangement actually doing" view.</p>
+	  	<ul>
+	  		<li>Slots with nothing on them <b>in this pattern</b> are dimmed, so
+	  			you can see what you are actually muting.</li>
+	  		<li>The <b>chain</b> row shows your arrangement, with the currently
+	  			playing link lit. <b>Tap a link to remove it</b> &mdash; no more
+	  			starting the whole chain over because of one wrong tap.</li>
+	  		<li>The <b>add</b> row appends a pattern to the end.</li>
+	  		<li>Every chain edit is a separate undo step.</li>
+	  	</ul>
 
 	  	<h2>The song view</h2>
 	  	<p>Tap <b>song</b> in the top bar of the screen. Every sound that has
@@ -612,6 +668,9 @@
 <script src="js/undo.js"></script>
 <script src="js/projects.js"></script>
 <script src="js/slice.js"></script>
+<script src="js/chopstore.js"></script>
+<script src="js/drumkit.js"></script>
+<script src="js/fxrec.js"></script>
 <script src="js/trim.js"></script>
 <script src="js/locks.js"></script>
 <script src="js/util.js"></script>
