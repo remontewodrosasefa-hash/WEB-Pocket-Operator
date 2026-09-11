@@ -67,7 +67,10 @@
 	.po33 { padding: 0; align-items: stretch; }
 
 	/* the screen takes the slack instead of a fixed height */
-	.lcd { flex: 1 1 auto; height: auto; min-height: 110px; max-height: 30vh; }
+	/* 15% shorter than it was. The cap does the work: the screen still grows
+	 * into spare height, it just stops sooner, and the perform strip takes
+	 * whatever it gives back. */
+	.lcd { flex: 1 1 auto; height: auto; min-height: 94px; max-height: 23vh; }
 	.topRow, .controlStrip, .gridArea { flex: 0 0 auto; }
 	/* The perform strip GROWS. The LCD is capped at 30vh, so on a tall phone
 	 * (Pixel 9a and friends) it stops growing and the leftover height used to
