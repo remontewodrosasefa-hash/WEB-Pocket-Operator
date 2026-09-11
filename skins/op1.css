@@ -1,0 +1,324 @@
+/* skins/op1.css — the OP-1 field skin.
+ *
+ * Every colour here was sampled from the device render, not guessed:
+ *   chassis      #CFCFCF -> #A2A2A2   brushed aluminium
+ *   key face     #F6F3F2              the warm off-white every key shares
+ *   black keys   #1B1C1C
+ *   screen       #020202 with #F7230B accents
+ *   knob caps    #21263B navy - #A07650 tan - #7D7B7B grey - #D64B21 orange
+ *
+ * This is a SKIN, not a chassis: the layout stays exactly as it is, and only
+ * the materials change. The OP-1's actual topology (piano keyboard, four
+ * encoders, wide colour screen) is a different build — see the notes in the
+ * guide. Everything is scoped under body[data-skin="op1"] so the default
+ * PO-33 look is untouched and can't regress.
+ *
+ * The engine addresses the DOM only by id, so none of this touches behaviour.
+ */
+
+body[data-skin="op1"] {
+	--op1-chassis-hi: #E2E2E2;
+	--op1-chassis:    #CFCFCF;
+	--op1-chassis-lo: #A2A2A2;
+	--op1-key:        #F6F3F2;
+	--op1-key-hi:     #FDFCFC;
+	--op1-key-edge:   #E2DEDC;
+	--op1-ink:        #6A7074;
+	--op1-ink-strong: #2C3136;
+	--op1-black:      #1B1C1C;
+	--op1-screen:     #050505;
+	--op1-accent:     #F24B00;
+	--op1-navy:       #21263B;
+	--op1-tan:        #A07650;
+	--op1-grey:       #7D7B7B;
+
+	background: #B8B8B8;
+	color: var(--op1-ink);
+}
+
+body[data-skin="op1"] article { background: #B8B8B8; }
+
+/* ---------------- the chassis ---------------- */
+
+body[data-skin="op1"] .circuitBoard {
+	background:
+		linear-gradient(180deg, var(--op1-chassis-hi) 0%, var(--op1-chassis) 45%, var(--op1-chassis-lo) 100%);
+	border-radius: 18px;
+	padding: 10px;
+	gap: 6px;
+	box-shadow:
+		inset 0 1px 0 rgba(255,255,255,0.85),
+		inset 0 -1px 0 rgba(0,0,0,0.18),
+		0 10px 26px rgba(0,0,0,0.4);
+}
+
+/* the warm-white field the keys sit in, inset into the metal */
+body[data-skin="op1"] .controlStrip,
+body[data-skin="op1"] .gridArea,
+body[data-skin="op1"] .perfStrip {
+	background: var(--op1-key);
+	border-radius: 6px;
+	padding: 7px;
+	box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+}
+body[data-skin="op1"] .gridArea { padding-left: 7px; }
+
+/* ---------------- top row ---------------- */
+
+body[data-skin="op1"] .koLabelContainer,
+body[data-skin="op1"] .koLabel,
+body[data-skin="op1"] .koItalicLabel { color: var(--op1-ink-strong); opacity: 0.75; }
+body[data-skin="op1"] .topLink { color: var(--op1-ink-strong); }
+body[data-skin="op1"] #versionTag { color: var(--op1-ink); background: rgba(255,255,255,0.5); }
+
+/* ---------------- the screen ---------------- */
+
+body[data-skin="op1"] #lcdHud,
+body[data-skin="op1"] .lcd {
+	background: var(--op1-screen);
+	border: 2px solid #2A2A2A;
+	border-radius: 6px;
+	color: var(--op1-key);
+	box-shadow: inset 0 1px 6px rgba(0,0,0,0.9);
+	/* scene.js reads its ink from this, so the little figure is drawn in the
+	 * screen's own colour instead of the PO-33's green */
+	--lcd-ink: 246, 243, 242;
+}
+body[data-skin="op1"] #hudMain,
+body[data-skin="op1"] #hudSub,
+body[data-skin="op1"] #hudMode,
+body[data-skin="op1"] #hudClock,
+body[data-skin="op1"] #hudSong,
+body[data-skin="op1"] .songHead b { color: var(--op1-key); }
+body[data-skin="op1"] #hudMode { background: rgba(255,255,255,0.14); }
+body[data-skin="op1"] #hudSteps i { background: rgba(246,243,242,0.18); }
+body[data-skin="op1"] #hudSteps i.on { background: rgba(246,243,242,0.65); }
+body[data-skin="op1"] #hudSteps i.cur { background: var(--op1-accent); box-shadow: 0 0 5px rgba(242,75,0,0.9); }
+body[data-skin="op1"] .songCell { background: rgba(246,243,242,0.1); box-shadow: inset 0 0 0 1px rgba(246,243,242,0.2); }
+body[data-skin="op1"] .songCell.on { background: var(--op1-key); box-shadow: none; }
+body[data-skin="op1"] .songCell.cur { outline-color: var(--op1-accent); }
+body[data-skin="op1"] .songChain i,
+body[data-skin="op1"] #hudView { color: var(--op1-key); border-color: rgba(246,243,242,0.35); }
+body[data-skin="op1"] .songChain i.on,
+body[data-skin="op1"] #hudView.on { background: var(--op1-key); color: var(--op1-screen); }
+body[data-skin="op1"] #projBtn { color: var(--op1-key); border-color: rgba(246,243,242,0.4); }
+body[data-skin="op1"] #hudFlash { color: var(--op1-accent); }
+body[data-skin="op1"] #hudFlash::before { background: #101010; opacity: 0.92; }
+body[data-skin="op1"] .segmentDisplay,
+body[data-skin="op1"] .lcdKO,
+body[data-skin="op1"] #hiphop,
+body[data-skin="op1"] #disco,
+body[data-skin="op1"] #tencho { color: rgba(246,243,242,0.55); }
+
+/* panels drawn over the screen keep the screen's own palette */
+body[data-skin="op1"] #trimView,
+body[data-skin="op1"] #utilView,
+body[data-skin="op1"] #buildView,
+body[data-skin="op1"] #projView {
+	background: #101010;
+	color: var(--op1-key);
+}
+body[data-skin="op1"] #trimView button,
+body[data-skin="op1"] #utilView button,
+body[data-skin="op1"] #buildView button,
+body[data-skin="op1"] #projView button,
+body[data-skin="op1"] #utilView select,
+body[data-skin="op1"] #trimView label {
+	color: var(--op1-key);
+	border-color: rgba(246,243,242,0.45);
+}
+body[data-skin="op1"] #buildView button.on,
+body[data-skin="op1"] #buildView button.bdBig,
+body[data-skin="op1"] .uvHead button { background: var(--op1-key); color: #101010; }
+body[data-skin="op1"] #tvCanvas { filter: invert(1) hue-rotate(180deg); }
+body[data-skin="op1"] #tvBpmBtn { background: var(--op1-accent); border-color: var(--op1-accent); color: #fff; }
+
+/* ---------------- keys ----------------
+ * The PO-33's pads are round; the OP-1's are rounded rectangles sitting in a
+ * hairline grid. That shape change is most of what makes this read as an
+ * OP-1 at a glance, so the round cap is squared off here.
+ */
+
+body[data-skin="op1"] .buttonBG,
+body[data-skin="op1"] .modeRow .buttonBG,
+body[data-skin="op1"] .topRow .buttonBG {
+	background: linear-gradient(180deg, var(--op1-key-hi), var(--op1-key) 60%, #EFEBE9);
+	border-radius: 7px;
+	width: calc(100% - 4px);
+	height: calc(100% - 4px);
+	left: 2px;
+	top: 2px;
+	margin-left: 0;
+	box-shadow:
+		inset 0 1px 0 #fff,
+		0 1px 2px rgba(0,0,0,0.16),
+		0 0 0 1px var(--op1-key-edge);
+}
+body[data-skin="op1"] .buttonGridItem { border-radius: 8px; }
+body[data-skin="op1"] .buttonGridItem .square,
+body[data-skin="op1"] .buttonGridItem .circle { display: none; }
+
+/* No fake black keys. A checkerboard of sharps across a 4x4 pad grid reads as
+ * arbitrary rather than as a piano — the OP-1's keyboard is a different
+ * topology, which is Tier 2's job. Here every pad wears the same key face,
+ * exactly like the OP-1's button field does. */
+
+body[data-skin="op1"] .buttonGrid .btnText,
+body[data-skin="op1"] .modeRow .btnText {
+	top: 50%;
+	left: 0;
+	right: 0;
+	width: 100%;
+	transform: translateY(-50%);
+	color: var(--op1-ink);
+	font-weight: 500;
+	letter-spacing: 0.04em;
+	text-shadow: none;
+	pointer-events: none;
+}
+/* the mode row carries an encoder cap in the middle, so its label drops under it */
+body[data-skin="op1"] .modeRow .btnText { top: auto; bottom: 5px; transform: none; }
+body[data-skin="op1"] .btnText { color: var(--op1-ink); text-shadow: none; }
+body[data-skin="op1"] #btnRecord > .btnText {
+	background: transparent;
+	border: none;
+	color: var(--op1-accent);
+	font-weight: 600;
+}
+body[data-skin="op1"] #btnRecord > .buttonBG {
+	background: linear-gradient(180deg, var(--op1-key-hi), var(--op1-key) 60%, #EFEBE9);
+	box-shadow: inset 0 1px 0 #fff, 0 0 0 1.5px var(--op1-accent), 0 1px 2px rgba(0,0,0,0.18);
+}
+body[data-skin="op1"] .soundBtn > .btnText { color: var(--op1-accent); }
+body[data-skin="op1"] .liveBtn > .btnText { color: #C0392B; }
+body[data-skin="op1"] .utilBtn > .btnText { color: var(--op1-navy); }
+
+/* the four encoder colours land on the mode row, left to right */
+body[data-skin="op1"] #btnSound > .buttonBG::after,
+body[data-skin="op1"] #btnPattern > .buttonBG::after,
+body[data-skin="op1"] #btnBPM > .buttonBG::after,
+body[data-skin="op1"] #btnTrim > .buttonBG::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 44%;
+	height: 44%;
+	transform: translate(-50%, -50%);
+	border-radius: 50%;
+	box-shadow: inset 0 -1px 2px rgba(0,0,0,0.35), 0 1px 1px rgba(255,255,255,0.6);
+}
+body[data-skin="op1"] #btnSound > .buttonBG::after   { background: var(--op1-navy); }
+body[data-skin="op1"] #btnPattern > .buttonBG::after { background: var(--op1-tan); }
+body[data-skin="op1"] #btnBPM > .buttonBG::after     { background: var(--op1-grey); }
+body[data-skin="op1"] #btnTrim > .buttonBG::after    { background: var(--op1-accent); }
+body[data-skin="op1"] .modeRow .buttonBG { position: relative; }
+
+/* lit / held states in the OP-1's orange */
+body[data-skin="op1"] .gridHover:hover,
+body[data-skin="op1"] .buttonHold {
+	border-color: var(--op1-accent) !important;
+	box-shadow: 0 0 8px rgba(242,75,0,0.45);
+}
+body[data-skin="op1"] .led { background: #D8D4D2; }
+body[data-skin="op1"] .ledOnFull,
+body[data-skin="op1"] .ledFlash { background: var(--op1-accent); box-shadow: 0 0 5px rgba(242,75,0,0.8); }
+body[data-skin="op1"] .ledOnHalf { background: rgba(242,75,0,0.45); }
+
+body[data-skin="op1"] .gridGutter span { color: var(--op1-ink); opacity: 0.7; }
+
+/* ---------------- sliders ---------------- */
+
+body[data-skin="op1"] input[type="range"] { background: transparent; }
+body[data-skin="op1"] input[type="range"]::-webkit-slider-runnable-track {
+	background: #DCD8D6;
+	border-radius: 3px;
+	box-shadow: inset 0 1px 2px rgba(0,0,0,0.18);
+}
+body[data-skin="op1"] input[type="range"]::-webkit-slider-thumb {
+	background: linear-gradient(180deg, #fff, #EDE9E7);
+	border: 1px solid var(--op1-key-edge);
+	border-radius: 4px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+body[data-skin="op1"] input[type="range"]::-moz-range-thumb {
+	background: linear-gradient(180deg, #fff, #EDE9E7);
+	border: 1px solid var(--op1-key-edge);
+	border-radius: 4px;
+}
+body[data-skin="op1"] .sliderLabel { color: var(--op1-ink); }
+body[data-skin="op1"] .sliderRow.expanded .sliderWrap.active .sliderLabel { color: var(--op1-accent); }
+
+/* ---------------- perform strip ---------------- */
+
+body[data-skin="op1"] .perfTabs button,
+body[data-skin="op1"] .perfCells button,
+body[data-skin="op1"] .keysBar button,
+body[data-skin="op1"] .chainLink,
+body[data-skin="op1"] .chainAdd button,
+body[data-skin="op1"] .chainTools button,
+body[data-skin="op1"] .mixHead button,
+body[data-skin="op1"] #xyModes button {
+	background: linear-gradient(180deg, var(--op1-key-hi), #EFEBE9);
+	color: var(--op1-ink-strong);
+	border: 1px solid var(--op1-key-edge);
+	box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+body[data-skin="op1"] .perfTabs button.on,
+body[data-skin="op1"] .perfCells button.hot,
+body[data-skin="op1"] .keysBar .keysVoice.on,
+body[data-skin="op1"] .keysBar .keysFit.on,
+body[data-skin="op1"] .chainLink.playing,
+body[data-skin="op1"] #xyModes button.on {
+	background: var(--op1-accent);
+	color: #fff;
+	border-color: var(--op1-accent);
+}
+body[data-skin="op1"] #xyModes button[data-xy="synth"].on { background: var(--op1-navy); border-color: var(--op1-navy); }
+body[data-skin="op1"] #xyModes button[data-xy="space"].on { background: var(--op1-tan); border-color: var(--op1-tan); }
+body[data-skin="op1"] .keysBar .keysRec.on { background: #C0392B; border-color: #C0392B; color: #fff; }
+body[data-skin="op1"] .chainLink.sel { border-color: var(--op1-navy); box-shadow: inset 0 0 0 1px var(--op1-navy); }
+body[data-skin="op1"] .chainTools button[data-chainmove] { color: var(--op1-accent); border-color: rgba(242,75,0,0.5); }
+body[data-skin="op1"] .mixHead,
+body[data-skin="op1"] .keysScale,
+body[data-skin="op1"] .chainAdd span,
+body[data-skin="op1"] .perfNote { color: #8D9297; }
+body[data-skin="op1"] .perfCells.mute button.mute { background: #F3DEDE; color: #A0342B; border-color: #D9B6B2; }
+body[data-skin="op1"] .perfCells.mute button.solo { background: #E2EFD9; color: #4A6B32; border-color: #B9D4A6; }
+
+body[data-skin="op1"] #xyPad {
+	background: linear-gradient(180deg, #FBFAF9, #EDE9E7);
+	border-color: var(--op1-key-edge);
+}
+body[data-skin="op1"] #xyLabel { color: var(--op1-ink-strong); background: rgba(255,255,255,0.75); }
+
+/* ---------------- library / drawers ---------------- */
+
+body[data-skin="op1"] aside#library,
+body[data-skin="op1"] #infoDrawer { background: #EFECEA; color: var(--op1-ink-strong); }
+body[data-skin="op1"] #infoDrawer h2,
+body[data-skin="op1"] #infoDrawer h3 { color: var(--op1-ink-strong); }
+body[data-skin="op1"] .libRow { background: #F8F6F5; color: var(--op1-ink-strong); border: 1px solid var(--op1-key-edge); }
+body[data-skin="op1"] .libRow.loaded { box-shadow: inset 3px 0 0 var(--op1-accent); }
+body[data-skin="op1"] .libPlay { background: #E8E4E2; color: var(--op1-ink-strong); }
+body[data-skin="op1"] .libPlay.playing { background: var(--op1-accent); color: #fff; }
+
+/* undo sits in the screen's top bar, so it needs the screen's palette */
+body[data-skin="op1"] #undoBtn {
+	color: var(--op1-key);
+	border-color: rgba(246,243,242,0.4);
+	background: transparent;
+}
+body[data-skin="op1"] #undoBtn:active:not(:disabled) { background: var(--op1-key); color: var(--op1-screen); }
+
+/* long labels ("record", "pattern") must not spill out of their key face */
+body[data-skin="op1"] .buttonGrid .btnText,
+body[data-skin="op1"] .modeRow .btnText {
+	padding: 0 1px;
+	font-size: 7.5px;      /* "record" has to fit inside a 44px key face */
+	letter-spacing: 0;
+	overflow: visible;
+	white-space: nowrap;
+	box-sizing: border-box;
+}
+body[data-skin="op1"] .btnNumber > .btnText { font-size: 13px; font-weight: 400; }

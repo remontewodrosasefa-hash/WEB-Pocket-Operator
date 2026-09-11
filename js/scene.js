@@ -27,7 +27,21 @@
 
 	var SRC = "game/sprites/";
 	var SHEETS = ["hero_idle", "hero_walk", "hen", "chick", "mush_idle", "mush_run", "mush_hit"];
+	// The PO-33's dark-green screen ink. A skin can override it by setting
+	// --lcd-ink on .lcd (see skins/op1.css), and reink() re-renders the
+	// sprites in the new colour.
 	var INK = [27, 36, 17];
+
+	function readInk() {
+		try {
+			var el = document.querySelector(".lcd");
+			if (!el) { return; }
+			var v = getComputedStyle(el).getPropertyValue("--lcd-ink").trim();
+			if (!v) { return; }
+			var p = v.split(",").map(function (n) { return parseInt(n, 10); });
+			if (p.length === 3 && p.every(function (n) { return n >= 0 && n <= 255; })) { INK = p; }
+		} catch (e) {}
+	}
 
 	var HERO = 32, IDLE_F = 4, WALK_F = 6;
 	var BIRD = 16, BIRD_F = 4;
@@ -181,7 +195,18 @@
 		xp: function () { return xp; },
 		add: function (n) { bump(n || 1); },
 		reset: function () { xp = 0; saveXp(); },
-		dance: setDanceCanvas
+		dance: setDanceCanvas,
+		// called by skin.js when the screen's palette changes
+		reink: function () {
+			var before = INK.join();
+			readInk();
+			if (INK.join() === before) { return; }
+			SHEETS.forEach(function (n) {
+				var im = new Image();
+				im.onload = function () { sheet[n] = monoize(im); };
+				im.src = SRC + n + ".png";
+			});
+		}
 	};
 
 	/* ---------- the walkable area ---------- */
@@ -413,6 +438,7 @@
 	function boot() {
 		if (booted) { return; }
 		booted = true;
+		readInk();
 		loadXp();
 		var left = SHEETS.length;
 		SHEETS.forEach(function (n) {

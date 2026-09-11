@@ -1234,13 +1234,26 @@ body.utilOpen #hudFlash { bottom: 0; }
 	margin-top: 4px;
 }
 .chainTools button {
-	font: 600 10px/1 ui-monospace, Menlo, monospace;
-	padding: 5px 8px;
+	font: 600 11px/1 ui-monospace, Menlo, monospace;
+	min-height: 34px;                 /* a real finger target, not a 10px glyph */
+	padding: 7px 10px;
 	background: #232329;
 	color: #cfcfcf;
 	border: 1px solid #3a3a40;
 	border-radius: 4px;
 	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
 }
+/* the two move arrows are the controls you hit most, so they get the most room */
+.chainTools button[data-chainmove] {
+	flex: 1 1 0;
+	min-width: 56px;
+	font-size: 17px;
+	line-height: 1;
+	padding: 5px 10px;
+	color: #ffb060;
+	border-color: #6a5335;
+}
+.chainTools button[data-chainmove]:active { background: #ff7a1a; color: #141410; }
 .chainTools button.del { color: #ff8a7a; border-color: #5a3330; }
 .chainTools button.done { margin-left: auto; color: #9ad06b; border-color: #3f5a35; }

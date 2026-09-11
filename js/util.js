@@ -20,6 +20,9 @@
 			'<button type="button" data-uv="close">&times;</button></div>' +
 		'<div id="uvBody">' +
 
+			'<div class="uvSec"><h4>skin <i>(how the device looks)</i></h4>' +
+				'<div class="uvRow" id="uvSkins"></div></div>' +
+
 			'<div class="uvSec"><h4>scale &amp; key <i>(melodic slots 1-8)</i></h4>' +
 				'<div class="uvRow">' +
 					'<select id="scaleSel">' +
@@ -88,10 +91,22 @@
 		if (window.PO33.trim) { PO33.trim.close(); }
 		document.body.classList.add("utilOpen");
 		view.hidden = false;
+		renderSkins();
 		if (window.PO33.scale) { syncScale(); }
 	}
 	function hide() { document.body.classList.remove("utilOpen"); if (view) { view.hidden = true; } }
 	function toggle() { if (isOpen()) { hide(); } else { show(); } }
+
+	function renderSkins() {
+		var row = document.getElementById("uvSkins");
+		if (!row || !window.PO33.skin) { return; }
+		var cur = PO33.skin.current();
+		row.innerHTML = PO33.skin.list().map(function (s) {
+			return '<button type="button" data-uv="skin" data-v="' + s.id + '"' +
+				(s.id === cur ? ' class="on"' : "") + ' title="' + s.blurb + '">' +
+				s.name + "</button>";
+		}).join("");
+	}
 
 	function syncScale() {
 		// scale.js keeps its own selects in sync; nudge it so the labels are right
@@ -102,6 +117,7 @@
 		var P = window.PO33 || {};
 		switch (a) {
 			case "close":  hide(); break;
+			case "skin":   if (P.skin) { P.skin.set(target.getAttribute("data-v")); renderSkins(); } break;
 			case "octup":  if (P.scale) { P.scale.octave(1); } break;
 			case "octdn":  if (P.scale) { P.scale.octave(-1); } break;
 			case "live":   if (P.liveRec) { hide(); P.liveRec(); } break;
