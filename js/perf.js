@@ -18,14 +18,22 @@
 
 	var xyEl, xyCv, xyCtx, xyLabel, xyChip, panel, panelTarget, W = 0, H = 0, DPR = 1;
 	var xyOn = false, xyX = 0.5, xyY = 0.2, tab = "xy";
-	var latched = false;
 
-	// What the XY pad is wired to right now. SYNTH is never latched — a lead
-	// note that carries on after you lift your finger is just a stuck note.
+	/* What the XY pad is wired to.
+	 *
+	 * Each of the three can be LOCKED independently. A locked mode keeps
+	 * running at the last spot you left it, so you can lock a filter setting,
+	 * switch to SPACE, and now have both going at once — the effects stack
+	 * instead of replacing each other. The pad always drives whichever mode is
+	 * selected; locking is what keeps the others alive behind it.
+	 */
 	var XY_MODES = ["tone", "synth", "space"];
 	var XY_TITLE = { tone: "TONE", synth: "SYNTH", space: "SPACE" };
 	var XY_REST = { tone: "muffled \u2194 bright", synth: "play a lead", space: "echo + reverb" };
 	var xyMode = "tone";
+	var xyLock = { tone: false, synth: false, space: false };
+	var xyPos = { tone: { x: 0.5, y: 0.2 }, synth: { x: 0.5, y: 0.6 }, space: { x: 0.4, y: 0.4 } };
+	var xyLockBtn;
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "info"); } }
@@ -72,48 +80,109 @@
 			}
 		}
 
-		if (!xyOn && !latched) { return; }
+		// ghost markers for anything locked in another mode
+		XY_MODES.forEach(function (m) {
+			if (!xyLock[m] || m === xyMode) { return; }
+			var gx = xyPos[m].x * W, gy = (1 - xyPos[m].y) * H;
+			xyCtx.strokeStyle = "rgba(255,176,96,0.45)";
+			xyCtx.beginPath(); xyCtx.arc(gx, gy, 6, 0, 7); xyCtx.stroke();
+		});
+
+		if (!xyOn && !xyLock[xyMode]) { return; }
 		var px = xyX * W, py = (1 - xyY) * H;
 		xyCtx.strokeStyle = "rgba(255,122,26,0.5)";
 		xyCtx.beginPath();
 		xyCtx.moveTo(px, 0); xyCtx.lineTo(px, H);
 		xyCtx.moveTo(0, py); xyCtx.lineTo(W, py);
 		xyCtx.stroke();
-		xyCtx.fillStyle = latched && !xyOn ? "#ffb060" : "#ff7a1a";
+		xyCtx.fillStyle = (xyLock[xyMode] && !xyOn) ? "#ffb060" : "#ff7a1a";
 		xyCtx.beginPath(); xyCtx.arc(px, py, 8, 0, 7); xyCtx.fill();
 	}
 
-	// send the current position to whichever engine the pad is driving
-	function xyApply(on) {
-		if (xyMode === "synth") {
-			if (window.PO33.keys) { PO33.keys.xy(xyX, xyY, on); }
-		} else if (xyMode === "space") {
-			if (window.PO33.fx && PO33.fx.space) { PO33.fx.space(xyX, xyY, on); }
+	// drive one named engine
+	function xyDrive(mode, x, y, on) {
+		if (mode === "synth") {
+			if (window.PO33.keys) { PO33.keys.xy(x, y, on); }
+		} else if (mode === "space") {
+			if (window.PO33.fx && PO33.fx.space) { PO33.fx.space(x, y, on); }
 		} else if (window.PO33.fx) {
-			PO33.fx.xy(xyX, xyY, on);
+			PO33.fx.xy(x, y, on);
 		}
 	}
 
-	function xyRelease() {
-		// always silence every engine, not just the current one, so switching
-		// modes mid-drag can never leave something hanging
-		if (window.PO33.fx) { PO33.fx.xy(0, 0, false); }
-		if (window.PO33.fx && PO33.fx.space) { PO33.fx.space(0, 0, false); }
-		if (window.PO33.keys) { PO33.keys.xy(0, 0, false); }
+	// the mode under your finger
+	function xyApply(on) {
+		xyPos[xyMode] = { x: xyX, y: xyY };
+		xyDrive(xyMode, xyX, xyY, on);
+	}
+
+	// stop only the selected mode; anything locked keeps playing
+	function xyRelease() { xyDrive(xyMode, 0, 0, false); }
+
+	// re-assert every locked mode. Called after a release so that turning off
+	// the mode you were touching can't knock out the ones you locked earlier.
+	function xyReassert() {
+		XY_MODES.forEach(function (m) {
+			if (xyLock[m] && m !== xyMode) { xyDrive(m, xyPos[m].x, xyPos[m].y, true); }
+		});
+	}
+
+	function xyAllOff() {
+		XY_MODES.forEach(function (m) { xyLock[m] = false; xyDrive(m, 0, 0, false); });
+	}
+
+	function paintLocks() {
+		if (xyChip) {
+			Array.prototype.forEach.call(xyChip.children, function (b) {
+				var m = b.getAttribute("data-xy");
+				if (!m) { return; }
+				b.classList.toggle("on", m === xyMode);
+				b.classList.toggle("locked", !!xyLock[m]);
+			});
+		}
+		if (xyLockBtn) {
+			xyLockBtn.classList.toggle("on", !!xyLock[xyMode]);
+			xyLockBtn.textContent = xyLock[xyMode] ? "LOCKED" : "LOCK";
+		}
+		if (xyEl) {
+			var any = XY_MODES.some(function (m) { return xyLock[m]; });
+			xyEl.classList.toggle("latched", any);
+		}
+	}
+
+	function toggleLock() {
+		var on = !xyLock[xyMode];
+		xyLock[xyMode] = on;
+		if (on) {
+			// lock it where it is now, so it keeps doing what you just heard
+			xyDrive(xyMode, xyPos[xyMode].x, xyPos[xyMode].y, true);
+			flash(XY_TITLE[xyMode] + " locked \u2014 stays on while you use the others", "warn");
+		} else {
+			xyDrive(xyMode, 0, 0, false);
+			flash(XY_TITLE[xyMode] + " unlocked", "tip");
+		}
+		paintLocks();
+		xyReadout();
+		xyDraw();
 	}
 
 	function xyReadout() {
 		if (!xyLabel) { return; }
-		if (!xyOn && !latched) { xyLabel.textContent = XY_REST[xyMode]; return; }
+		// name anything still running in the background so a locked effect is
+		// never a mystery
+		var also = XY_MODES.filter(function (m) { return xyLock[m] && m !== xyMode; })
+			.map(function (m) { return XY_TITLE[m].toLowerCase(); });
+		var tail = also.length ? "   +" + also.join(" +") : "";
+		if (!xyOn && !xyLock[xyMode]) { xyLabel.textContent = XY_REST[xyMode] + tail; return; }
 		if (xyMode === "synth") {
 			var n = window.PO33.keys ? PO33.keys.note(Math.round(xyX * 15)) : "";
-			xyLabel.textContent = n + "  \u00b7  tone " + Math.round(xyY * 100) + "%";
+			xyLabel.textContent = n + "  \u00b7  tone " + Math.round(xyY * 100) + "%" + tail;
 		} else if (xyMode === "space") {
 			xyLabel.textContent = "echo " + Math.round(xyX * 100) +
-				"%  \u00b7  reverb " + Math.round(xyY * 100) + "%";
+				"%  \u00b7  reverb " + Math.round(xyY * 100) + "%" + tail;
 		} else {
 			xyLabel.textContent = (xyX < 0.5 ? "muffled" : "thin") +
-				"  " + Math.round(xyX * 100) + "%  \u00b7  bite " + Math.round(xyY * 100) + "%";
+				"  " + Math.round(xyX * 100) + "%  \u00b7  bite " + Math.round(xyY * 100) + "%" + tail;
 		}
 	}
 
@@ -127,15 +196,17 @@
 	}
 
 	function setXyMode(m) {
-		xyRelease();
+		// leaving a mode only silences it if it isn't locked
+		if (!xyLock[xyMode]) { xyRelease(); }
 		xyOn = false;
-		if (latched) { latched = false; if (xyEl) { xyEl.classList.remove("latched"); } }
 		xyMode = m;
-		if (xyChip) { xyChip.textContent = XY_TITLE[m]; }
+		xyX = xyPos[m].x; xyY = xyPos[m].y;
 		if (xyEl) { xyEl.setAttribute("data-mode", m); }
+		paintLocks();
 		xyReadout();
 		xyDraw();
-		flash("XY: " + XY_TITLE[m] + " \u2014 " + XY_REST[m], "tip");
+		flash("XY: " + XY_TITLE[m] + " \u2014 " + XY_REST[m] +
+			(xyLock[m] ? " (locked)" : ""), "tip");
 	}
 
 	function wireXY() {
@@ -154,36 +225,48 @@
 		var up = function () {
 			if (!xyOn) { return; }
 			xyOn = false;
-			// synth always stops on release; the other two respect the latch
-			if (!latched || xyMode === "synth") { xyRelease(); }
+			// lifting your finger stops this mode unless you locked it
+			if (!xyLock[xyMode]) { xyRelease(); }
+			xyReassert();
 			xyReadout();
 			xyDraw();
 		};
 		xyCv.addEventListener("pointerup", up);
 		xyCv.addEventListener("pointercancel", up);
 
-		// the corner chip cycles what the pad is wired to
-		xyChip = document.getElementById("xyMode");
+		// all three modes sit side by side — no hunting through a cycle
+		xyChip = document.getElementById("xyModes");
 		if (xyChip) {
 			xyChip.addEventListener("click", function (e) {
+				var b = e.target.closest("[data-xy]");
+				if (!b) { return; }
 				e.stopPropagation();
-				setXyMode(XY_MODES[(XY_MODES.indexOf(xyMode) + 1) % XY_MODES.length]);
+				setXyMode(b.getAttribute("data-xy"));
 			});
 		}
 
-		// tap the readout to latch, so an effect stays on with no finger down.
-		// SYNTH is excluded: a held lead note with nothing holding it is a
-		// stuck note, not a feature.
-		if (xyLabel) {
-			xyLabel.addEventListener("click", function (e) {
+		/* A labelled button, not a hidden tap on the readout text. LOCK keeps
+		 * the mode you are on running after you lift your finger, so you can
+		 * stack it with the others. Long-press clears every lock at once. */
+		xyLockBtn = document.getElementById("xyLock");
+		if (xyLockBtn) {
+			var lockHold = null;
+			xyLockBtn.addEventListener("pointerdown", function (e) {
 				e.stopPropagation();
-				if (xyMode === "synth") { flash("synth mode can't latch", "warn"); return; }
-				latched = !latched;
-				xyEl.classList.toggle("latched", latched);
-				if (latched) { xyApply(true); } else { xyRelease(); }
-				xyReadout();
-				flash(latched ? "XY latched \u2014 stays on when you let go" : "XY back to hold-to-use", "tip");
-				xyDraw();
+				lockHold = setTimeout(function () {
+					lockHold = null;
+					xyAllOff();
+					paintLocks(); xyReadout(); xyDraw();
+					flash("all XY locks cleared", "warn");
+				}, 600);
+			});
+			var endHold = function (e) {
+				if (e) { e.stopPropagation(); }
+				if (lockHold) { clearTimeout(lockHold); lockHold = null; toggleLock(); }
+			};
+			xyLockBtn.addEventListener("pointerup", endHold);
+			xyLockBtn.addEventListener("pointercancel", function () {
+				if (lockHold) { clearTimeout(lockHold); lockHold = null; }
 			});
 		}
 		setXyMode(xyMode);
@@ -230,9 +313,18 @@
 			panelTarget.innerHTML = '<div class="perfNote">keyboard unavailable</div>';
 			return;
 		}
-		var h = '<div class="keysBar">' +
-			'<button class="keysVoice" data-keysvoice="1">' + K.voice() + '</button>' +
+		// Every voice is a button of its own. Cycling through a single button
+		// meant three taps to reach the bass; there is room to just show them.
+		var cur = K.voice();
+		var h = '<div class="keysBar">';
+		K.voices().forEach(function (v) {
+			h += '<button class="keysVoice' + (v === cur ? " on" : "") +
+				'" data-keysvoice="' + v + '">' + v + '</button>';
+		});
+		h += '</div><div class="keysBar keysBar2">' +
 			'<button class="keysFit' + (K.fit() ? " on" : "") + '" data-keysfit="1">in time</button>' +
+			'<button class="keysRec' + (K.armed() ? " on" : "") + '" data-keysrec="1">rec</button>' +
+			'<button class="keysClear" data-keysclear="1">clear</button>' +
 			'<span class="keysScale">' + K.layout() + '</span>' +
 			'</div><div class="perfCells keys">';
 		for (var i = 0; i < 16; i++) {
@@ -282,8 +374,11 @@
 		panel.addEventListener("click", function (e) {
 			var K = window.PO33.keys;
 			if (!K) { return; }
-			if (e.target.closest("[data-keysvoice]")) { K.nextVoice(); renderKeys(); }
-			else if (e.target.closest("[data-keysfit]")) { K.toggleFit(); renderKeys(); }
+			var v = e.target.closest("[data-keysvoice]");
+			if (v) { K.setVoice(v.getAttribute("data-keysvoice")); renderKeys(); return; }
+			if (e.target.closest("[data-keysfit]")) { K.toggleFit(); renderKeys(); return; }
+			if (e.target.closest("[data-keysrec]")) { K.toggleArm(); renderKeys(); return; }
+			if (e.target.closest("[data-keysclear]")) { K.clearTrack(); renderKeys(); }
 		});
 
 		/* FX and keys are hold-to-use, so they need press and release.

@@ -60,10 +60,12 @@
 		hud.id = "lcdHud";
 		hud.innerHTML =
 			'<div class="hudTop"><span id="hudMode">PERFORM</span>' +
+				'<button id="hudView" type="button">song</button>' +
 				'<span id="hudClock"></span></div>' +
 			'<div id="hudMain">—</div>' +
 			'<div id="hudSub">&nbsp;</div>' +
 			'<div id="hudArt"></div>' +
+			'<div id="hudSong" hidden></div>' +
 			'<div id="hudFlash"></div>' +
 			'<div id="hudSteps"></div>';
 		lcd.appendChild(hud);
@@ -79,12 +81,128 @@
 		E.sub = document.getElementById("hudSub");
 		E.clock = document.getElementById("hudClock");
 		E.art = document.getElementById("hudArt");
+		E.song = document.getElementById("hudSong");
+		E.view = document.getElementById("hudView");
 		E.steps = document.getElementById("hudSteps").children;
+		if (E.view) {
+			E.view.addEventListener("click", function () {
+				songOpen = !songOpen;
+				E.view.textContent = songOpen ? "scene" : "song";
+				E.view.classList.toggle("on", songOpen);
+				E.art.hidden = songOpen;
+				E.song.hidden = !songOpen;
+				// the mode line stays; the sound name and hint step aside so the
+				// grid gets the whole screen
+				var hudEl = document.getElementById("lcdHud");
+				if (hudEl) { hudEl.classList.toggle("songOn", songOpen); }
+				songSig = "";
+				if (songOpen) { drawSong(); }
+			});
+		}
 		tick();
 		setInterval(tick, 130);
 	}
 
 	var E = {};
+
+	/* ============================================================
+	 * SONG VIEW
+	 *
+	 * A one-screen answer to "what is actually in this track?". Every sound
+	 * that has something on it in this pattern gets a row of sixteen cells —
+	 * filled where it hits, hollow where it rests — so the whole arrangement
+	 * is readable at a glance, the way a piano roll is, but small enough to
+	 * live on the device's own screen.
+	 *
+	 * Rows only appear for sounds that are in use, so an empty track shows an
+	 * empty screen rather than sixteen blank lines.
+	 * ============================================================ */
+
+	var songOpen = false, songSig = "";
+
+	function songRows() {
+		var pat = g("currentPattern", 0);
+		var rows = [];
+		for (var ch = 0; ch < 16; ch++) {
+			var hits = [], any = false;
+			for (var i = 0; i < 16; i++) {
+				var on = false;
+				try { on = !!(window.newChannelArr[ch][pat][i].noteOn); } catch (e) {}
+				hits.push(on);
+				if (on) { any = true; }
+			}
+			if (any) { rows.push({ label: String(ch + 1), hits: hits, kind: ch < 8 ? "mel" : "drm" }); }
+		}
+		// the keyboard's own track, if anything has been played onto it
+		var kt = (window.PO33 && PO33.keys && PO33.keys.track) ? PO33.keys.track() : null;
+		if (kt) {
+			var kh = [], kany = false;
+			for (var j = 0; j < 16; j++) { kh.push(!!kt[j]); if (kt[j]) { kany = true; } }
+			if (kany) { rows.push({ label: "\u266a", hits: kh, kind: "key" }); }
+		}
+		return rows;
+	}
+
+	function drawSong() {
+		if (!E.song) { return; }
+		var rows = songRows();
+		var pat = g("currentPattern", 0);
+		var chain = g("patternChain", [0]);
+		var tempo = g("tempo", 120);
+		var scaleTxt = (window.PO33 && PO33.scale) ? PO33.scale.label() : "";
+		var filled = 0;
+		rows.forEach(function (r) { r.hits.forEach(function (h) { if (h) { filled++; } }); });
+
+		// only rebuild when something actually changed
+		var sig = rows.map(function (r) {
+			return r.label + r.hits.map(function (h) { return h ? 1 : 0; }).join("");
+		}).join("|") + "#" + pat + "#" + tempo + "#" + chain.join(",") + "#" + scaleTxt;
+		if (sig !== songSig) {
+			songSig = sig;
+			var h = '<div class="songHead">' +
+				"<b>PAT " + (pat + 1) + "</b>" +
+				"<span>" + tempo + " BPM</span>" +
+				"<span>" + scaleTxt + "</span>" +
+				"<span>" + rows.length + " part" + (rows.length === 1 ? "" : "s") + "</span>" +
+				"<span>" + filled + " hits</span>" +
+				"</div>";
+			if (!rows.length) {
+				h += '<div class="songEmpty">nothing on this pattern yet &mdash; ' +
+					'press WRITE and tap the pads</div>';
+			} else {
+				h += '<div class="songGrid">';
+				rows.forEach(function (r) {
+					h += '<div class="songRow" data-kind="' + r.kind + '">' +
+						'<i class="songLbl">' + r.label + "</i>";
+					for (var i = 0; i < 16; i++) {
+						h += '<i class="songCell' + (r.hits[i] ? " on" : "") +
+							(i % 4 === 0 ? " beat" : "") + '"></i>';
+					}
+					h += "</div>";
+				});
+				h += "</div>";
+			}
+			h += '<div class="songChain">chain ' +
+				chain.map(function (n, i) {
+					return '<i' + (n === pat && i === g("patternCount", 0) ? ' class="on"' : "") +
+						">" + (n + 1) + "</i>";
+				}).join("") + "</div>";
+			E.song.innerHTML = h;
+		}
+
+		// the playhead column is cheap to move, so it updates every tick
+		var beat = g("beatCount", 0), play = g("play", false);
+		var grid = E.song.querySelector(".songGrid");
+		if (!grid) { return; }
+		Array.prototype.forEach.call(grid.children, function (row) {
+			for (var i = 0; i < 16; i++) {
+				var cell = row.children[i + 1];
+				if (!cell) { continue; }
+				var want = play && i === beat;
+				if (cell.classList.contains("cur") !== want) { cell.classList.toggle("cur", want); }
+			}
+		});
+	}
 
 	function tick() {
 		var modeEl = E.mode;
@@ -139,6 +257,7 @@
 
 		updateSliderLabels();
 		updateClock();
+		if (songOpen) { drawSong(); }
 
 		var kids = E.steps;
 		var heldLock = (window.PO33 && PO33.locks) ? PO33.locks.held() : -1;

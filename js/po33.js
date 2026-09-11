@@ -357,6 +357,12 @@ var keys = new Tone.Players({
 
 
 
+			//THE KEYBOARD'S OWN TRACK (js/keys.js). It lives outside the 16 sample
+			//slots, so it plays from here rather than from newChannelArr.
+			if(window.po33Keys && window.po33Keys.step){
+				try { window.po33Keys.step(beat, time); } catch(e){}
+			}
+
 			//THE CHAIN ADVANCES ON THE REAL STEP 15, NOT THE REMAPPED ONE, SO FX
 			//THAT REVERSE OR SHORTEN THE POINTER STILL LAND ON THE BAR LINE.
 			//LOOP / RETRIGGER FX PIN THE CHAIN SO THE SAME PATTERN REPEATS.

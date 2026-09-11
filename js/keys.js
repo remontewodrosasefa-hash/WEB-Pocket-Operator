@@ -138,12 +138,102 @@
 		} catch (e) { return 0; }
 	}
 
+	/* ==============================================================
+	 * THE KEYS TRACK — recording what you play
+	 *
+	 * The sixteen sample slots are the hardware's tracks and they are full.
+	 * Rather than steal one, the keyboard gets a track of its own, kept
+	 * alongside the pattern data instead of inside it: for every pattern,
+	 * sixteen steps, and each step either empty or holding one note.
+	 *
+	 * js/po33.js calls step() on every sixteenth while the sequencer runs, so
+	 * the track plays back in time with the drums with no changes to how the
+	 * pattern data is stored, saved or cleared.
+	 * ============================================================== */
+
+	var track = {};        // pattern index -> array of 16 (null | {note, voice})
+	var armed = false;     // is the keyboard writing what you play?
+
+	function lane(pat) {
+		if (!track[pat]) { track[pat] = new Array(16); }
+		return track[pat];
+	}
+	function curPattern() { return (typeof window.currentPattern === "number") ? window.currentPattern : 0; }
+
+	// Which step should this note be written to? Whatever the playhead is on,
+	// except that a note played in the back half of a step was almost certainly
+	// meant for the next one, so it rounds forward.
+	function writeStep() {
+		var b = (typeof window.beatCount === "number") ? window.beatCount : 0;
+		try {
+			if (window.Tone && Tone.Transport.state === "started") {
+				var st = Tone.Time("16n").toSeconds();
+				var into = (Tone.Transport.seconds % st) / st;
+				if (into > 0.5) { b = (b + 1) % 16; }
+			}
+		} catch (e) {}
+		return b;
+	}
+
+	function record(pad) {
+		if (!armed) { return false; }
+		var L = lane(curPattern());
+		L[writeStep()] = { note: note(pad), voice: voiceName };
+		save();
+		return true;
+	}
+
+	// called by the sequencer once per sixteenth
+	function step(beat, time) {
+		var L = track[curPattern()];
+		if (!L) { return; }
+		var e = L[beat];
+		if (!e) { return; }
+		var v = make(e.voice || voiceName);
+		if (!v) { return; }
+		try {
+			v.triggerAttackRelease(e.note, Tone.Time("8n").toSeconds(),
+				time != null ? time : Tone.now(), 0.8);
+		} catch (err) {}
+	}
+
+	function saveKey() { return "po33.keys.track"; }
+	function save() {
+		try { localStorage.setItem(saveKey(), JSON.stringify(track)); } catch (e) {}
+	}
+	function restore() {
+		try {
+			var v = JSON.parse(localStorage.getItem(saveKey()) || "null");
+			if (v && typeof v === "object") { track = v; }
+		} catch (e) {}
+	}
+	restore();
+
+	function clearTrack(all) {
+		if (all) { track = {}; }
+		else { delete track[curPattern()]; }
+		save();
+		flash(all ? "keys track cleared everywhere"
+			: "keys track cleared on pattern " + (curPattern() + 1), "warn");
+	}
+
+	function trackInfo() {
+		var L = track[curPattern()];
+		var n = 0;
+		if (L) { for (var i = 0; i < 16; i++) { if (L[i]) { n++; } } }
+		return { steps: n, armed: armed };
+	}
+
+	// the sequencer's hook
+	window.po33Keys = { step: step };
+
 	var held = {};   // pad -> note name, so release hits the right note
 
 	function down(pad, vel) {
 		var v = make(voiceName);
 		if (!v) { return null; }
 		var n = note(pad);
+		record(pad);
 		var wait = delayToGrid();
 		try {
 			if (wait > 0) {
@@ -244,6 +334,16 @@
 		toggleFit: function () { return this.setFit(!inTime); },
 		note: note,
 		layout: layout,
+		armed: function () { return armed; },
+		toggleArm: function () {
+			armed = !armed;
+			flash(armed ? "keys rec on \u2014 what you play is written into this pattern"
+				: "keys rec off", armed ? "warn" : "tip");
+			return armed;
+		},
+		clearTrack: clearTrack,
+		trackInfo: trackInfo,
+		track: function () { return track[curPattern()] || null; },
 		down: down,
 		up: up,
 		allOff: allOff,

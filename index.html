@@ -327,7 +327,7 @@
 					<button data-perf="keys">keys</button>
 				</div>
 				<div id="perfPanel">
-					<div id="xyPad" data-mode="tone"><canvas id="xyCanvas"></canvas><button id="xyMode" type="button">TONE</button><span id="xyLabel">muffled &harr; bright</span></div>
+					<div id="xyPad" data-mode="tone"><canvas id="xyCanvas"></canvas><div id="xyModes"><button type="button" data-xy="tone" class="on">TONE</button><button type="button" data-xy="synth">SYNTH</button><button type="button" data-xy="space">SPACE</button><button type="button" id="xyLock" title="keep this one running while you use the others">LOCK</button></div><span id="xyLabel">muffled &harr; bright</span></div>
 				</div>
 			</div>
 		</div>
@@ -463,6 +463,52 @@
 	  		<li>Tap <button onclick="fxButtonFunction()">FX</button> to switch what the two sliders do (TONE / FILTER / TRIM). <b>Hold</b> it instead and the 16 pads become punch-in effects.</li>
 	  		<li>In Pattern-select mode press <button onclick="writeButtonFunction()">WRITE</button> to copy a pattern, then choose an empty slot to paste it.</li>
 	  	</ol>
+
+	  	<h2>The keyboard, and recording it</h2>
+	  	<p>The <b>keys</b> tab under the screen is a real instrument, not a sample
+	  		being retuned: an electric piano, a pad, a pluck and a bass, all built
+	  		out of maths rather than audio files, so they add nothing to the download.
+	  		Tap the one you want &mdash; they are all on show.</p>
+	  	<p>The pads are laid out in a <b>scale</b> (a chosen set of notes that sound
+	  		good together) and show their real note names, so there is no wrong note
+	  		to avoid. If you have picked a key and scale in UTIL it uses that;
+	  		otherwise it uses C minor pentatonic, five notes that sit well over
+	  		almost any beat.</p>
+	  	<ul>
+	  		<li><b>in time</b> &mdash; holds each note until the next sixteenth of the
+	  			beat, so a slightly late finger still lands with the drums. It changes
+	  			<i>when</i> you play, never <i>what</i>.</li>
+	  		<li><b>rec</b> &mdash; writes what you play into the pattern you are on.
+	  			The keyboard has its own track, kept alongside the sixteen sample
+	  			slots rather than taking one of them, so recording onto it costs you
+	  			no sounds. It shows up as the <b>&#9834;</b> row in the song view.</li>
+	  		<li><b>clear</b> &mdash; wipes the keyboard track on this pattern only.</li>
+	  	</ul>
+	  	<p>The XY pad's <b>SYNTH</b> mode plays the same notes with your finger:
+	  		left-to-right picks the note, up-and-down goes from dark to bright. It is
+	  		for playing live over the beat &mdash; it is not recorded.</p>
+
+	  	<h2>Stacking the XY effects</h2>
+	  	<p>Each of the pad's three modes can be <b>locked</b> on its own. Set a
+	  		filter you like, press <b>LOCK</b>, then switch to SPACE &mdash; the
+	  		filter keeps running underneath while you play with the echo. They
+	  		stack rather than replacing each other, so you can build a sound up
+	  		layer by layer.</p>
+	  	<ul>
+	  		<li>An orange dot on a mode means it is still running in the background.</li>
+	  		<li>Faint circles on the pad show where each locked mode was left.</li>
+	  		<li>The readout names what else is on, e.g. <i>play a lead +tone +space</i>.</li>
+	  		<li><b>Hold LOCK</b> for a moment to clear every lock at once.</li>
+	  	</ul>
+
+	  	<h2>The song view</h2>
+	  	<p>Tap <b>song</b> in the top bar of the screen. Every sound that has
+	  		something on it gets a row of sixteen cells, filled where it hits and
+	  		hollow where it rests &mdash; the whole pattern at a glance. The outlined
+	  		column is where the playhead is. Along the top: which pattern you are on,
+	  		the tempo, the scale, how many parts are playing and how many hits there
+	  		are in total. Along the bottom: your pattern chain, with the one you are
+	  		playing highlighted. Tap <b>scene</b> to go back to the animation.</p>
 
 	  	<h2>The 16 punch-in effects</h2>
 	  	<p>Same set, same order as the hardware. <b>Hold FX + a pad</b>, or use the
