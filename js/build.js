@@ -37,48 +37,247 @@
 	}
 
 	/* ============================================================
-	 * The styles.
+	 * THE GENERATOR
 	 *
-	 * Step numbers are 0-15 across one bar. Step 0 is the "one" you would count
-	 * in; 4, 8 and 12 are the other three beats. Anything else is an off-beat.
-	 * Melodic entries are [step, pad] — the pad index picks the note out of
-	 * whatever scale is set, so they stay in key.
+	 * The first version was five fixed arrays of step numbers. It was always
+	 * right and always dead: every hit the same volume, every hit exactly on
+	 * the grid, the same beat every time you pressed the button.
+	 *
+	 * Three things separate a beat that sounds programmed from one that sounds
+	 * played, and none of them are the notes:
+	 *
+	 *   DYNAMICS   a hi-hat line where every tick is the same volume reads as a
+	 *              machine. Accent the beat, drop the off-beats back, and the
+	 *              same notes suddenly have a pulse.
+	 *   SWING      straight sixteenths are a grid. Delaying every second one
+	 *              turns it into a groove. Boom bap and lo-fi live on this.
+	 *   PUSH/DRAG  a snare landing 10ms late is the "behind the beat" feel that
+	 *              defines 90s hip-hop. The engine takes a per-step nudge in
+	 *              milliseconds, so we can actually do this.
+	 *
+	 * And one thing about the notes: THE BASS FOLLOWS THE KICK. Bass and kick
+	 * written independently fight each other in the low end and turn to mud.
+	 * Landing them together is most of what makes a beat sound finished.
+	 *
+	 * Each style below is a set of rules, not a pattern. Every press rolls
+	 * inside the rules, so two builds give two different beats that are both
+	 * correct.
 	 * ============================================================ */
+
+	function rnd(n) { return Math.floor(Math.random() * n); }
+	function chance(p) { return Math.random() < p; }
+	function pickOne(a) { return a[rnd(a.length)]; }
+	// choose n distinct entries
+	function pickSome(a, n) {
+		var pool = a.slice(), out = [];
+		while (out.length < n && pool.length) { out.push(pool.splice(rnd(pool.length), 1)[0]); }
+		return out;
+	}
+	// small random shift, for volume and timing
+	function jitter(v, amt) { return v + (Math.random() * 2 - 1) * amt; }
+
 	var STYLES = {
+		"old school": {
+			scale: "penta min",
+			bpm: [102, 108], swing: 0,
+			// Big, plain and confident — 1980s drum machine, nothing hiding.
+			kickBase: [0, 8], kickExtra: [[6], [10], [], []],
+			snare: [4, 12], snareVel: -5, snareNudge: 0, ghosts: 0,
+			hatEvery: 2, hatAccent: -13, hatOff: -19, hatDrop: 0.05,
+			clap: true,
+			bassMove: [0, 0, 4, 0], melDensity: 0.45, melLate: 0,
+			blurb: "straight, loud and simple — Sugarhill and Run-DMC territory"
+		},
 		"boom bap": {
-			bpm: 90,
-			kick:  [0, 3, 10],
-			snare: [4, 12],
-			hat:   [0, 2, 4, 6, 8, 10, 12, 14],
-			bass:  [[0, 0], [3, 0], [10, 2], [14, 4]],
-			mel:   [[0, 4], [6, 7], [8, 5], [11, 9], [14, 7]]
+			scale: "minor",
+			bpm: [86, 94], swing: 560,
+			// Swung, dusty, snare dragging just behind the beat.
+			kickBase: [0], kickExtra: [[3, 10], [6, 10], [3, 11], [10, 14]],
+			snare: [4, 12], snareVel: -7, snareNudge: 11, ghosts: 0.55,
+			hatEvery: 2, hatAccent: -15, hatOff: -23, hatDrop: 0.18,
+			clap: false,
+			bassMove: [0, 0, 3, 5], melDensity: 0.5, melLate: 6,
+			blurb: "swung and behind the beat — 90s Premier and Pete Rock"
 		},
 		"trap": {
-			bpm: 140,
-			kick:  [0, 6, 10, 11],
-			snare: [8],
-			hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-			bass:  [[0, 0], [6, 0], [10, 3]],
-			mel:   [[0, 7], [4, 9], [8, 5], [12, 4]]
+			scale: "minor",
+			bpm: [138, 144], swing: 0,
+			kickBase: [0], kickExtra: [[6, 10, 11], [6, 11], [7, 10, 14], [3, 10, 11]],
+			snare: [8], snareVel: -5, snareNudge: 0, ghosts: 0,
+			hatEvery: 1, hatAccent: -16, hatOff: -24, hatDrop: 0.1,
+			clap: false,
+			bassMove: [0, 0, 0, 3], melDensity: 0.35, melLate: 0,
+			blurb: "fast, sparse, rolling hats"
 		},
 		"house": {
-			bpm: 124,
-			kick:  [0, 4, 8, 12],
-			snare: [4, 12],
-			hat:   [2, 6, 10, 14],
-			bass:  [[2, 0], [6, 0], [10, 4], [14, 2]],
-			mel:   [[0, 5], [3, 7], [8, 9], [11, 7], [14, 5]]
+			scale: "dorian",
+			bpm: [122, 126], swing: 0,
+			kickBase: [0, 4, 8, 12], kickExtra: [[], [], [], []],
+			snare: [4, 12], snareVel: -9, snareNudge: 0, ghosts: 0,
+			hatEvery: 2, hatOffbeat: true, hatAccent: -14, hatOff: -20, hatDrop: 0,
+			clap: true,
+			bassMove: [0, 0, 4, 2], melDensity: 0.55, melLate: 0,
+			blurb: "four on the floor, hats on the off-beat"
 		},
 		"lo-fi": {
-			bpm: 76,
-			kick:  [0, 9],
-			snare: [4, 12],
-			hat:   [2, 6, 10, 14],
-			bass:  [[0, 0], [9, 2]],
-			mel:   [[2, 4], [5, 7], [10, 9], [13, 5]]
+			scale: "penta min",
+			bpm: [72, 80], swing: 620,
+			kickBase: [0], kickExtra: [[9], [10], [6, 9], [9]],
+			snare: [4, 12], snareVel: -11, snareNudge: 16, ghosts: 0.35,
+			hatEvery: 2, hatAccent: -19, hatOff: -26, hatDrop: 0.3,
+			clap: false,
+			bassMove: [0, 0, 2, 0], melDensity: 0.4, melLate: 10,
+			blurb: "slow, heavily swung, everything dragging"
 		}
 	};
 	var styleName = "boom bap";
+
+	/* ---------- drums ---------- */
+
+	function genKick(S) {
+		var steps = S.kickBase.concat(pickOne(S.kickExtra));
+		var out = [];
+		steps.forEach(function (st) {
+			// the "one" is always the loudest thing in the bar
+			out.push({ s: st, v: st === 0 ? -4 : jitter(-8, 1.5), n: 0 });
+		});
+		return out;
+	}
+
+	function genSnare(S) {
+		var out = [];
+		S.snare.forEach(function (st) {
+			out.push({ s: st, v: jitter(S.snareVel, 1), n: S.snareNudge });
+		});
+		// Ghost notes: quiet snare taps between the backbeats. They are what
+		// fills the space in a boom bap pattern without adding another part.
+		if (S.ghosts > 0) {
+			[2, 6, 7, 10, 14, 15].forEach(function (st) {
+				if (chance(S.ghosts * 0.4)) {
+					out.push({ s: st, v: jitter(-25, 2), n: S.snareNudge + 4 });
+				}
+			});
+		}
+		return out;
+	}
+
+	function genHat(S) {
+		var out = [];
+		for (var st = 0; st < 16; st += S.hatEvery) {
+			var step = S.hatOffbeat ? st + 2 : st;
+			if (step > 15) { continue; }
+			if (chance(S.hatDrop)) { continue; }     // a missing hat is a rest, not a mistake
+			var onBeat = step % 4 === 0;
+			out.push({
+				s: step,
+				v: jitter(onBeat ? S.hatAccent : S.hatOff, 1.5),
+				n: jitter(0, 3)                       // hats breathe a couple of ms either way
+			});
+		}
+		return out;
+	}
+
+	function genClap(S) {
+		if (!S.clap) { return []; }
+		return S.snare.map(function (st) {
+			return { s: st, v: jitter(-10, 1), n: S.snareNudge + jitter(3, 2) };
+		});
+	}
+
+	/* ---------- bass: locked to the kick ---------- */
+
+	function genBass(S, kick) {
+		// One note per kick, so the two land together instead of fighting.
+		// Pad index picks a note out of the current scale, so it stays in key.
+		var sorted = kick.slice().sort(function (a, b) { return a.s - b.s; });
+		return sorted.map(function (k, i) {
+			return {
+				s: k.s,
+				pad: S.bassMove[i % S.bassMove.length],
+				v: jitter(k.s === 0 ? -8 : -11, 1),
+				n: 0
+			};
+		});
+	}
+
+	/* ---------- melody: a phrase, not a scatter ---------- */
+
+	// Rhythms that leave room. Each is a set of steps within one half-bar.
+	// Deliberately sparse — two to four notes per half-bar. Over a full kit a
+	// melody with a note on every other step is clutter; the gaps are what let
+	// the drums be heard. But one note in a whole bar isn't a phrase either,
+	// so nothing here is shorter than two.
+	var PHRASE_RHYTHMS = [
+		[0, 3], [0, 4], [2, 5], [0, 3, 6], [0, 2, 5], [3, 6], [2, 6], [0, 2, 4, 6]
+	];
+
+	// Pads 0-4 are the root octave, which is where the bass lives. The melody
+	// starts an octave above it so the two occupy different space instead of
+	// muddling together in the same register.
+	var MEL_LO = 5, MEL_HI = 14;
+
+	function genMelody(S) {
+		// A contour: start somewhere, step up and down by small intervals, come
+		// back near where you began. Small moves sound like a tune; big jumps
+		// sound like an accident.
+		var deg = pickOne([MEL_LO, MEL_LO + 2, MEL_LO + 4]);
+		var call = pickOne(PHRASE_RHYTHMS);
+		var out = [];
+
+		call.forEach(function (st, i) {
+			out.push({ s: st, pad: deg, v: jitter(-14, 2), n: S.melLate });
+			var move = pickOne([1, 2, -1, -2, 1, -1]);
+			deg = Math.max(MEL_LO, Math.min(MEL_HI, deg + move));
+			if (i === call.length - 1) { return; }
+		});
+
+		// The answer. Call and response: the second half echoes the first and
+		// lands back on the note it started from, so the phrase settles instead
+		// of hanging in the air.
+		if (chance(0.8)) {
+			var answer = chance(0.6) ? call : pickOne(PHRASE_RHYTHMS);
+			var d2 = Math.max(MEL_LO, out[0].pad - pickOne([0, 1, 2]));
+			answer.forEach(function (st, i) {
+				if (st + 8 > 15) { return; }
+				out.push({ s: st + 8, pad: d2, v: jitter(-15, 2), n: S.melLate });
+				d2 = Math.max(MEL_LO, Math.min(MEL_HI, d2 + pickOne([1, -1, -2, 2])));
+			});
+			if (out.length) { out[out.length - 1].pad = out[0].pad; }
+		}
+		return out;
+	}
+
+	/* ---------- swing + tempo ---------- */
+
+	function applyFeel(S) {
+		/* THE SCALE MATTERS MORE THAN ANY OF THIS.
+		 *
+		 * The device's default "16-pad classic" layout is the original
+		 * hardware's fixed note order, and it is not a scale — the pads do not
+		 * even run in pitch order. Generating a melody across it produces
+		 * something closer to noise than a tune, which is the real reason the
+		 * first version's melodies sounded wrong.
+		 *
+		 * So a build sets a scale if one isn't already chosen. If the user has
+		 * picked their own we leave it alone: their key beats ours. */
+		try {
+			if (PO33.scale && !PO33.scale.enabled()) {
+				PO33.scale.set({ scale: S.scale, key: 0 }, true);
+			}
+		} catch (e) {}
+
+		var bpm = S.bpm[0] + rnd(S.bpm[1] - S.bpm[0] + 1);
+		try {
+			window.tempo = bpm;
+			Tone.Transport.bpm.value = bpm;
+		} catch (e) {}
+		try {
+			window.swing = S.swing;
+			Tone.Transport.swing = S.swing / 1000;
+			Tone.Transport.swingSubdivision = "16n";
+		} catch (e) {}
+		return bpm;
+	}
 
 	/* ============================================================
 	 * Reading and writing patterns
@@ -140,11 +339,14 @@
 
 	// Write one step, mirroring what editPattern does when it turns a step on,
 	// so a built step behaves exactly like one you tapped in by hand.
-	function setStep(ch, step, pitch, vol, patIdx) {
+	function setStep(ch, step, pitch, vol, patIdx, nudge) {
 		var c = cell(ch, step, patIdx), cs;
 		try { cs = window.channelSettingsArr[ch]; } catch (e) { return; }
 		if (!c || !cs) { return; }
 		c.noteOn = 1;
+		// per-step micro-timing, in milliseconds. This is what lets a snare sit
+		// a fraction behind the beat instead of dead on the grid.
+		c.nudge = Math.max(-60, Math.min(60, Math.round(nudge || 0)));
 		c.notePitch = pitch == null ? 0 : pitch;
 		c.fxPitch = cs.fxPitch;
 		c.fxVolume = vol == null ? cs.fxVolume : vol;
@@ -191,38 +393,49 @@
 	 * The parts
 	 * ============================================================ */
 
+	// write a generated list of {s, pad, v, n} into one slot
+	function layHits(ch, hits, patIdx) {
+		hits.forEach(function (h) {
+			setStep(ch, h.s, h.pad || 0,
+				Math.max(-32, Math.min(-2, Math.round(h.v))), patIdx, h.n);
+		});
+	}
+
 	function putDrums(patIdx, opts) {
 		opts = opts || {};
-		var st = STYLES[styleName], taken = [], out = [];
-		[["kick", st.kick], ["snare", st.snare], ["hat", st.hat]].forEach(function (pair) {
-			if (opts.noKick && pair[0] === "kick") { return; }
+		var S = STYLES[styleName], taken = [], out = [];
+		var kick = opts.kick || genKick(S);
+		var parts = [["kick", kick], ["snare", genSnare(S)], ["hat", genHat(S)]];
+		var clap = genClap(S);
+		if (clap.length) { parts.push(["clap", clap]); }
+		if (opts.noKick) { parts.shift(); }
+
+		parts.forEach(function (pair) {
 			var pick = pickSlot("drum", taken, patIdx);
 			if (!pick) { return; }
 			taken.push(pick.ch);
 			if (!pick.fresh) { clearSlot(pick.ch, patIdx); }
-			pair[1].forEach(function (s, i) {
-				// hats sit back so they don't fight the kick and snare
-				var vol = pair[0] === "hat" ? -20 : (i === 0 ? -8 : -12);
-				setStep(pick.ch, s, 0, vol, patIdx);
-			});
+			layHits(pick.ch, pair[1], patIdx);
 			out.push(pair[0] + " → slot " + (pick.ch + 1) + (pick.fresh ? "" : " (replaced)"));
 		});
-		return out;
+		return { log: out, kick: kick };
 	}
 
-	function putBass(patIdx) {
+	function putBass(patIdx, kick) {
 		var pick = pickSlot("melodic", [], patIdx);
 		if (!pick) { return null; }
 		if (!pick.fresh) { clearSlot(pick.ch, patIdx); }
-		STYLES[styleName].bass.forEach(function (pr) { setStep(pick.ch, pr[0], pr[1], -10, patIdx); });
-		return { ch: pick.ch, txt: "bass → slot " + (pick.ch + 1) + (pick.fresh ? "" : " (replaced)") };
+		var S = STYLES[styleName];
+		layHits(pick.ch, genBass(S, kick || genKick(S)), patIdx);
+		return { ch: pick.ch, txt: "bass → slot " + (pick.ch + 1) + " (follows the kick)" +
+			(pick.fresh ? "" : " (replaced)") };
 	}
 
 	function putMelody(patIdx, avoid) {
 		var pick = pickSlot("melodic", avoid || [], patIdx);
 		if (!pick) { return null; }
 		if (!pick.fresh) { clearSlot(pick.ch, patIdx); }
-		STYLES[styleName].mel.forEach(function (pr) { setStep(pick.ch, pr[0], pr[1], -14, patIdx); });
+		layHits(pick.ch, genMelody(STYLES[styleName]), patIdx);
 		return { ch: pick.ch, txt: "melody → slot " + (pick.ch + 1) + (pick.fresh ? "" : " (replaced)") };
 	}
 
@@ -277,7 +490,10 @@
 			}
 		}
 		if (snare >= 0) {
-			[12, 13, 14, 15].forEach(function (s) { setStep(snare, s, 0, -12, to); });
+			// a fill that builds: each hit a touch louder than the last
+			[12, 13, 14, 15].forEach(function (s, i) {
+				setStep(snare, s, 0, -16 + i * 3, to, i * 2);
+			});
 		}
 	}
 
@@ -301,10 +517,16 @@
 			clearPatternAt(cur());
 			log.push("cleared pattern " + (cur() + 1));
 		}
-		var avoid = [];
-		if (!st.drums) { putDrums().forEach(function (t) { log.push(t); }); }
+		var avoid = [], kick = null;
+		if (!st.drums) {
+			var dres = putDrums();
+			dres.log.forEach(function (t) { log.push(t); });
+			kick = dres.kick;
+			log.push("feel: " + applyFeel(STYLES[styleName]) + " BPM" +
+				(STYLES[styleName].swing ? ", swing " + Math.round(STYLES[styleName].swing / 10) + "%" : ""));
+		}
 		if (!st.bass) {
-			var bres = putBass();
+			var bres = putBass(null, kick);
 			if (bres) { avoid.push(bres.ch); log.push(bres.txt); }
 		}
 		if (!st.melody) {
@@ -348,19 +570,22 @@
 		var f = findPatterns(3);
 		var main = cur(), breakdown = f.list[0], fill = f.list[1], intro = f.list[2];
 
-		try {
-			window.tempo = STYLES[styleName].bpm;
-			Tone.Transport.bpm.value = window.tempo;
-		} catch (e) {}
+		var S = STYLES[styleName];
+		var bpm = applyFeel(S);
 
-		// 1. the main bar — everything
+		// 1. the main bar — everything, with the bass locked to this kick
 		clearPatternAt(main);
 		var avoid = [];
-		putDrums(main).forEach(function (t) { log.push(t); });
-		var bres = putBass(main);
+		var dres = putDrums(main);
+		dres.log.forEach(function (t) { log.push(t); });
+		var bres = putBass(main, dres.kick);
 		if (bres) { avoid.push(bres.ch); log.push(bres.txt); }
 		var mres = putMelody(main, avoid);
 		if (mres) { log.push(mres.txt); }
+		log.push("feel: " + bpm + " BPM" +
+			(S.swing ? ", swing " + Math.round(S.swing / 10) + "%" : ", straight") +
+			(S.snareNudge ? ", snare " + S.snareNudge + "ms behind the beat" : ""));
+		try { log.push("scale: " + PO33.scale.label()); } catch (e) {}
 
 		// 2. intro — the drums on their own, so the beat arrives
 		clearPatternAt(intro);
@@ -374,9 +599,14 @@
 			if (hasAny(d, breakdown)) { clearSlot(d, breakdown); break; }   // drop the kick
 		}
 
-		// 4. turnaround — the main bar with a fill at the end
+		// 4. turnaround — the main bar with a fill at the end and a new melody
+		// phrase, so the eighth bar is a real change rather than a copy
 		clearPatternAt(fill);
 		makeVariation(main, fill);
+		if (mres) {
+			clearSlot(mres.ch, fill);
+			layHits(mres.ch, genMelody(S), fill);
+		}
 
 		persist();
 		var chain = [intro, main, main, main, breakdown, main, main, fill];
@@ -419,11 +649,16 @@
 				return '<button type="button" data-bd="style" data-v="' + k + '"' +
 					(k === styleName ? ' class="on"' : "") + ">" + k + "</button>";
 			}).join("") + "</div>" +
-			'<p class="bdNote">sets the rhythm and the tempo (' +
-				STYLES[styleName].bpm + " BPM).</p></div>";
+			'<p class="bdNote">' + STYLES[styleName].blurb + " &mdash; " +
+				STYLES[styleName].bpm[0] + "&ndash;" + STYLES[styleName].bpm[1] + " BPM" +
+				(STYLES[styleName].swing
+					? ", swing " + Math.round(STYLES[styleName].swing / 10) + "%"
+					: ", straight") + ".</p></div>";
 
 		s += '<div class="uvSec"><h4>make a whole beat</h4><div class="uvRow">' +
 			'<button type="button" data-bd="whole" class="bdBig">build a whole beat</button>' +
+			"</div><div class='uvRow'>" +
+			'<button type="button" data-bd="whole">roll a different one</button>' +
 			"</div>" +
 			'<p class="bdNote">four bars &mdash; intro, main, breakdown, turnaround &mdash; ' +
 			"chained into eight. this is the one to press if you just want something " +
@@ -467,8 +702,7 @@
 			case "close": hide(); break;
 			case "style":
 				styleName = el.getAttribute("data-v");
-				try { window.tempo = STYLES[styleName].bpm; Tone.Transport.bpm.value = window.tempo; } catch (e) {}
-				flash(styleName + " · " + STYLES[styleName].bpm + " BPM", "tip");
+				flash(styleName + " · " + applyFeel(STYLES[styleName]) + " BPM", "tip");
 				paint();
 				break;
 			case "whole":   buildWholeBeat(); break;

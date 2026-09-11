@@ -232,7 +232,7 @@
 			var h = '<div class="songHead">' +
 				"<b>PAT " + (pat + 1) + "</b>" +
 				"<span>" + tempo + " BPM</span>" +
-				(swing ? "<span>swing " + swing + "%</span>" : "") +
+				(swing ? "<span>swing " + Math.round(swing / 10) + "%</span>" : "") +
 				"<span>" + scaleTxt + "</span>" +
 				"</div>";
 			h += '<div class="songHead songHead2">' +
@@ -323,7 +323,7 @@
 
 		if (state === 4) {
 			mainEl.textContent = tempo + " BPM";
-			subEl.textContent = "swing " + swing + "%   ·   vol " + vol + "/16";
+			subEl.textContent = "swing " + Math.round(swing / 10) + "%   ·   vol " + vol + "/16";
 		} else if (state === 3 || state === 33 || state === 34) {
 			mainEl.textContent = "PATTERN " + (pat + 1);
 			subEl.textContent = "chain: " + (g("patternChain", [0]).map(function (n) { return n + 1; }).join(" ")) ;
