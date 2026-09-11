@@ -66,6 +66,7 @@
 	function listen(dt) {
 		beatPulse = Math.max(0, beatPulse - dt * 0.0055);
 		barPulse = Math.max(0, barPulse - dt * 0.0022);
+		mush.bang = Math.max(0, mush.bang - dt * 0.004);
 		var lv = readLevel();
 		level += (lv - level) * 0.25;                  // smooth the jitter out
 
@@ -109,10 +110,10 @@
 		{ sheet: "chick", back: 52, peck: 0 }
 	];
 
-	/* The mushroom keeps to itself: it wanders its own path and headbangs on
-	 * the downbeat rather than following anyone. It gives the scene a second
-	 * thing to watch that is doing its own thing. */
-	var mush = { x: 0, y: 0, tx: null, ty: null, dir: 1, moving: false, restT: 1200, bang: 0 };
+	/* The mushroom lives on the SONG screen only — the main scene stays the boy
+	 * with his chickens. bang still ticks here because the song view's footer
+	 * animation reads it. */
+	var mush = { bang: 0 };
 
 	function loadXp() { try { xp = parseInt(localStorage.getItem("po33.scene.xp"), 10) || 0; } catch (e) { xp = 0; } }
 	function saveXp() { try { localStorage.setItem("po33.scene.xp", String(xp)); } catch (e) {} }
@@ -265,51 +266,6 @@
 		ctx.restore();
 	}
 
-	function drawMush(now) {
-		// the headbang beats standing still, which beats walking
-		var name = mush.bang > 0 ? "mush_hit" : (mush.moving ? "mush_run" : "mush_idle");
-		var sh = sheet[name];
-		if (!sh) { return; }
-		var nf = MUSH_F[name] || 1;
-		var fps = name === "mush_hit" ? 16 : (mush.moving ? 11 : 6);
-		var f = Math.floor(now / (1000 / fps)) % nf;
-		var w = MUSH_W * mushS, h = MUSH_H * mushS;
-		var mirror = mush.dir < 0;
-		ctx.save();
-		ctx.translate(Math.round(mush.x + (mirror ? w : 0)), Math.round(mush.y));
-		ctx.scale(mirror ? -1 : 1, 1);
-		ctx.drawImage(sh, f * MUSH_W, 0, MUSH_W, MUSH_H, 0, 0, w, h);
-		ctx.restore();
-	}
-
-	function moveMush(dt, b) {
-		if (mush.bang > 0) { mush.bang -= dt * 0.004; }
-		var w = MUSH_W * mushS, h = MUSH_H * mushS;
-		var maxX = Math.max(4, W - w - 4);
-		var maxY = Math.max(b.minY, H - h - 2);
-		if (!mush.x) { mush.x = W * 0.75; mush.y = (b.minY + maxY) / 2; }
-		if (mush.moving && mush.tx != null) {
-			var dx = mush.tx - mush.x, dy = mush.ty - mush.y;
-			var d = Math.sqrt(dx * dx + dy * dy);
-			if (d < 4) { mush.moving = false; mush.restT = 1400 + Math.random() * 3200; }
-			else {
-				var sp = 0.03 * dt;
-				mush.x += (dx / d) * sp * 1.5;
-				mush.y += (dy / d) * sp;
-				if (Math.abs(dx) > 1) { mush.dir = dx > 0 ? 1 : -1; }
-			}
-		} else {
-			mush.restT -= dt;
-			if (mush.restT <= 0) {
-				mush.tx = 4 + Math.random() * (maxX - 4);
-				mush.ty = b.minY + Math.random() * (maxY - b.minY);
-				mush.moving = true;
-			}
-		}
-		mush.x = Math.max(4, Math.min(maxX, mush.x));
-		mush.y = Math.max(b.minY, Math.min(maxY, mush.y));
-	}
-
 	function frame(now) {
 		requestAnimationFrame(frame);
 		if (!ctx || !W) { return; }
@@ -381,8 +337,6 @@
 			order.push({ y: f.y, draw: function () { drawBird(f, now); } });
 		});
 		order.push({ y: hero.y, draw: function () { drawHero(now); } });
-		moveMush(dt, b);
-		order.push({ y: mush.y, draw: function () { drawMush(now); } });
 
 		// whoever is further down the screen is nearer, so draw them last
 		order.sort(function (a, c) { return a.y - c.y; });

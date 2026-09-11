@@ -141,6 +141,16 @@
 				if (on) { any = true; }
 			}
 			if (!any) { continue; }
+			// average pad index of the notes on this slot; low = probably bass
+			var pitchSum = 0, pitchN = 0;
+			for (var q = 0; q < 16; q++) {
+				try {
+					var b2 = window.newChannelArr[ch][pat][q];
+					if (b2 && b2.noteOn) { pitchSum += (b2.notePitch || 0); pitchN++; }
+				} catch (e) {}
+			}
+			var lowNotes = ch < 8 && pitchN > 0 && (pitchSum / pitchN) <= 5;
+
 			var name = null;
 			try { name = window.PO33Lib && PO33Lib.slotName ? PO33Lib.slotName(ch + 1) : null; } catch (e) {}
 			var st = "on";
@@ -148,7 +158,7 @@
 			rows.push({
 				label: String(ch + 1), hits: hits, kind: ch < 8 ? "mel" : "drm",
 				name: name ? shortName(name) : null, locks: locks, loud: loud, soft: soft,
-				state: st
+				state: st, lowNotes: lowNotes
 			});
 		}
 		// the keyboard's own track, if anything has been played onto it
@@ -167,13 +177,29 @@
 		return rows;
 	}
 
-	// How busy is the bar? A pattern with a hit on every sixteenth of every part
-	// is 100%. Handy for spotting "this is getting cluttered" at a glance.
-	function density(rows) {
-		if (!rows.length) { return 0; }
-		var hits = 0;
-		rows.forEach(function (r) { r.hits.forEach(function (h) { if (h) { hits++; } }); });
-		return Math.round((hits / (rows.length * 16)) * 100);
+	/* Which jobs in the track are covered, and which are missing.
+	 *
+	 * This replaces a "% full" figure that told you nothing you could act on.
+	 * Knowing a bar is 53% full does not tell you what to do next; knowing it
+	 * has no bass does.
+	 *
+	 * The guess is simple and stated as a guess: drum slots (9-16) are drums,
+	 * and a melodic slot counts as bass if its notes sit in the bottom third of
+	 * the pads, otherwise it is melody. The keyboard track is melody.
+	 */
+	function roleOf(row) {
+		if (row.kind === "drm") { return "drums"; }
+		if (row.kind === "key") { return "melody"; }
+		return row.lowNotes ? "bass" : "melody";
+	}
+
+	function roleSummary(rows) {
+		var have = {};
+		rows.forEach(function (r) { if (r.state !== "mute") { have[roleOf(r)] = 1; } });
+		return ["drums", "bass", "melody"].map(function (k) {
+			return "<span class='" + (have[k] ? "roleOk" : "roleGap") + "'>" +
+				(have[k] ? "\u2713 " : "\u2013 ") + k + "</span>";
+		}).join("");
 	}
 
 	function drawSong() {
@@ -188,7 +214,7 @@
 
 		// only rebuild when something actually changed
 		var swing = g("swing", 0);
-		var dens = density(rows);
+		var roles = roleSummary(rows);
 		var muted = rows.filter(function (r) { return r.state === "mute"; }).length;
 		var soloed = rows.filter(function (r) { return r.state === "solo"; }).length;
 		var locks = rows.reduce(function (a, r) { return a + r.locks; }, 0);
@@ -197,7 +223,7 @@
 		var loopSecs = barSecs * chain.length;
 
 		var sig = rows.map(function (r) {
-			return r.label + r.state + r.locks + (r.name || "") +
+			return r.label + r.state + r.locks + (r.lowNotes ? "L" : "") + (r.name || "") +
 				r.hits.map(function (h) { return h ? 1 : 0; }).join("");
 		}).join("|") + "#" + pat + "#" + tempo + "#" + swing + "#" +
 			chain.join(",") + "#" + scaleTxt;
@@ -212,7 +238,7 @@
 			h += '<div class="songHead songHead2">' +
 				"<span>" + rows.length + " part" + (rows.length === 1 ? "" : "s") + "</span>" +
 				"<span>" + filled + " hits</span>" +
-				"<span>" + dens + "% full</span>" +
+				"<span class='roleBox'>" + roles + "</span>" +
 				(locks ? "<span>" + locks + " locked</span>" : "") +
 				(muted ? "<span class='warnTxt'>" + muted + " muted</span>" : "") +
 				(soloed ? "<span class='warnTxt'>" + soloed + " solo</span>" : "") +
@@ -272,6 +298,7 @@
 		// an overlay covers the LCD — don't churn behind it
 		if (document.body.classList.contains("projOpen") ||
 		    document.body.classList.contains("utilOpen") ||
+		    document.body.classList.contains("buildOpen") ||
 		    document.body.classList.contains("trimOpen")) { updateClock(); return; }
 
 		var mode = g("mode", 0), state = g("state", 0), view = g("view", 0);
@@ -1187,6 +1214,9 @@
 	/* ---- clear helpers (exposed on window.PO33) ---- */
 
 	function clearPattern() {
+		// the keyboard track is stored outside newChannelArr, so it has to be
+		// cleared alongside it or a "cleared" pattern still plays synth notes
+		try { if (window.PO33.keys && PO33.keys.clearPattern) { PO33.keys.clearPattern(); } } catch (e) {}
 		var p = g("currentPattern", 0);
 		try {
 			for (var c = 0; c < 16; c++) {

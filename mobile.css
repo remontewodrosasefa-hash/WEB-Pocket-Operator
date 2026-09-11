@@ -369,6 +369,13 @@
 	body.lib-lcd .perfStrip { display: none; }
 	body.lib-lcd .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
 
+	/* BUILD is a screenful of choices, not a status line — it gets the same
+	 * treatment as the library: the screen grows and the pads step aside. */
+	body.buildOpen .controlStrip,
+	body.buildOpen .gridArea,
+	body.buildOpen .perfStrip { display: none; }
+	body.buildOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
+
 	#lcdLibSlot { display: none; }
 	body.lib-lcd #lcdLibSlot {
 		display: flex;

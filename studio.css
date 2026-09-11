@@ -961,3 +961,71 @@ body.utilOpen #utilView { display: flex; }
 	height: 32px;
 	display: block;
 }
+
+/* the XY pad flags when the synth is being written into the pattern */
+#xyPad.recording { border-color: #c0392b; box-shadow: 0 0 10px rgba(192,57,43,0.35); }
+#xyPad.recording::after {
+	content: "REC";
+	position: absolute;
+	right: 7px; bottom: 6px;
+	z-index: 2;
+	font: 700 9px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.1em;
+	color: #fff;
+	background: #c0392b;
+	border-radius: 3px;
+	padding: 3px 6px;
+	pointer-events: none;
+}
+
+/* ================================================================
+ * BUILD screen (triple-press TRIM)
+ * ================================================================ */
+#buildView { display: none; }
+body.buildOpen #buildView { display: flex; }
+#buildView {
+	position: absolute;
+	inset: 0;
+	z-index: 9;                /* above trim and util */
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 10px 10px;
+	background: linear-gradient(180deg, #c4cdae, #a3ad8a);
+	color: #1b2411;
+	font-family: ui-monospace, Menlo, monospace;
+}
+#bdBody {
+	flex: 1 1 auto; min-height: 0; overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	display: flex; flex-direction: column; gap: 6px;
+}
+#buildView .uvSec h4 {
+	margin: 2px 0 3px;
+	font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+	border-bottom: 1px solid rgba(27,36,17,0.25); padding-bottom: 2px;
+}
+#buildView .uvRow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+#buildView button {
+	font: inherit; font-size: 11px; padding: 6px 9px;
+	border: 1px solid #1b2411; border-radius: 3px;
+	background: transparent; color: #1b2411;
+	touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+#buildView button.on,
+#buildView button.bdBig { background: #1b2411; color: #c4cdae; }
+#buildView button.bdBig { flex: 1 1 100%; font-weight: 700; padding: 9px; letter-spacing: 0.06em; }
+#buildView button[disabled] { opacity: 0.35; }
+.bdNote { margin: 3px 0 0; font-size: 10px; line-height: 1.45; opacity: 0.72; }
+.bdHave { gap: 10px; font-size: 11px; }
+
+/* shared role chips (song view + build screen) */
+.roleOk { font-weight: 700; }
+.roleGap { opacity: 0.45; }
+.roleBox { display: inline-flex; gap: 8px; }
+
+/* The message bar normally floats mid-screen. With a full-screen LCD panel
+ * open that lands across the panel's controls, so it drops to the bottom edge
+ * and the panel keeps clear space for it. */
+body.buildOpen #hudFlash,
+body.utilOpen #hudFlash { bottom: 0; }
+#bdBody { padding-bottom: 22px; }

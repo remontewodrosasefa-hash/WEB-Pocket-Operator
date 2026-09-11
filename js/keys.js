@@ -152,7 +152,16 @@
 	 * ============================================================== */
 
 	var track = {};        // pattern index -> array of 16 (null | {note, voice})
-	var armed = false;     // is the keyboard writing what you play?
+	var keysArm = false;   // the keys tab's own rec button
+
+	/* Is the keyboard writing what you play?
+	 *
+	 * TWO switches turn this on, because there were two obvious ways to ask for
+	 * it and only one of them used to work: the rec button in the keys tab, and
+	 * the device's own LIVE REC (window.mode === 11). Arming live rec and then
+	 * playing the synth recorded nothing, which is not what anyone would expect.
+	 */
+	function isArmed() { return keysArm || window.mode === 11; }
 
 	function lane(pat) {
 		if (!track[pat]) { track[pat] = new Array(16); }
@@ -176,7 +185,7 @@
 	}
 
 	function recordNote(n, voice) {
-		if (!armed) { return false; }
+		if (!isArmed()) { return false; }
 		var L = lane(curPattern());
 		var st = writeStep();
 		// a slide can cross several notes inside one step; the last one wins,
@@ -232,7 +241,7 @@
 		var L = track[curPattern()];
 		var n = 0;
 		if (L) { for (var i = 0; i < 16; i++) { if (L[i]) { n++; } } }
-		return { steps: n, armed: armed };
+		return { steps: n, armed: isArmed(), liveRec: window.mode === 11 };
 	}
 
 	// the sequencer's hook
@@ -360,14 +369,30 @@
 		toggleFit: function () { return this.setFit(!inTime); },
 		note: note,
 		layout: layout,
-		armed: function () { return armed; },
+		armed: isArmed,
 		toggleArm: function () {
-			armed = !armed;
-			flash(armed ? "keys rec on \u2014 what you play is written into this pattern"
-				: "keys rec off", armed ? "warn" : "tip");
-			return armed;
+			keysArm = !keysArm;
+			if (!keysArm && window.mode === 11) {
+				flash("still recording \u2014 the device's LIVE REC is on", "warn");
+			} else {
+				flash(keysArm ? "keys rec on \u2014 what you play is written into this pattern"
+					: "keys rec off", keysArm ? "warn" : "tip");
+			}
+			return isArmed();
 		},
 		clearTrack: clearTrack,
+		// so undo and the project files can carry the keyboard track with them
+		snapshot: function () {
+			try { return JSON.parse(JSON.stringify(track)); } catch (e) { return null; }
+		},
+		restore: function (v) {
+			if (!v || typeof v !== "object") { return; }
+			try { track = JSON.parse(JSON.stringify(v)); save(); } catch (e) {}
+		},
+		clearPattern: function (idx) {
+			delete track[idx == null ? curPattern() : idx];
+			save();
+		},
 		trackInfo: trackInfo,
 		track: function () { return track[curPattern()] || null; },
 		down: down,

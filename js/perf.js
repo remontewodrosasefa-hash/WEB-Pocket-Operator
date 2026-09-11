@@ -168,6 +168,12 @@
 
 	function xyReadout() {
 		if (!xyLabel) { return; }
+		// tell the user when the synth is being written into the pattern —
+		// there is no way to tell from the pad itself otherwise
+		if (xyEl) {
+			var rec = xyMode === "synth" && window.PO33.keys && PO33.keys.armed();
+			xyEl.classList.toggle("recording", !!rec);
+		}
 		// name anything still running in the background so a locked effect is
 		// never a mystery
 		var also = XY_MODES.filter(function (m) { return xyLock[m] && m !== xyMode; })
@@ -271,6 +277,7 @@
 		}
 		setXyMode(xyMode);
 
+		setInterval(function () { if (xyEl && !xyOn) { xyReadout(); } }, 400);
 		xyResize();
 		if (window.ResizeObserver) { new ResizeObserver(xyResize).observe(xyEl); }
 		window.addEventListener("resize", xyResize);

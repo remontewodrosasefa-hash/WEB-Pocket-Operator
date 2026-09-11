@@ -49,6 +49,24 @@
 		} catch (e) { return null; }
 	}
 
+	/* A snapshot of everything an action can touch at once: all the patterns,
+	 * the chain, and the keyboard track. Used by builds, which change several
+	 * of those in one go and should undo in one press rather than three. */
+	function snapWorld() {
+		var all = snapAll();
+		if (!all) { return null; }
+		var keys = null;
+		try { keys = PO33.keys.snapshot(); } catch (e) {}
+		return {
+			kind: "world",
+			data: all.data,
+			chain: (window.patternChain || []).slice(),
+			cur: g("currentPattern", 0),
+			count: g("patternCount", 0),
+			keys: keys
+		};
+	}
+
 	function restore(s) {
 		if (!s) { return; }
 		try {
@@ -56,6 +74,16 @@
 				window.patternChain = s.data.slice();
 				window.currentPattern = s.cur;
 				window.patternCount = Math.min(s.count, Math.max(0, s.data.length - 1));
+				if (window.updateDisplay) { window.updateDisplay(); }
+				return;
+			}
+			if (s.kind === "world") {
+				window.newChannelArr = JSON.parse(JSON.stringify(s.data));
+				window.patternChain = s.chain.slice();
+				window.currentPattern = s.cur;
+				window.patternCount = Math.min(s.count, Math.max(0, s.chain.length - 1));
+				if (s.keys) { try { PO33.keys.restore(s.keys); } catch (e) {} }
+				persist();
 				if (window.updateDisplay) { window.updateDisplay(); }
 				return;
 			}
@@ -105,12 +133,30 @@
 		paint();
 	}
 
+	function markWorld(label) {
+		if (busy) { return; }
+		var s = snapWorld();
+		if (!s) { return; }
+		s.label = label || "build";
+		past.push(s);
+		if (past.length > LIMIT) { past.shift(); }
+		future.length = 0;
+		lastPush = 0;
+		paint();
+	}
+
+	function counterpart(s) {
+		if (s.kind === "chain") { return snapChain(); }
+		if (s.kind === "world") { return snapWorld(); }
+		if (s.kind === "all") { return snapAll(); }
+		return snapPattern(s.idx);
+	}
+
 	function undo() {
 		if (!past.length) { flash("nothing to undo", "warn"); return; }
 		busy = true;
 		var s = past.pop();
-		var back = s.kind === "chain" ? snapChain()
-			: (s.kind === "all" ? snapAll() : snapPattern(s.idx));
+		var back = counterpart(s);
 		if (back) { back.label = s.label; future.push(back); }
 		restore(s);
 		busy = false;
@@ -124,8 +170,7 @@
 		if (!future.length) { flash("nothing to redo", "warn"); return; }
 		busy = true;
 		var s = future.pop();
-		var back = s.kind === "chain" ? snapChain()
-			: (s.kind === "all" ? snapAll() : snapPattern(s.idx));
+		var back = counterpart(s);
 		if (back) { back.label = s.label; past.push(back); }
 		restore(s);
 		busy = false;
@@ -135,7 +180,7 @@
 
 	window.PO33 = window.PO33 || {};
 	window.PO33.undo = {
-		mark: mark, markChain: markChain, undo: undo, redo: redo,
+		mark: mark, markChain: markChain, markWorld: markWorld, undo: undo, redo: redo,
 		depth: function () { return past.length; },
 		clear: function () { past.length = 0; future.length = 0; paint(); }
 	};
