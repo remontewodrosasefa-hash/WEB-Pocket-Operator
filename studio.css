@@ -703,10 +703,38 @@ body.utilOpen #utilView { display: flex; }
 /* Fills whatever the strip has left rather than a fixed 150px, but never
  * collapses below a usable size. Still stable across tabs, because its height
  * comes from the available space, not from whichever view is showing. */
+/* Grows into spare height; gives way rather than overflow when space is tight.
+ *
+ * overflow-y: auto matters more than it looks. This was `hidden`, which meant
+ * that on a phone with a navigation bar eating ~50px the bottom of whatever
+ * was in here got cut off with no way to reach it — the last row of the FX
+ * grid, the chain editor in MIX, the lower octave of the keyboard. Clipped
+ * content that can't be scrolled to is just missing content. */
 #perfPanel {
+	flex: 1 1 150px;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior: contain;
+}
+/* the XY pad is a drag surface — it must never scroll under the finger */
+#xyPad { touch-action: none; overscroll-behavior: none; }
+
+/* Views lay out as a column so a header row and a grid share the height
+ * predictably instead of the grid assuming it owns all of it. */
+#perfViews {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-height: 100%;
+	box-sizing: border-box;
+}
+/* the fx grid takes what's left after its rec/clear bar, with a floor so the
+ * four rows stay tappable rather than squashing to nothing */
+.perfCells.fx {
 	flex: 1 1 auto;
-	min-height: 150px;
-	overflow: hidden;
+	min-height: 124px;
 }
 #xyPad[hidden] { display: none; }
 #perfViews[hidden] { display: none; }
@@ -1075,7 +1103,7 @@ body.utilOpen #hudFlash { bottom: 0; }
 	font: 700 9px/1 ui-monospace, Menlo, monospace;
 	letter-spacing: 0.14em;
 	color: #8a8a8a;
-	margin: 6px 0 4px;
+	margin: 5px 0 3px;
 }
 .mixHead:first-child { margin-top: 0; }
 .mixHead button {
@@ -1148,3 +1176,71 @@ body.utilOpen #hudFlash { bottom: 0; }
 }
 .keysKit:disabled { opacity: 0.5; }
 .kitLabel { margin-left: 0 !important; }
+.mixHead i { font-style: normal; opacity: 0.6; letter-spacing: 0.04em; margin-left: 6px; }
+
+/* ================================================================
+ * Compact the perform tabs so they FIT rather than relying on the
+ * scroll. On a phone with a navigation bar the panel is ~150px, and
+ * a performance surface you have to scroll to reach isn't one.
+ * ================================================================ */
+
+/* voice and kit pickers stay on one line and scroll sideways if they must,
+ * instead of wrapping onto a second row and costing 28px of height */
+.keysBar {
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	overflow-y: hidden;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	gap: 4px;
+	margin-bottom: 3px;
+}
+.keysBar::-webkit-scrollbar { display: none; }
+.keysBar button { flex: 0 0 auto; padding: 5px 7px; font-size: 9.5px; }
+.keysBar .keysVoice { flex: 0 0 auto; }
+.keysScale { flex: 0 0 auto; margin-left: auto; padding-left: 6px; }
+
+.perfCells.keys button { padding: 5px 1px; }
+.perfCells.keys button b { font-size: 8.5px; }
+
+/* MIX: tighter rows so mute + chain + add all sit above the fold */
+.perfCells.mute button { padding: 7px 2px; }
+.chainLink { padding: 5px 5px; }
+.chainAdd { margin-top: 3px; }
+.chainAdd button { padding: 4px 4px; }
+.mixHead { margin: 4px 0 3px; }
+/* the pad's 1px border was pushing it 2px past its own container */
+#xyPad { box-sizing: border-box; }
+.perfCells.mute button { padding: 6px 2px; }
+
+/* ---------- trim: the waveform is the point, give it the space ---------- */
+#tvWave { min-height: 90px; }
+#tvNote { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tvHead { flex-wrap: nowrap; gap: 6px; align-items: center; }
+#tvLabel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tvHead button { flex: 0 0 auto; white-space: nowrap; }
+
+/* ---------- chain link editing ---------- */
+.chainLink.sel {
+	border-color: #6fb3ff;
+	box-shadow: 0 0 0 1px #6fb3ff inset;
+	color: #cfe6ff;
+}
+.chainLink.playing.sel { background: #ff7a1a; color: #141410; border-color: #6fb3ff; }
+.chainTools {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	margin-top: 4px;
+}
+.chainTools button {
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	padding: 5px 8px;
+	background: #232329;
+	color: #cfcfcf;
+	border: 1px solid #3a3a40;
+	border-radius: 4px;
+	touch-action: manipulation;
+}
+.chainTools button.del { color: #ff8a7a; border-color: #5a3330; }
+.chainTools button.done { margin-left: auto; color: #9ad06b; border-color: #3f5a35; }

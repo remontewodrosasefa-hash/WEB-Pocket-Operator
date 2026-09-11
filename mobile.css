@@ -32,7 +32,14 @@
 		align-items: center;
 		justify-content: center;
 		overflow: hidden;
-		padding: 4px;
+		/* The page is set to viewport-fit=cover, which deliberately extends it
+		 * BEHIND the phone's system bars — but only the top inset was ever
+		 * accounted for. On a phone with an on-screen navigation/gesture bar
+		 * that left the bottom of the unit underneath it, clipping the perform
+		 * strip by the height of that bar. env() reports 0 on devices that
+		 * don't have one, so this costs nothing elsewhere. */
+		padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+		box-sizing: border-box;
 	}
 
 	.po33 {
@@ -379,6 +386,13 @@
 	body.buildOpen .gridArea,
 	body.buildOpen .perfStrip { display: none; }
 	body.buildOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
+
+	/* TRIM is a drawing you read — a waveform squeezed into 40px is useless.
+	 * The perform strip steps aside so the screen can grow, but the PADS STAY:
+	 * tapping them previews the trimmed sound, which is the whole point of
+	 * having the editor open. The sliders stay too — they're the trim controls. */
+	body.trimOpen .perfStrip { display: none; }
+	body.trimOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
 
 	#lcdLibSlot { display: none; }
 	body.lib-lcd #lcdLibSlot {

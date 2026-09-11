@@ -52,7 +52,7 @@
 		wrap.innerHTML =
 			'<div class="tvHead"><span id="tvLabel">TRIM</span>' +
 				'<span><button type="button" data-tv="prev">&#9654; preview</button>' +
-				'<button type="button" data-tv="all" title="steps already placed in this pattern keep the OLD trim until you press this">apply trim to steps</button></span></div>' +
+				'<button type="button" data-tv="all" title="steps already placed in this pattern keep the OLD trim until you press this">apply to steps</button></span></div>' +
 			'<div id="tvWave">' +
 				'<canvas id="tvCanvas"></canvas>' +
 				'<div class="tvShade" id="tvShadeL"></div><div class="tvShade" id="tvShadeR"></div>' +
@@ -69,9 +69,7 @@
 				'<button type="button" data-tv="pitch" id="tvPitch">&#9834; pitch</button>' +
 				'<label><input type="checkbox" id="tvLayout" checked> lay out + match tempo</label>' +
 			'</div>' +
-			'<div id="tvNote">drag handles &mdash; the pads now preview the trimmed sound live &middot; ' +
-				'“apply trim to steps” re-trims steps you already placed &middot; ' +
-				'chop spreads slices across the 16 pads</div>';
+			'<div id="tvNote">drag the handles &middot; tap a pad to hear it</div>';
 		hud.appendChild(wrap);
 
 		canvas = wrap.querySelector("#tvCanvas");
@@ -176,14 +174,13 @@
 		var durTxt = "";
 		if (buf && buf.duration) {
 			var total = buf.duration, sel = total * lenF;
-			durTxt = "  " + sel.toFixed(2) + "s of " + total.toFixed(2) + "s";
+			durTxt = "  \u00b7  " + sel.toFixed(2) + "s / " + total.toFixed(2) + "s";
 			showBpmMatch(sel);
 		} else if (bpmRow) {
 			bpmRow.hidden = true;
 		}
 		if (label) {
-			label.textContent = "TRIM · SOUND " + (ch + 1) +
-				"  " + Math.round(startF * 100) + "%–" + Math.round(endF * 100) + "%" + durTxt;
+			label.textContent = "SOUND " + (ch + 1) + durTxt;
 		}
 		var dest = document.getElementById("tvDest");
 		if (dest && window.PO33 && PO33.slice && PO33.slice.target) {
@@ -242,7 +239,7 @@
 			clearTimeout(sayTimer);
 			if (!keep) {
 				sayTimer = setTimeout(function () {
-					note.innerHTML = "drag handles to trim &middot; chop spreads slices across the 16 pads";
+					note.innerHTML = "drag the handles &middot; tap a pad to hear it";
 				}, 2600);
 			}
 		}

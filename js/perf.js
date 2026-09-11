@@ -38,6 +38,8 @@
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
 	// chain edits are undoable one link at a time, same as tapping them in
 	function markChain() { try { PO33.undo.markChain(); } catch (e) {} }
+	var chainSel = -1;        // which chain link is being edited, -1 = none
+	function chainText(c) { return c.map(function (n) { return n + 1; }).join(" "); }
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "info"); } }
 
 	/* ================= XY pad ================= */
@@ -323,28 +325,42 @@
 		}
 		h += '</div>';
 
-		h += '<div class="mixHead"><span>CHAIN</span>' +
-			'<button data-mix="chainclear">reset</button></div>';
+		/* Tapping a link SELECTS it rather than deleting it. Selection is what
+		 * makes real editing possible — once the app knows which link you mean
+		 * you can move it, insert next to it, or remove just that one, instead
+		 * of only ever being able to append to the end. */
+		h += '<div class="mixHead"><span>CHAIN <i>' +
+			(chainSel >= 0 ? "editing link " + (chainSel + 1) : "tap a link to edit") +
+			'</i></span><button data-mix="chainclear">reset</button></div>';
 		h += '<div class="chainRow">';
 		if (!chain.length) {
 			h += '<span class="chainEmpty">empty</span>';
 		} else {
 			chain.forEach(function (n, idx) {
 				h += '<button class="chainLink' + (idx === pos ? " playing" : "") +
-					'" data-chaindel="' + idx + '" title="tap to remove this one">' +
-					(n + 1) + '</button>';
+					(idx === chainSel ? " sel" : "") +
+					'" data-chainsel="' + idx + '">' + (n + 1) + '</button>';
 			});
 		}
 		h += '</div>';
-		h += '<div class="chainAdd"><span>add</span>';
+
+		if (chainSel >= 0 && chainSel < chain.length) {
+			h += '<div class="chainTools">' +
+				'<button data-chainmove="-1" title="move earlier">\u25c0</button>' +
+				'<button data-chainmove="1" title="move later">\u25b6</button>' +
+				'<button data-chaindup="1" title="duplicate it">copy</button>' +
+				'<button data-chaindel="' + chainSel + '" class="del" title="remove it">remove</button>' +
+				'<button data-chainsel="-1" class="done">done</button>' +
+				'</div>';
+		}
+
+		h += '<div class="chainAdd"><span>' +
+			(chainSel >= 0 ? "insert after" : "add") + '</span>';
 		for (var q = 0; q < 8; q++) {
 			h += '<button data-chainadd="' + q + '"' + (q === cur ? ' class="cur"' : "") +
 				'>' + (q + 1) + '</button>';
 		}
 		h += '</div>';
-		h += '<p class="perfNote">tap a link to remove it \u00b7 ' +
-			'the lit one is playing now</p>';
-
 		panelTarget.innerHTML = h;
 	}
 
@@ -442,7 +458,8 @@
 
 		// mute cells + chain editing
 		panel.addEventListener("click", function (e) {
-			var t = e.target.closest("[data-mute],[data-mix],[data-chaindel],[data-chainadd]");
+			var t = e.target.closest("[data-mute],[data-mix],[data-chaindel],[data-chainadd]," +
+				"[data-chainsel],[data-chainmove],[data-chaindup]");
 			if (!t) { return; }
 
 			var m = t.getAttribute("data-mute");
@@ -454,19 +471,52 @@
 				markChain();
 				window.patternChain = [g("currentPattern", 0)];
 				window.patternCount = 0;
+				chainSel = -1;
 				flash("chain reset to pattern " + (g("currentPattern", 0) + 1), "tip");
+				renderMute();
+				return;
+			}
+
+			var sel = t.getAttribute("data-chainsel");
+			if (sel != null) {
+				var si = +sel;
+				chainSel = (si === chainSel || si < 0) ? -1 : si;   // tap again to deselect
+				renderMute();
+				return;
+			}
+
+			var chain = g("patternChain", [0]);
+
+			var mv = t.getAttribute("data-chainmove");
+			if (mv != null && chainSel >= 0) {
+				var to = chainSel + (+mv);
+				if (to < 0 || to >= chain.length) { flash("already at the end", "warn"); return; }
+				markChain();
+				var moved = chain.splice(chainSel, 1)[0];
+				chain.splice(to, 0, moved);
+				chainSel = to;
+				flash("chain: " + chainText(chain), "tip");
+				renderMute();
+				return;
+			}
+
+			if (t.getAttribute("data-chaindup") != null && chainSel >= 0) {
+				markChain();
+				chain.splice(chainSel + 1, 0, chain[chainSel]);
+				chainSel = chainSel + 1;
+				flash("chain: " + chainText(chain), "tip");
 				renderMute();
 				return;
 			}
 
 			var del = t.getAttribute("data-chaindel");
 			if (del != null) {
-				var chain = g("patternChain", [0]);
 				if (chain.length <= 1) { flash("a chain needs at least one pattern", "warn"); return; }
 				markChain();
 				chain.splice(+del, 1);
 				if (window.patternCount >= chain.length) { window.patternCount = 0; }
-				flash("chain: " + chain.map(function (n) { return n + 1; }).join(" "), "tip");
+				chainSel = -1;
+				flash("chain: " + chainText(chain), "tip");
 				renderMute();
 				return;
 			}
@@ -474,8 +524,11 @@
 			var add = t.getAttribute("data-chainadd");
 			if (add != null) {
 				markChain();
-				g("patternChain", [0]).push(+add);
-				flash("chain: " + g("patternChain", [0]).map(function (n) { return n + 1; }).join(" "), "tip");
+				// with a link selected this inserts next to it; otherwise it
+				// appends, which is what you want when you're building it up
+				if (chainSel >= 0) { chain.splice(chainSel + 1, 0, +add); chainSel++; }
+				else { chain.push(+add); }
+				flash("chain: " + chainText(chain), "tip");
 				renderMute();
 			}
 		});
