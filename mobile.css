@@ -429,3 +429,71 @@
 	/* the screen chrome would otherwise show through the library */
 	body.lib-lcd .lcd > :not(#lcdLibSlot) { visibility: hidden; }
 }
+
+/* ================================================================
+ * The guide: searchable, scannable. Entries are short blocks with a
+ * bold heading, not walls of prose, so you can find an answer by
+ * skimming rather than reading.
+ * ================================================================ */
+#infoSearch {
+	flex: 0 0 auto;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0 0 8px;
+	padding: 9px 11px;
+	font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	color: #e8e8e8;
+	background: #202024;
+	border: 1px solid #3a3a40;
+	border-radius: 7px;
+	-webkit-appearance: none;
+}
+#infoSearch::placeholder { color: #6f6f76; }
+#infoSearch:focus { outline: none; border-color: #ff7a1a; }
+
+#infoNav { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+#infoNav[hidden] { display: none; }
+#infoNav button {
+	flex: 1 1 auto;
+	font: 600 11px/1 ui-monospace, Menlo, monospace;
+	letter-spacing: 0.04em;
+	padding: 8px 6px;
+	background: #202024;
+	color: #b6b6bd;
+	border: 1px solid #3a3a40;
+	border-radius: 6px;
+	touch-action: manipulation;
+}
+#infoNav button.on { background: #ff7a1a; color: #141410; border-color: #ff7a1a; }
+
+.infoItem {
+	padding: 9px 0;
+	border-bottom: 1px solid #26262b;
+}
+.infoItem[hidden] { display: none; }
+.infoItem h3 {
+	margin: 0 0 3px;
+	font: 700 13px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	color: #ffb060;
+	letter-spacing: 0.01em;
+}
+.infoItem p {
+	margin: 0;
+	font-size: 12.5px;
+	line-height: 1.5;
+	color: #cfcfd4;
+}
+.infoItem b { color: #fff; font-weight: 600; }
+.infoItem kbd {
+	font: 600 11px/1 ui-monospace, Menlo, monospace;
+	background: #26262b;
+	border: 1px solid #3a3a40;
+	border-radius: 3px;
+	padding: 1px 4px;
+}
+#infoNone {
+	padding: 20px 2px;
+	font-size: 12.5px;
+	color: #7a7a82;
+}
+#infoNone[hidden] { display: none; }

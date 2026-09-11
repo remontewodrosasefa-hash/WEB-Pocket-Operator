@@ -1279,7 +1279,13 @@ body.utilOpen #hudFlash { bottom: 0; }
  * manager: a toolbar, folder chips, a list, and an action bar that
  * appears under whichever project you've selected.
  * ================================================================ */
-#projView { display: flex; flex-direction: column; gap: 5px; }
+/* NO display here. #projView { display: none } lives further up and is what
+ * hides the panel; re-declaring display at the same specificity later made it
+ * permanently visible, sitting invisibly over the screen and swallowing every
+ * tap meant for PROJ, the song toggle and undo. Layout only. */
+#projView { flex-direction: column; gap: 5px; }
+/* and a guard, since the panel also uses the hidden attribute */
+#projView[hidden] { display: none !important; }
 #projView .pvNew { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 #projView .pvNew input {
 	flex: 1 1 90px;

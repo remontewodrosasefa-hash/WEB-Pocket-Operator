@@ -1263,7 +1263,14 @@
 
 	// arm live record without the hidden 3-second WRITE hold
 	function liveRec() {
-		if (!g("play", false)) { flash("press PLAY first, then arm live rec", "warn"); return false; }
+		// It used to refuse and tell you to press PLAY first, which makes the
+		// button feel broken — you press it, nothing happens. Just start the
+		// sequencer and arm it, since that's obviously what you wanted.
+		if (!g("play", false)) {
+			try { window.playButtonFunction(); } catch (e) {}
+			if (!g("play", false)) { flash("press PLAY first, then arm live rec", "warn"); return false; }
+			flash("started playing \u2014 arming live rec", "tip");
+		}
 		try {
 			window.btnWriteHold = true;
 			window.mode = 0;                    // so writeButtonFunction lands on 11
