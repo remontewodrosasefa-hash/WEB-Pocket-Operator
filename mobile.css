@@ -397,6 +397,13 @@
 	body.trimOpen .perfStrip { display: none; }
 	body.trimOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
 
+	/* the project browser is a file manager now, not a two-line list — it
+	 * needs the room the other full-screen panels get */
+	body.projOpen .controlStrip,
+	body.projOpen .gridArea,
+	body.projOpen .perfStrip { display: none; }
+	body.projOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
+
 	#lcdLibSlot { display: none; }
 	body.lib-lcd #lcdLibSlot {
 		display: flex;

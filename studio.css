@@ -1273,3 +1273,105 @@ body.utilOpen #hudFlash { bottom: 0; }
 	display: none;
 }
 #escapeCanvas.on { display: block; }
+
+/* ================================================================
+ * PROJECTS — folders, rename, export. Laid out like a small file
+ * manager: a toolbar, folder chips, a list, and an action bar that
+ * appears under whichever project you've selected.
+ * ================================================================ */
+#projView { display: flex; flex-direction: column; gap: 5px; }
+#projView .pvNew { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+#projView .pvNew input {
+	flex: 1 1 90px;
+	min-width: 80px;
+	font: inherit;
+	font-size: 11px;
+	padding: 5px 7px;
+	background: rgba(27,36,17,0.08);
+	border: 1px solid rgba(27,36,17,0.35);
+	border-radius: 3px;
+	color: #1b2411;
+}
+#projView .pvNew input::placeholder { color: rgba(27,36,17,0.4); }
+
+.pvFolders {
+	display: flex;
+	gap: 3px;
+	flex-wrap: wrap;
+	align-items: center;
+	padding-bottom: 3px;
+	border-bottom: 1px solid rgba(27,36,17,0.25);
+}
+.pvFolders button {
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	padding: 4px 7px;
+	background: transparent;
+	border: 1px solid rgba(27,36,17,0.3);
+	border-radius: 3px;
+	color: #1b2411;
+}
+.pvFolders button.on { background: #1b2411; color: #c4cdae; border-color: #1b2411; }
+.pvFolders button i { font-style: normal; opacity: 0.6; font-size: 9px; }
+.pvFolders .pvAddFolder { border-style: dashed; opacity: 0.75; }
+
+#pvList { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.pvRow { display: flex; align-items: center; }
+.pvRow .pvPick {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 1px;
+	text-align: left;
+	padding: 6px 6px;
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid rgba(27,36,17,0.18);
+	color: #1b2411;
+	font: inherit;
+}
+.pvRow .pvPick b { font-size: 12px; font-weight: 700; }
+.pvRow .pvMeta { font-size: 9px; opacity: 0.65; }
+.pvRow .pvMeta i { font-style: normal; font-weight: 700; }
+/* the one that's currently loaded */
+.pvRow.cur .pvPick { box-shadow: inset 3px 0 0 #7a2a15; }
+.pvRow.sel .pvPick { background: rgba(27,36,17,0.1); }
+
+.pvTools {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+	padding: 4px 4px 7px;
+	border-bottom: 1px solid rgba(27,36,17,0.25);
+}
+.pvTools button {
+	font: 600 10px/1 ui-monospace, Menlo, monospace;
+	min-height: 30px;
+	padding: 6px 8px;
+	background: rgba(27,36,17,0.07);
+	border: 1px solid rgba(27,36,17,0.35);
+	border-radius: 3px;
+	color: #1b2411;
+}
+.pvTools button.go { background: #1b2411; color: #c4cdae; border-color: #1b2411; }
+.pvTools button.del { color: #7a2a15; border-color: rgba(122,42,21,0.5); }
+.pvTools button.done { margin-left: auto; }
+
+.pvFoot {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding-top: 3px;
+	border-top: 1px solid rgba(27,36,17,0.25);
+}
+.pvFoot .pvCur { flex: 1 1 auto; font-size: 9px; opacity: 0.7; }
+.pvFoot button {
+	font: 600 9px/1 ui-monospace, Menlo, monospace;
+	padding: 5px 7px;
+	background: transparent;
+	border: 1px solid rgba(27,36,17,0.35);
+	border-radius: 3px;
+	color: #1b2411;
+}
+.pvEmpty { padding: 14px 6px; font-size: 11px; opacity: 0.6; }
