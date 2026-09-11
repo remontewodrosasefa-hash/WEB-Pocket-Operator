@@ -19,7 +19,7 @@
 	var KEY = "po33.skin";
 	var SKINS = [
 		{ id: "po33", name: "PO-33", blurb: "the original: bare circuit board, green LCD" },
-		{ id: "op1", name: "OP-1 field", blurb: "aluminium body, white keys, black screen" }
+		{ id: "ep133", name: "K.O. II", blurb: "EP-133: grey deck, black pads, orange record" }
 	];
 
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "tip"); } }

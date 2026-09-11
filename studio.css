@@ -320,25 +320,29 @@ body.trimOpen #trimView { display: flex; }
 	pointer-events: none;
 }
 #tvShadeL { left: 0; }
+/* A 14px-wide handle is roughly a third of a fingertip. The hit area is now
+ * 44px — the usual minimum for touch — while the visible marker stays thin,
+ * so it's grabbable without looking heavy. */
 .tvHandle {
 	position: absolute;
 	top: -2px; bottom: -2px;
-	width: 14px;
-	margin-left: -7px;
+	width: 44px;
+	margin-left: -22px;
 	cursor: ew-resize;
 	touch-action: none;
+	z-index: 3;
 }
 .tvHandle::after {
 	content: "";
 	position: absolute;
-	left: 6px; top: 0; bottom: 0;
+	left: 21px; top: 0; bottom: 0;
 	width: 2px;
 	background: #7a2a15;
 }
 .tvHandle::before {
 	content: "";
 	position: absolute;
-	left: 1px; top: 50%;
+	left: 16px; top: 50%;
 	width: 12px; height: 12px;
 	margin-top: -6px;
 	border-radius: 3px;

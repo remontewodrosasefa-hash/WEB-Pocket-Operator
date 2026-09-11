@@ -85,6 +85,23 @@
 
 		hStart.addEventListener("pointerdown", startDrag("start"));
 		hEnd.addEventListener("pointerdown", startDrag("end"));
+
+		/* Touching anywhere on the waveform grabs whichever handle is nearer
+		 * and drags it from there. Hunting for a thin marker with a fingertip
+		 * is the slow way to trim; this is how every mobile audio editor does
+		 * it, and it makes the handles a convenience rather than the only way in. */
+		wrap.querySelector("#tvWave").addEventListener("pointerdown", function (e) {
+			if (e.target === hStart || e.target === hEnd) { return; }   // handle owns its own drag
+			var cs, ch = g("selectedChannel", 0);
+			try { cs = window.channelSettingsArr[ch]; } catch (err) { return; }
+			if (!cs) { return; }
+			var r = this.getBoundingClientRect();
+			var f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+			var startF = (cs.fxTrim || 0) / 1000;
+			var endF = Math.min(1, startF + (cs.fxLength == null ? 1000 : cs.fxLength) / 1000);
+			var which = Math.abs(f - startF) <= Math.abs(f - endF) ? "start" : "end";
+			startDrag(which)(e);
+		});
 		wrap.addEventListener("click", function (e) {
 			var a = e.target.getAttribute("data-tv");
 			if (a === "prev") { preview(); }
