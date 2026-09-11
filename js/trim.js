@@ -6,7 +6,7 @@
 (function () {
 	"use strict";
 
-	var wrap, canvas, ctx, hStart, hEnd, shadeL, shadeR, label, note;
+	var wrap, canvas, ctx, hStart, hEnd, shadeL, shadeR, label, note, bpmRow, bpmText;
 	var curChannel = -1, curBufKey = "";
 	var dragging = null;
 	var count = 8;                      // chop into any number of pieces, 1-16
@@ -53,6 +53,8 @@
 				'<div class="tvShade" id="tvShadeL"></div><div class="tvShade" id="tvShadeR"></div>' +
 				'<div class="tvHandle" id="tvStart"></div><div class="tvHandle" id="tvEnd"></div>' +
 			'</div>' +
+			'<div id="tvBpm" hidden><span id="tvBpmText"></span>' +
+				'<button type="button" data-tv="setbpm" id="tvBpmBtn">set BPM</button></div>' +
 			'<div id="tvSlice">' +
 				'<span id="tvDest">chop:</span>' +
 				'<button type="button" data-tv="less">&minus;</button>' +
@@ -75,6 +77,8 @@
 		shadeR = wrap.querySelector("#tvShadeR");
 		label = wrap.querySelector("#tvLabel");
 		note = wrap.querySelector("#tvNote");
+		bpmRow = wrap.querySelector("#tvBpm");
+		bpmText = wrap.querySelector("#tvBpmText");
 
 		hStart.addEventListener("pointerdown", startDrag("start"));
 		hEnd.addEventListener("pointerdown", startDrag("end"));
@@ -86,6 +90,7 @@
 			else if (a === "less") { setCount(count - 1); }
 			else if (a === "more") { setCount(count + 1); }
 			else if (a === "go") { doSlice(count); }
+			else if (a === "setbpm") { applyBpm(); }
 		});
 		return true;
 	}
@@ -160,9 +165,20 @@
 		shadeL.style.width = (startF * 100) + "%";
 		shadeR.style.left = (endF * 100) + "%";
 		shadeR.style.width = ((1 - endF) * 100) + "%";
+		// the guide tells people to read the sample's length off this screen to
+		// work out a matching BPM — it needs to actually be here to do that
+		var buf = selectedBuffer();
+		var durTxt = "";
+		if (buf && buf.duration) {
+			var total = buf.duration, sel = total * lenF;
+			durTxt = "  " + sel.toFixed(2) + "s of " + total.toFixed(2) + "s";
+			showBpmMatch(sel);
+		} else if (bpmRow) {
+			bpmRow.hidden = true;
+		}
 		if (label) {
 			label.textContent = "TRIM · SOUND " + (ch + 1) +
-				"  " + Math.round(startF * 100) + "%–" + Math.round(endF * 100) + "%";
+				"  " + Math.round(startF * 100) + "%–" + Math.round(endF * 100) + "%" + durTxt;
 		}
 		var dest = document.getElementById("tvDest");
 		if (dest && window.PO33 && PO33.slice && PO33.slice.target) {
@@ -172,6 +188,43 @@
 				? "chops replace this slot's 16 pads"
 				: "melodic slots hold one sample, so chops land on drum SOUND " + t;
 		}
+	}
+
+	/* ---------- BPM to match the trimmed selection ----------
+	 * One bar of the sequencer is 16 steps = 4 beats, so a sample that should
+	 * fill exactly one bar wants BPM = 240 / (its length in seconds). Doing
+	 * this by hand is the one bit of arithmetic in the whole app, so the trim
+	 * screen works it out and offers to set it.
+	 */
+	function matchBpm(seconds) {
+		if (!seconds || seconds <= 0) { return null; }
+		var bpm = Math.round(240 / seconds);
+		return (bpm >= 40 && bpm <= 300) ? bpm : null;   // outside this, one bar isn't a sane fit
+	}
+
+	function showBpmMatch(seconds) {
+		if (!bpmRow || !bpmText) { return; }
+		var bpm = matchBpm(seconds);
+		if (bpm == null) { bpmRow.hidden = true; return; }
+		bpmRow.hidden = false;
+		bpmRow.dataset.bpm = bpm;
+		var cur = g("tempo", 120);
+		bpmText.textContent = "→ " + bpm + " BPM fills one bar" +
+			(cur === bpm ? " ✓" : "");
+		var btn = wrap.querySelector("#tvBpmBtn");
+		if (btn) { btn.disabled = (cur === bpm); btn.textContent = cur === bpm ? "already set" : "set BPM"; }
+	}
+
+	function applyBpm() {
+		var bpm = bpmRow && +bpmRow.dataset.bpm;
+		if (!bpm) { return; }
+		try {
+			window.tempo = bpm;
+			Tone.Transport.bpm.value = bpm;
+			if (window.PO33 && PO33.session) { PO33.session.save(); }
+		} catch (e) {}
+		say(bpm + " BPM — the trimmed sample now fills exactly one bar");
+		layout();
 	}
 
 	/* ---------- feedback ---------- */
@@ -225,7 +278,7 @@
 					n++;
 				}
 			}
-			localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  "));
+			try { window.PO33.session.save(); } catch (e2) {}
 		} catch (e) {
 			say("couldn't apply: " + e.message);
 			return;

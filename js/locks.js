@@ -35,7 +35,7 @@
 		} catch (e) { return null; }
 	}
 	function persist() {
-		try { localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  ")); } catch (e) {}
+		try { window.PO33.session.save(); } catch (e) {}
 	}
 
 	/* ---------- on-screen readout ---------- */

@@ -2,7 +2,7 @@
  * App shell is precached; wav / sample files are cached on first use so the
  * whole 500-file pack isn't downloaded up front.
  */
-var VERSION = "po33-v45";
+var VERSION = "po33-v47";
 var SHELL = VERSION + "-shell";
 var MEDIA = VERSION + "-media";
 
@@ -59,7 +59,20 @@ self.addEventListener("message", function (e) {
 self.addEventListener("install", function (e) {
 	self.skipWaiting();
 	e.waitUntil(caches.open(SHELL).then(function (c) {
-		return Promise.allSettled(SHELL_FILES.map(function (u) { return c.add(u); }));
+		// cache.add()/addAll() fetch with the browser's normal HTTP cache in
+		// play. If a shell file (index.html, a .js) was fetched recently and
+		// the host sent any cache-control lifetime on it, this new SHELL cache
+		// — under its own fresh version key — could still get seeded with the
+		// STALE bytes straight out of the browser's disk cache, even though the
+		// service worker itself is genuinely new. That's the "some devices take
+		// longer to see an update, even after it installs" symptom: the version
+		// number moves, the file contents underneath it don't. { cache: "reload" }
+		// forces each of these fetches past HTTP caching entirely.
+		return Promise.allSettled(SHELL_FILES.map(function (u) {
+			return fetch(u, { cache: "reload" }).then(function (res) {
+				if (res && res.ok) { return c.put(u, res); }
+			}).catch(function () {});
+		}));
 	}));
 });
 

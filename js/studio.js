@@ -1162,6 +1162,18 @@
 			}
 		};
 		el.addEventListener("input", function () { apply(); readout(n); });
+
+		// live tempo preview: hear the click while you drag, on the BPM screen
+		// only (bpmPreview itself also checks, so this is just tidy start/stop)
+		if (n === 1 || n === 2) {
+			var startPreview = function () { if (window.PO33 && PO33.bpmPreview) { PO33.bpmPreview.start(); } };
+			var stopPreview = function () { if (window.PO33 && PO33.bpmPreview) { PO33.bpmPreview.stop(); } };
+			el.addEventListener("pointerdown", startPreview);
+			el.addEventListener("pointerup", stopPreview);
+			el.addEventListener("pointercancel", stopPreview);
+			el.addEventListener("pointerleave", stopPreview);
+		}
+
 		// mouse wheel over a slider also turns it
 		el.addEventListener("wheel", function (ev) {
 			ev.preventDefault();
@@ -1222,7 +1234,7 @@
 			for (var c = 0; c < 16; c++) {
 				for (var b = 0; b < 16; b++) { window.newChannelArr[c][p][b].noteOn = 0; }
 			}
-			localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  "));
+			try { window.PO33.session.save(); } catch (e2) {}
 			if (window.updateDisplay) { window.updateDisplay(); }
 			flash("pattern " + (p + 1) + " cleared", "warn");
 		} catch (e) { flash("could not clear pattern", "warn"); }

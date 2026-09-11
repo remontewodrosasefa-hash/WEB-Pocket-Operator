@@ -232,7 +232,7 @@
 				beat.fxResonance = cs.fxResonance;
 				beat.fxFilterRes = cs.fxFilterRes;
 			}
-			localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  "));
+			try { window.PO33.session.save(); } catch (e2) {}
 			if (window.updateDisplay) { window.updateDisplay(); }
 		} catch (e) {}
 	}

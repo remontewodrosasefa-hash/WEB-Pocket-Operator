@@ -20,7 +20,7 @@
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "info"); } }
 
 	function persist() {
-		try { localStorage.setItem("po33_settings", JSON.stringify(window.newChannelArr, null, "  ")); } catch (e) {}
+		try { window.PO33.session.save(); } catch (e) {}
 	}
 
 	/* ---------- snapshots ---------- */

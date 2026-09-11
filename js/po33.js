@@ -450,9 +450,178 @@ var loadDefault = function(){
 					}
 				}
 			}
+			//SEED THE AUTOSAVE RIGHT AWAY. Without this, a device that has never
+			//been used yet (no autosave slot exists) reloads once before there is
+			//anything to restore, and would fetch default.json a second time.
+			try { window.PO33.session.save(true); } catch(e) {}
 	});
 }
-loadDefault();
+
+/* ============================================================
+ * AUTOSAVE — "every update deletes my memory"
+ *
+ * The real bug: every editing path in this app (editPattern, BUILD, chop,
+ * per-step locks, undo...) wrote the current patterns to
+ * localStorage["po33_settings"] on every change — but NOTHING ever read that
+ * key back. loadDefault(), above, unconditionally re-seeds newChannelArr from
+ * the shipped demo patterns on every single page load. So every reload —
+ * closing the tab, refreshing, or the app's own PWA update flow reloading the
+ * page to pick up a new version — silently threw away everything you had
+ * built, and always had, unless you had explicitly opened PROJ and pressed
+ * save first. It was never actually about "updates" specifically; any reload
+ * did it. Updates just happen to reload the page, which is how it showed up.
+ *
+ * This keeps one always-current autosave slot ("po33.session"), separate from
+ * named projects, and restores it BEFORE loadDefault() would otherwise run —
+ * so any reload picks up exactly where you left off. If you have a named
+ * project open (PROJ), the same autosave also keeps THAT project current, so
+ * you don't have to remember to press save while working inside one either.
+ * ============================================================ */
+window.PO33 = window.PO33 || {};
+(function () {
+	var KEY = "po33.session";
+	var flushTimer = null;
+
+	function currentProjectName() {
+		try { return localStorage.getItem("po33.currentProject") || ""; } catch (e) { return ""; }
+	}
+
+	function snapshot() {
+		return {
+			t: Date.now(),
+			channels: window.newChannelArr,
+			chain: window.patternChain || [0],
+			tempo: window.tempo || 120,
+			swing: window.swing || 0,
+			volume: (typeof window.volume === "number") ? window.volume : 8,
+			currentPattern: window.currentPattern || 0,
+			slots: (window.PO33Lib && PO33Lib.slotIds) ? PO33Lib.slotIds() : null
+		};
+	}
+
+	function writeNow() {
+		var snap;
+		try { snap = snapshot(); } catch (e) { return; }
+		try { localStorage.setItem(KEY, JSON.stringify(snap)); } catch (e) { return; }
+
+		// a named project you currently have open stays current too, with no
+		// extra save press needed
+		var pn = currentProjectName();
+		if (!pn) { return; }
+		try {
+			var all = JSON.parse(localStorage.getItem("po33.projects") || "{}");
+			if (all[pn]) {
+				all[pn] = snap;
+				localStorage.setItem("po33.projects", JSON.stringify(all));
+			}
+		} catch (e) {}
+	}
+
+	// coalesce a burst of edits (a fast run of pad taps, a chop, a build) into
+	// one write instead of one per step. `immediate` skips the debounce for
+	// the one-time seed right after loadDefault().
+	function save(immediate) {
+		if (immediate) { clearTimeout(flushTimer); writeNow(); return; }
+		clearTimeout(flushTimer);
+		flushTimer = setTimeout(writeNow, 250);
+	}
+
+	// used right before an unavoidable reload (SW update, tab close) — must
+	// not be left waiting on the debounce timer
+	function flush() {
+		clearTimeout(flushTimer);
+		writeNow();
+	}
+
+	function restore() {
+		var raw;
+		try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) { return false; }
+		if (!raw || !raw.channels) { return false; }
+		try {
+			window.newChannelArr = raw.channels;
+			window.patternChain = (raw.chain || [0]).slice();
+			if (typeof raw.tempo === "number") { window.tempo = raw.tempo; }
+			if (typeof raw.swing === "number") { window.swing = raw.swing; }
+			if (typeof raw.volume === "number") { window.volume = raw.volume; }
+			window.currentPattern = raw.currentPattern || 0;
+			window.patternCount = 0;
+			if (raw.slots) {
+				try { localStorage.setItem("po33.slots", JSON.stringify(raw.slots)); } catch (e) {}
+			}
+			return true;
+		} catch (e) { return false; }
+	}
+
+	window.PO33.session = { save: save, flush: flush, restore: restore, snapshot: snapshot };
+
+	// a regular backstop save, so even a code path that forgets to call
+	// save() explicitly is never more than ~20s of work from being caught
+	setInterval(function () { save(true); }, 20000);
+	window.addEventListener("pagehide", flush);
+	window.addEventListener("beforeunload", flush);
+})();
+
+//RESTORE WHERE YOU LEFT OFF IF THERE IS ANYTHING TO RESTORE; OTHERWISE, AND
+//ONLY THEN, LOAD THE SHIPPED DEMO PATTERNS.
+if (!window.PO33.session.restore()) { loadDefault(); }
+
+/* ============================================================
+ * BPM PREVIEW — a click you can hear while you set the tempo
+ *
+ * The BPM screen's number pads already do something else: they set the
+ * master volume, 16 discrete levels, a real feature carried over from the
+ * original hardware and already documented in the guide. So rather than
+ * repurpose them, touching either slider on this screen starts a four-beat
+ * click that tracks whatever tempo (and, loosely, swing) you're dragging to,
+ * live, and stops the moment you let go. It runs on its own timer, separate
+ * from Tone.Transport, so it never touches playback or the sequencer even if
+ * a pattern happens to be playing underneath it.
+ * ============================================================ */
+(function () {
+	var synth = null, timer = null, beat = 0;
+
+	function synthEngine() {
+		if (synth || !window.Tone) { return synth; }
+		try {
+			synth = new Tone.MembraneSynth({
+				pitchDecay: 0.008,
+				octaves: 2,
+				envelope: { attack: 0.001, decay: 0.09, sustain: 0, release: 0.03 }
+			});
+			synth.volume.value = -8;
+			synth.toMaster();
+		} catch (e) { synth = null; }
+		return synth;
+	}
+
+	function tick() {
+		var s = synthEngine();
+		if (s) {
+			var accent = beat % 4 === 0;
+			try { s.triggerAttackRelease(accent ? "C3" : "C2", "32n", undefined, accent ? 1 : 0.55); } catch (e) {}
+		}
+		beat = (beat + 1) % 4;
+		if (window.view !== 4) { timer = null; return; }
+		var ms = Math.max(60, 60000 / Math.max(40, window.tempo || 120));
+		// an honest approximation, not the real 16th-note swing: nudges every
+		// other quarter-note click late by roughly the swing amount, enough to
+		// hear that a heavier swing setting is dragging the pace
+		if (beat % 2 === 1 && window.swing) { ms += ms * (window.swing / 1000) * 0.5; }
+		timer = setTimeout(tick, ms);
+	}
+
+	function start() {
+		if (timer || window.view !== 4) { return; }
+		beat = 0;
+		tick();
+	}
+	function stop() {
+		clearTimeout(timer);
+		timer = null;
+	}
+
+	window.PO33.bpmPreview = { start: start, stop: stop };
+})();
 
 
 //CURRENT CHANNEL SETTINGS USED FOR LIVE PLAY BACK AND ADDING NOTES
@@ -805,8 +974,9 @@ var editPattern = function(channel,beat){
 		chan.fxResonance = chanSettings.fxResonance;
 		chan.fxFilterRes = chanSettings.fxFilterRes
 	}
- 	var myJSON = JSON.stringify(newChannelArr, null, "  ");
-	localStorage.setItem("po33_settings", myJSON);
+	//AUTOSAVE THE FULL SESSION (patterns, chain, tempo, swing...), NOT JUST
+	//THIS ARRAY, SO A RELOAD RESTORES EVERYTHING, NOT JUST STEP DATA.
+	try { window.PO33.session.save(); } catch(e) {}
 
 }
 

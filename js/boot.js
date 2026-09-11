@@ -2,7 +2,7 @@
 // Modern browsers (incl. Safari/Chrome on macOS) start the AudioContext
 // suspended until a user gesture. This unlocks it once, up front.
 (function () {
-	var APP_VERSION = "45";   // keep in sync with sw.js VERSION (po33-v<n>)
+	var APP_VERSION = "47";   // keep in sync with sw.js VERSION (po33-v<n>)
 
 	// small always-on version chip at the very top; doubles as the update button
 	function versionTag() {
@@ -83,6 +83,10 @@
 			navigator.serviceWorker.addEventListener("controllerchange", function () {
 				if (reloading) { return; }
 				reloading = true;
+				// force any pending autosave out to localStorage before the reload
+				// actually happens — the debounce timer doesn't get a chance to
+				// fire on its own between the update landing and the page going away
+				try { window.PO33 && PO33.session && PO33.session.flush(); } catch (e) {}
 				location.reload();
 			});
 		});
