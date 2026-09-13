@@ -57,6 +57,17 @@
 			],
 			keyHint: "sk-ant-...",
 			signup: "console.anthropic.com",
+			list: function (key) {
+				return fetch("https://api.anthropic.com/v1/models?limit=100", {
+					headers: {
+						"x-api-key": key,
+						"anthropic-version": "2023-06-01",
+						"anthropic-dangerous-direct-browser-access": "true"
+					}
+				}).then(readJson).then(function (j) {
+					return (j.data || []).map(function (m) { return [m.id, m.display_name || m.id]; });
+				});
+			},
 			send: function (key, model, system, messages) {
 				return fetch("https://api.anthropic.com/v1/messages", {
 					method: "POST",
@@ -81,10 +92,25 @@
 		},
 		gemini: {
 			label: "Gemini",
+			// Fallbacks only. Providers retire model names on their own schedule —
+			// this list was stale the same week it was written — so the real list
+			// is fetched from the API (see listModels) and these are what we show
+			// until it answers.
 			models: [
-				["gemini-2.0-flash", "2.0 Flash · fast, cheap"],
-				["gemini-2.5-pro", "2.5 Pro · strongest"]
+				["gemini-3.6-flash", "3.6 Flash · fast, cheap"],
+				["gemini-2.5-pro", "2.5 Pro"]
 			],
+			// GET the live catalogue, newest first, chat-capable only
+			list: function (key) {
+				return fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=" +
+						encodeURIComponent(key)).then(readJson).then(function (j) {
+					return (j.models || []).filter(function (m) {
+						return (m.supportedGenerationMethods || []).indexOf("generateContent") !== -1;
+					}).map(function (m) {
+						return [String(m.name).replace(/^models\//, ""), m.displayName || m.name];
+					});
+				});
+			},
 			keyHint: "AIza...",
 			signup: "aistudio.google.com",
 			send: function (key, model, system, messages) {
@@ -134,11 +160,43 @@
 	}
 	function unlocked() { return ls(K_UNLOCK) === "1"; }
 	function provider() { return PROVIDERS[ls(K_PROV) || "claude"] ? (ls(K_PROV) || "claude") : "claude"; }
+	var K_LIST = "po33.ai.models.";      // + provider
+
+	/* The catalogue the provider actually offers, cached per provider so the
+	 * dropdown is populated instantly on the next open. A hardcoded list goes
+	 * stale and then every request fails with "model no longer available" —
+	 * which is exactly what happened — so the API is the source of truth and
+	 * the built-in list is only the fallback. */
+	function modelList(prov) {
+		prov = prov || provider();
+		var raw = ls(K_LIST + prov);
+		if (raw) {
+			try {
+				var v = JSON.parse(raw);
+				if (v && v.length) { return v; }
+			} catch (e) {}
+		}
+		return PROVIDERS[prov].models;
+	}
+
+	function refreshModels() {
+		var prov = provider(), p = PROVIDERS[prov], key = (ls(K_KEY) || "").trim();
+		if (!p.list || !key) { return Promise.resolve(null); }
+		return p.list(key).then(function (list) {
+			if (!list || !list.length) { return null; }
+			ls(K_LIST + prov, JSON.stringify(list));
+			// a stored choice that the provider has since retired must not stick
+			var cur = ls(K_MODEL);
+			if (cur && !list.some(function (x) { return x[0] === cur; })) { ls(K_MODEL, null); }
+			return list;
+		}).catch(function () { return null; });
+	}
+
 	function model() {
-		var p = PROVIDERS[provider()];
+		var list = modelList();
 		var m = ls(K_MODEL);
-		var ok = p.models.some(function (x) { return x[0] === m; });
-		return ok ? m : p.models[0][0];
+		var ok = list.some(function (x) { return x[0] === m; });
+		return ok ? m : list[0][0];
 	}
 	function hasKey() { return !!(ls(K_KEY) || "").trim(); }
 
@@ -199,6 +257,15 @@
 		var chain = g("patternChain", [0]);
 		lines.push("chain: " + chain.map(function (n) { return n + 1; }).join(" ") +
 			" (" + chain.length + " bar" + (chain.length === 1 ? "" : "s") + ").");
+
+		// what the selected slot's audio actually measures — this is the
+		// "hearing" half, and it is arithmetic, not guesswork
+		try {
+			if (window.PO33.listen) {
+				lines.push("");
+				lines.push(PO33.listen.describeSlot(g("selectedChannel", 0) + 1));
+			}
+		} catch (e) {}
 		return lines.join("\n");
 	}
 
@@ -226,13 +293,16 @@
 		"- Be concrete. Name steps by number, slots by number. 'kick on 1, 7, 11' beats 'add some drums'.\n" +
 		"- Be short. A few sentences or a short list. This is read on a phone between takes.\n" +
 		"- If the user asks how to do something, answer from the MANUAL section when one covers it.\n" +
-		"- Never invent controls that do not exist in the manual.";
+		"- Never invent controls that do not exist in the manual.\n" +
+		"- You are given MEASURED properties of the selected slot's audio (length, where the " +
+		"first transient is, detected hits, tempo estimates, brightness, dynamics). Use those " +
+		"numbers. They are exact. Never say you listened to it.";
 
 	/* =================================================================
 	 * panel
 	 * ================================================================= */
 
-	var view = null, open = false, chat = [], busy = false;
+	var view = null, open = false, chat = [], busy = false, listChecked = false, pending = null;
 
 	function esc(s) {
 		return String(s).replace(/[&<>"]/g, function (c) {
@@ -279,7 +349,8 @@
 			'<div class="aiQuick">' +
 				'<button type="button" data-ai="q" data-q="read">read my beat</button>' +
 				'<button type="button" data-ai="q" data-q="missing">what is missing?</button>' +
-				'<button type="button" data-ai="q" data-q="next">what should I try next?</button>' +
+				'<button type="button" data-ai="q" data-q="sample">check my sample</button>' +
+				'<button type="button" data-ai="q" data-q="write">write the missing part</button>' +
 			'</div>' +
 			'<div id="aiLog">' + renderChat() + '</div>' +
 			'<div class="uvRow aiAsk">' +
@@ -290,10 +361,11 @@
 			'<div id="aiMsg" class="aiNote"></div></div>' +
 
 			'<div class="uvSec"><h4>settings</h4><div class="uvRow">' +
-				'<select id="aiModel">' + p.models.map(function (m) {
+				'<select id="aiModel">' + modelList().map(function (m) {
 					return '<option value="' + m[0] + '"' + (m[0] === model() ? " selected" : "") +
 						">" + esc(m[1]) + "</option>";
 				}).join("") + '</select>' +
+				'<button type="button" data-ai="models">refresh models</button>' +
 				'<button type="button" data-ai="forget">forget key</button>' +
 				'<button type="button" data-ai="clear">clear chat</button>' +
 			'</div></div>';
@@ -307,10 +379,28 @@
 				'you have written — the steps, tempo, swing and which slots are loaded — ' +
 				'and the manual. Ask it about either.</div>';
 		}
-		return chat.map(function (m) {
-			return '<div class="aiMsg ' + m.role + '"><b>' +
+		return chat.map(function (m, i) {
+			var h = '<div class="aiMsg ' + m.role + '"><b>' +
 				(m.role === "user" ? "you" : "assistant") + '</b>' +
-				esc(m.text).replace(/\n/g, "<br>") + "</div>";
+				esc(m.text).replace(/\n/g, "<br>");
+			if (m.plan) {
+				var A = window.PO33.aiApply;
+				h += '<div class="aiPlan' + (m.plan.done ? " done" : "") + '">' +
+					'<b>' + esc(m.plan.summary) + '</b><ul>' +
+					A.describe(m.plan.ops).map(function (line) {
+						return "<li>" + esc(line) + "</li>";
+					}).join("") + '</ul>' +
+					(m.plan.errs && m.plan.errs.length
+						? '<div class="aiPlanWarn">skipped: ' + esc(m.plan.errs.join("; ")) + '</div>' : "") +
+					(m.plan.done
+						? '<div class="aiPlanWarn">applied &middot; undo puts it back</div>'
+						: '<div class="aiPlanBtns">' +
+							'<button type="button" data-ai="apply" data-i="' + i + '">apply</button>' +
+							'<button type="button" data-ai="reject" data-i="' + i + '">no thanks</button>' +
+						  '</div>') +
+					'</div>';
+			}
+			return h + "</div>";
 		}).join("");
 	}
 
@@ -331,8 +421,13 @@
 	var QUICK = {
 		read: "Describe what I have written, in plain language. Say what is working and what is not.",
 		missing: "Which of drums, bass and melody is missing or weak here? Name the slot and the exact steps to add.",
-		next: "Give me one concrete thing to try next, with the exact steps to press."
+		sample: "Look at the measured audio for my selected slot. Is it the right length for chopping, " +
+			"does it need trimming, and what tempo should I be at? Be specific with the numbers.",
+		next: "Give me one concrete thing to try next, with the exact steps to press.",
+		write: "Write the part that is missing. Explain the idea in a sentence, then give me the json block."
 	};
+
+	var retried = false;
 
 	function ask(text) {
 		if (busy || !text) { return; }
@@ -343,19 +438,47 @@
 
 		var p = PROVIDERS[provider()];
 		var system = SYSTEM_BASE +
+			(window.PO33.aiApply ? "\n\n=== MAKING CHANGES ===\n" + PO33.aiApply.SCHEMA_DOC : "") +
 			"\n\n=== THE USER'S CURRENT PATTERN (measured, not heard) ===\n" + describeBeat() +
 			"\n\n=== THE MANUAL ===\n" + guideText();
 
 		p.send((ls(K_KEY) || "").trim(), model(), system, chat.slice(-10))
 			.then(function (answer) {
-				chat.push({ role: "assistant", text: answer || "(empty answer)" });
+				var A = window.PO33.aiApply, plan = A ? A.extract(answer) : null;
+				var msg = { role: "assistant", text: (A ? A.prose(answer) : answer) || "(empty answer)" };
+
+				if (plan) {
+					var v = A.validate(plan);
+					if (v.ops.length) {
+						// held, not applied. Nothing changes until it is read and accepted.
+						msg.plan = { summary: plan.summary || "change the pattern", ops: v.ops, errs: v.errs };
+						pending = msg.plan;
+					} else if (v.errs.length) {
+						msg.text += "\n\n(it proposed a change I rejected: " + v.errs.join("; ") + ")";
+					}
+				}
+				chat.push(msg);
 				busy = false; paint(); note("");
 			})
 			.catch(function (e) {
+				var msg = (e && e.message) || "that did not go through";
+				// providers retire model names without warning. Re-read the
+				// catalogue, drop the dead choice and try once more before
+				// bothering the user about it.
+				if (/no longer available|not found|unsupported model|does not exist/i.test(msg) && !retried) {
+					retried = true;
+					note("that model is gone — finding a current one…");
+					refreshModels().then(function () {
+						busy = false;
+						chat.pop();
+						ask(text);
+					});
+					return;
+				}
 				busy = false;
 				chat.pop();               // drop the question that got no answer
 				paint();
-				note(e && e.message ? e.message : "that did not go through");
+				note(msg);
 			});
 	}
 
@@ -375,10 +498,26 @@
 			if (prov && PROVIDERS[prov]) { ls(K_PROV, prov); ls(K_MODEL, null); }
 			var k = ((view.querySelector("#aiKey") || {}).value || "").trim();
 			if (!k) { note("paste a key first"); return; }
-			ls(K_KEY, k); paint(); note("saved in this browser only");
+			ls(K_KEY, k); paint(); note("saved in this browser only · checking models…");
+			refreshModels().then(function (list) {
+				paint();
+				note(list ? ("saved · " + list.length + " models available")
+					: "saved in this browser only");
+				syncButton();
+			});
 			return;
 		}
-		if (what === "forget") { ls(K_KEY, null); chat = []; paint(); note("key removed"); return; }
+		if (what === "forget") {
+			ls(K_KEY, null); chat = []; paint(); note("key removed"); syncButton(); return;
+		}
+		if (what === "models") {
+			note("checking…");
+			refreshModels().then(function (list) {
+				paint();
+				note(list ? (list.length + " models available") : "could not reach the provider");
+			});
+			return;
+		}
 		if (what === "clear") { chat = []; paint(); return; }
 		if (what === "send") {
 			var inp = view.querySelector("#aiInput");
@@ -388,6 +527,17 @@
 			return;
 		}
 		if (what === "q") { ask(QUICK[el.getAttribute("data-q")] || ""); return; }
+
+		if (what === "apply" || what === "reject") {
+			var m = chat[+el.getAttribute("data-i")];
+			if (!m || !m.plan || m.plan.done) { return; }
+			if (what === "reject") { delete m.plan; pending = null; paint(); note("left alone"); return; }
+			var n = window.PO33.aiApply.apply(m.plan.ops);
+			m.plan.done = true; pending = null;
+			paint();
+			note("applied " + n + " change" + (n === 1 ? "" : "s") + " — undo reverts all of it");
+			return;
+		}
 	}
 
 	function build() {
@@ -419,18 +569,40 @@
 		return true;
 	}
 
-	function show() { build(); open = true; document.body.classList.add("aiOpen"); paint(); }
+	/* The top-row shortcut. It only appears once the assistant is BOTH unlocked
+	 * and holding a key, so nobody who cannot use it ever sees a button for it —
+	 * which is the whole point of the feature being hidden. */
+	function syncButton() {
+		var a = document.getElementById("fabAi");
+		if (!a) { return; }
+		a.hidden = !(unlocked() && hasKey());
+	}
+
+	function show() {
+		build(); open = true;
+		document.body.classList.add("aiOpen");
+		paint(); syncButton();
+		// keep the catalogue fresh in the background, once per session
+		if (hasKey() && !listChecked) { listChecked = true; refreshModels().then(function (l) { if (l) { paint(); } }); }
+	}
 	function hide() { open = false; document.body.classList.remove("aiOpen"); }
 	function toggle() { if (open) { hide(); } else { show(); } }
 
 	window.PO33.ai = {
 		show: show, hide: hide, toggle: toggle,
-		unlocked: unlocked,
+		unlocked: unlocked, hasKey: hasKey, syncButton: syncButton,
+		// aaa calls this to hand a question straight over
+		ask: function (q) { build(); paint(); ask(q); },
 		describeBeat: describeBeat,          // exported so it can be tested without a key
-		lock: function () { ls(K_UNLOCK, null); ls(K_KEY, null); chat = []; paint(); }
+		lock: function () { ls(K_UNLOCK, null); ls(K_KEY, null); chat = []; paint(); syncButton(); }
 	};
 
 	function boot() {
+		var a = document.getElementById("fabAi");
+		if (a) {
+			a.addEventListener("click", function (e) { e.preventDefault(); toggle(); });
+		}
+		syncButton();
 		var tries = 0;
 		var iv = setInterval(function () {
 			if (build() || ++tries > 100) { clearInterval(iv); }

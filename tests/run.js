@@ -80,28 +80,31 @@ async function reload(page, settle) {
 	await powerOn(page, settle);
 }
 
-// Several panels rebuild themselves in response to the very tap we are
-// sending — the mix row redraws on every mute change, for instance. That
-// leaves a window where the handle we just resolved is replaced before the
-// tap lands, and puppeteer reports "Node is detached from document". The
-// product is behaving correctly; the harness just has to re-aim. Re-resolve
-// and try again rather than failing a green build on a race.
+/* Tap the element handle. Deliberately the simple version.
+ *
+ * Twice now this has been "improved" and both attempts were worse, so the
+ * findings are recorded here rather than relearned:
+ *
+ *  - Retrying on "Node is detached from document" DOUBLE-TAPS. The node
+ *    usually detaches BECAUSE the tap landed and triggered a re-render, so
+ *    the retry sends a second tap. On a sequencer step that is on-then-off
+ *    and the test sees the step it just placed as empty.
+ *
+ *  - Measuring boundingBox() and tapping the point instead fails on the MIX
+ *    chain editor, which rebuilds and relays out its buttons between the
+ *    measurement and the dispatch, so the tap lands on whatever moved into
+ *    that spot. It failed six runs out of six.
+ *
+ * elementHandle.tap() scrolls the element into view and taps it in one go,
+ * which is the closest thing to atomic that is available here. The rare
+ * detached-node error is a genuinely rare race and is better than either
+ * cure.
+ */
 async function tap(page, sel) {
-	let lastErr;
-	for (let attempt = 0; attempt < 3; attempt++) {
-		const el = await page.$(sel);
-		assert(el, "no element " + sel);
-		try {
-			await el.tap();
-			await sleep(250);
-			return;
-		} catch (e) {
-			if (!/detached/i.test(e.message)) { throw e; }
-			lastErr = e;
-			await sleep(120);
-		}
-	}
-	throw lastErr;
+	const el = await page.$(sel);
+	assert(el, "no element " + sel);
+	await el.tap();
+	await sleep(250);
 }
 
 const ev = (page, fn, ...args) => page.evaluate(fn, ...args);
@@ -347,6 +350,115 @@ test("guide: opens, search filters across tabs, closes", async b => {
 	assert(n >= 2 && n < 15, "search narrows results, got " + n);
 	await tap(p, ".drawerClose");
 	assert(!(await ev(p, () => document.body.classList.contains("drawer-info"))), "closed");
+});
+
+/* The apply layer is the only place a language model can change the user's work,
+ * so it is the only place where being "roughly right" is not good enough. Every
+ * one of these must be REJECTED, not clamped: clamping step 21 to step 16 makes
+ * a real edit nobody asked for. */
+test("ai: every malformed proposal is rejected, never clamped", async b => {
+	const p = await boot(b);
+	const r = await ev(p, () => {
+		const A = PO33.aiApply;
+		const t = {
+			good:        { ops: [{ op: "setSteps", slot: 9, pitch: 0, steps: [1, 7, 11] }] },
+			stepTooHigh: { ops: [{ op: "addSteps", slot: 9, steps: [1, 21] }] },
+			stepZero:    { ops: [{ op: "addSteps", slot: 9, steps: [0] }] },
+			slotZero:    { ops: [{ op: "setSteps", slot: 0, steps: [1] }] },
+			slot17:      { ops: [{ op: "setSteps", slot: 17, steps: [1] }] },
+            pitchBad:    { ops: [{ op: "setSteps", slot: 9, pitch: 99, steps: [1] }] },
+			bpmSilly:    { ops: [{ op: "tempo", bpm: 9000 }] },
+			swingSilly:  { ops: [{ op: "swing", percent: 900 }] },
+			unknownOp:   { ops: [{ op: "deleteEverything" }] },
+			notInteger:  { ops: [{ op: "setSteps", slot: 9, steps: [1.5] }] },
+			noOps:       { ops: [] },
+			junk:        { nonsense: true }
+		};
+		const out = {};
+		for (const k in t) { out[k] = A.validate(t[k]).ops.length; }
+		out.notJson = A.extract("just a sentence, no block at all") === null;
+		out.brokenJson = A.extract("```json\n{not valid}\n```") === null;
+		return out;
+	});
+	eq(r.good, 1, "a well-formed op is accepted");
+	["stepTooHigh", "stepZero", "slotZero", "slot17", "pitchBad", "bpmSilly",
+	 "swingSilly", "unknownOp", "notInteger", "noOps", "junk"].forEach(k => {
+		eq(r[k], 0, k + " must be rejected outright");
+	});
+	assert(r.notJson, "prose with no json block yields no plan");
+	assert(r.brokenJson, "unparseable json yields no plan, not a guess");
+});
+
+/* A chopped slot holds the user's own arrangement of their own sample across 16
+ * pads. Writing a generated part over it destroys work the pattern data cannot
+ * rebuild. aaa already refuses; so must this. */
+test("ai: refuses to write over a chopped slot", async b => {
+	const p = await boot(b);
+	const r = await ev(p, (mk) => {
+		const buf = (new Function("return " + mk))()();
+		PO33.slice.toSlot(buf, 11, 16, { layout: false, matchTempo: false });
+		const v = PO33.aiApply.validate({ ops: [{ op: "setSteps", slot: 11, steps: [1, 5] }] });
+		return { accepted: v.ops.length, err: v.errs.join(" ") };
+	}, MAKE_SIGNATURE_BUFFER.toString());
+	eq(r.accepted, 0, "must not accept a write to a chopped slot");
+	assert(/chopped/.test(r.err), "should say why: " + r.err);
+});
+
+/* The whole round trip, and the promise that one undo puts it all back. */
+test("ai: a proposal previews, applies as one undo step, and reverts", async b => {
+	const p = await boot(b);
+	const r = await ev(p, () => {
+		const A = PO33.aiApply;
+		PO33.clearPattern();
+		const reply = "Your bar has no kick.\n\n```json\n" + JSON.stringify({
+			summary: "add a boom-bap kick",
+			ops: [{ op: "setSteps", slot: 9, pitch: 0, steps: [1, 7, 11] }, { op: "tempo", bpm: 90 }]
+		}) + "\n```\nThat sits under the snare.";
+		const v = A.validate(A.extract(reply));
+		const preview = A.describe(v.ops);
+		A.apply(v.ops);
+		const after = PO33.ai.describeBeat();
+		PO33.undo.undo();
+		return {
+			preview: preview,
+			proseKeepsText: /no kick/.test(A.prose(reply)) && !/json/i.test(A.prose(reply)),
+			applied: /slot 9 \(drum\) hits on steps: 1 7 11/.test(after),
+			tempo: window.tempo,
+			reverted: !/slot 9 \(drum\) hits on steps: 1 7 11/.test(PO33.ai.describeBeat())
+		};
+	});
+	assert(r.proseKeepsText, "the explanation survives, the json block is stripped");
+	assert(/slot 9/.test(r.preview.join(" ")), "preview names the slot: " + r.preview.join(" | "));
+	assert(r.applied, "the steps were written");
+	eq(r.tempo, 90, "tempo op applied");
+	assert(r.reverted, "ONE undo must remove the whole proposal");
+});
+
+/* "Hearing" is arithmetic. If these numbers drift the model is being told
+ * fiction about audio it cannot check. */
+test("ai: listen measures real properties of a known buffer", async b => {
+	const p = await boot(b);
+	const r = await ev(p, () => {
+		const ctx = Tone.context._context || Tone.context;
+		const sr = ctx.sampleRate;
+		// 2.0s buffer: 0.25s of silence, then four evenly spaced clicks
+		const buf = ctx.createBuffer(1, Math.floor(sr * 2), sr);
+		const d = buf.getChannelData(0);
+		for (let k = 0; k < 4; k++) {
+			const at = Math.floor(sr * (0.25 + k * 0.4));
+			for (let i = 0; i < Math.floor(sr * 0.05); i++) {
+				d[at + i] = Math.sin(i / 6) * (1 - i / (sr * 0.05));
+			}
+		}
+		const a = PO33.listen.analyseBuffer(buf);
+		return { secs: a.seconds, lead: a.leadIn, hits: a.onsets.length, silent: a.silent,
+			first: a.onsets[0] || 0 };
+	});
+	assert(Math.abs(r.secs - 2) < 0.02, "duration measured: " + r.secs);
+	assert(Math.abs(r.lead - 0.25) < 0.03, "lead-in silence measured: " + r.lead);
+	assert(r.hits >= 3 && r.hits <= 5, "should find the four clicks, found " + r.hits);
+	assert(Math.abs(r.first - 0.25) < 0.05, "first onset located: " + r.first);
+	assert(!r.silent, "a buffer with clicks is not silent");
 });
 
 /* The assistant. No network here: the gate and the context builder are the two

@@ -306,7 +306,23 @@
 		return false;
 	}
 
+	/* Everything renderMute draws, as one short string: the per-slot state, the
+	 * dimming (does this slot have anything in this pattern), the chain, which
+	 * link is playing and which is selected. If this is unchanged the panel
+	 * would be rebuilt identically, so there is nothing to do. */
+	var lastMuteSig = "";
+
+	function muteSig() {
+		var P = window.PO33.channels, i, out = "";
+		for (i = 0; i < 16; i++) {
+			out += (P ? P.state(i) : "on").charAt(0) + (chanHasContent(i) ? "1" : "0");
+		}
+		return out + "|" + g("patternChain", [0]).join(",") +
+			"|" + g("patternCount", 0) + "|" + g("currentPattern", 0) + "|" + chainSel;
+	}
+
 	function renderMute() {
+		lastMuteSig = muteSig();
 		var P = window.PO33.channels;
 		var chain = g("patternChain", [0]);
 		var pos = g("patternCount", 0);
@@ -611,7 +627,22 @@
 
 		render();
 		// keep the mute view honest if solo/mute changes elsewhere
-		setInterval(function () { if (tab === "mute" && panel.offsetParent !== null) { renderMute(); } }, 700);
+		/* Keep the MIX view current without churning the DOM.
+		 *
+		 * This used to rebuild the whole panel every 700ms unconditionally, so
+		 * the buttons under your finger were replaced roughly twice a second
+		 * whether or not anything had changed. That is wasted work, it throws
+		 * away any transient state in the panel, and it is a real race for
+		 * anything holding a reference to a button — a tap can land on a node
+		 * that has just been detached.
+		 *
+		 * Now it only repaints when what it DISPLAYS has actually changed. */
+		setInterval(function () {
+			if (tab !== "mute" || panel.offsetParent === null) { return; }
+			var sig = muteSig();
+			if (sig === lastMuteSig) { return; }
+			renderMute();
+		}, 700);
 		return true;
 	}
 

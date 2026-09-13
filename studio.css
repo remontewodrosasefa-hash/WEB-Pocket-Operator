@@ -1580,3 +1580,20 @@ body.aiOpen #aiView { display: flex; }
 	border-left: 2px solid rgba(27, 36, 17, 0.4);
 }
 .aiAsk { margin-top: 5px; }
+
+/* a proposed change, held until you accept it */
+.aiPlan {
+	margin: 6px 0 2px;
+	padding: 7px 8px;
+	border: 1px solid rgba(27, 36, 17, 0.45);
+	border-left-width: 3px;
+	border-radius: 4px;
+	background: rgba(27, 36, 17, 0.09);
+}
+.aiPlan > b { display: block; font-size: 11px; margin-bottom: 4px; opacity: 1; text-transform: none; letter-spacing: 0; }
+.aiPlan ul { margin: 0; padding-left: 16px; font-size: 11px; line-height: 1.45; }
+.aiPlan li { margin: 1px 0; }
+.aiPlan.done { opacity: 0.65; }
+.aiPlanWarn { margin-top: 4px; font-size: 10px; opacity: 0.75; }
+.aiPlanBtns { display: flex; gap: 4px; margin-top: 6px; }
+.aiPlanBtns button { font-size: 11px; padding: 4px 9px; }
