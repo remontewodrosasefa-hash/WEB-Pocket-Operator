@@ -404,6 +404,13 @@
 	body.projOpen .perfStrip { display: none; }
 	body.projOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
 
+	/* UTIL is a screenful of settings too — scale, LFO, recording, feel,
+	 * projects, clear. Same treatment so nothing is cramped or scrolled. */
+	body.utilOpen .controlStrip,
+	body.utilOpen .gridArea,
+	body.utilOpen .perfStrip { display: none; }
+	body.utilOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
+
 	#lcdLibSlot { display: none; }
 	body.lib-lcd #lcdLibSlot {
 		display: flex;
@@ -523,4 +530,110 @@
 	/* the voice/kit picker row above the keys stays compact so the pads
 	 * get the lion's share of the height */
 	.keysBar { flex: 0 0 auto; }
+}
+
+/* ================================================================
+ * FX and MIX pads fill the panel too.
+ *
+ * KEYS already grows into the perform panel; FX (16 punch-in effects,
+ * 4 wide) and MIX (16 channel mute/solo cells, 8 wide) were still
+ * sitting at the default cell height with dead space underneath. They
+ * are performance controls — you stab them mid-loop — so they get the
+ * same treatment: fill the height, one row per grid track, fingers
+ * instead of cursors.
+ * ================================================================ */
+@media (max-width: 720px), (pointer: coarse) {
+	.perfCells.fx,
+	.perfCells.mute {
+		height: 100%;
+		grid-auto-rows: 1fr;
+		align-content: stretch;
+		gap: 5px;
+	}
+	.perfCells.fx button {
+		min-height: 42px;
+		padding: 4px 2px;
+		font-size: 11px;
+		border-radius: 8px;
+		line-height: 1.15;
+	}
+
+	/* The fx grid is 4 rows deep where mix and keys are 2, so it is the one
+	 * tab that does not fit at this size. The screen gives back a few vh
+	 * while fx is showing and takes it straight back when you leave — you
+	 * are performing on this tab, not reading it. perf.js sets the
+	 * attribute. Without this the fourth row sits below the fold. */
+	body[data-perftab="fx"] .lcd { max-height: 18vh; }
+	/* the scene has a 72px floor so it never gets squashed to nothing.
+	 * At this height that floor pushes the sound name and the hint off
+	 * the top of the screen, so on this tab the scene yields first —
+	 * the words matter more than the picture. */
+	body[data-perftab="fx"] #hudArt { min-height: 24px; }
+	.perfCells.mute button {
+		min-height: 44px;
+		padding: 4px 1px;
+		font-size: 11px;
+		border-radius: 8px;
+	}
+	/* the mix cells carry a channel number and a state glyph; keep the
+	 * number readable now that the cell is twice the height */
+	.perfCells.mute button b { font-size: 12px; font-weight: 700; }
+}
+
+/* ================================================================
+ * Bigger transport column.
+ *
+ * RECORD / FX / PLAY / WRITE are the four keys you hit while both
+ * hands are busy, and they were exactly the same 42px circle as the
+ * sixteen pads. Give the right-hand column a visibly larger key so
+ * it can be found without looking. The inner square and circle scale
+ * with it, and the negative margins stay at half the width so the
+ * absolute centring still holds.
+ * ================================================================ */
+@media (max-width: 720px), (pointer: coarse) {
+	#btnRecord > .buttonBG,
+	#btnFX > .buttonBG,
+	#btnPlay > .buttonBG,
+	#btnWrite > .buttonBG {
+		width: 46px;
+		height: 46px;
+		margin-left: -23px;
+		top: 0;
+	}
+	#btnRecord > .buttonBG > .square,
+	#btnFX > .buttonBG > .square,
+	#btnPlay > .buttonBG > .square,
+	#btnWrite > .buttonBG > .square {
+		width: 34px;
+		height: 34px;
+		margin: -17px 0 0 -17px;
+	}
+	#btnRecord > .buttonBG > .square > .circle,
+	#btnFX > .buttonBG > .square > .circle,
+	#btnPlay > .buttonBG > .square > .circle,
+	#btnWrite > .buttonBG > .square > .circle {
+		width: 18px;
+		height: 18px;
+		margin: -9px 0 0 -9px;
+	}
+	/* the label sits below a taller key, so push it clear */
+	/* the row is 58px and the key is 46px, so the label gets the last 12px
+	 * and nothing reaches into the row below */
+	#btnRecord > .btnText,
+	#btnFX > .btnText,
+	#btnPlay > .btnText,
+	#btnWrite > .btnText {
+		top: 45px;
+		font-size: 8px;
+		line-height: 1;
+		font-weight: 700;
+	}
+	/* the touch target is what actually receives the tap, and it is free to
+	 * be wider than the key drawn inside it */
+	#btnRecord, #btnFX, #btnPlay, #btnWrite { width: 60px; }
+}
+
+/* pad dots scale up with the touch layout so they read at arm's length */
+@media (max-width: 720px), (pointer: coarse) {
+	.padDot { width: 6px; height: 6px; top: 4px; right: 4px; }
 }

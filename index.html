@@ -333,375 +333,704 @@
 		</div>
 	</div>
 	</article>
-	  <nav>
-	  	<h1>HOW TO PLAY ME!</h1>
+	  <nav id="guide">
 
-	  	<h2>Get started</h2>
-	  	<ol>
-			<li>Click <button onclick="allowSound()">Allow Sound</button> if you skipped the power-on screen.</li>
-	  		<li>Press <button onclick="playButtonFunction()">PLAY</button> to start the sequencer. Press it again to stop.</li>
-	  		<li>When playback is stopped, press any <button>NUMBER</button> button to play the currently selected sound live.</li>
-	 	</ol>
+	  	<!-- the guide opens with a screen, the same way the device does.
+	  	     A <div>, not a <header>: the page already styles <header> for its
+	  	     own title bar, and that rule was squeezing this one. -->
+	  	<div class="gHead">
+	  		<div class="gLcd">
+	  			<span class="gLcdTop">MANUAL</span>
+	  			<span class="gLcdBig">HOW TO<br>PLAY ME!</span>
+	  			<span class="gLcdSub">pocket sampler &middot; 16 pads &middot; 16 patterns</span>
+	  			<i class="gLcdDot"></i>
+	  		</div>
+	  	</div>
 
-	  	<h2>Keyboard</h2>
-	  	<ul>
-	  		<li><b>Number pads 1&ndash;16:</b> keys <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> / <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> / <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> / <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd></li>
-	  		<li><kbd>Return</kbd> = PLAY &nbsp;&middot;&nbsp; <kbd>5</kbd> = SOUND &nbsp;&middot;&nbsp; <kbd>6</kbd> = PATTERN &nbsp;&middot;&nbsp; <kbd>7</kbd> = BPM &nbsp;&middot;&nbsp; <kbd>8</kbd> = FX &nbsp;&middot;&nbsp; <kbd>9</kbd> = WRITE</li>
-	  	</ul>
+	  	<p class="gLede">Everything here is a section you can open. Start at
+	  		<b>01</b> and you will have a beat playing in about a minute. The rest
+	  		is there when you want it.</p>
 
-	  	<h2>&#9834; Let's make a song</h2>
+	  	<div class="gJump">
+	  		<a href="#gs01">first beat</a>
+	  		<a href="#gs04">samples</a>
+	  		<a href="#gs06">trim &amp; chop</a>
+	  		<a href="#gs11">effects</a>
+	  		<a href="#gs17">projects</a>
+	  		<a href="#gs20">recipes</a>
+	  	</div>
 
-	  	<h3>The one idea</h3>
-	  	<p>The 16 pads are <b>two things at once</b>: in play mode they trigger sounds,
-	  	in <b>WRITE</b> mode the same pads are the <b>16 steps</b> of the bar.</p>
+	  	<!-- ============================================================
+	  	     01 — the sixty second start
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs01" open>
+	  		<summary><span class="gNum">01</span>Your first beat</summary>
+	  		<div class="gBody">
+	  			<ol>
+	  				<li>Press <button onclick="allowSound()">Allow Sound</button>
+	  					if you skipped the power-on screen.</li>
+	  				<li>Press <button onclick="soundButtonFunction()">SOUND</button>,
+	  					then pad <b>9</b>, then <b>SOUND</b> again. You are now on a
+	  					drum slot.</li>
+	  				<li>Press <button onclick="writeButtonFunction()">WRITE</button>.
+	  					The pads are now the sixteen steps of the bar.</li>
+	  				<li>Tap steps <b>1</b>, <b>5</b>, <b>9</b>, <b>13</b>. Each tap
+	  					plays the sound as it writes it, so you hear the beat
+	  					assemble.</li>
+	  				<li>Press <b>WRITE</b> again, then
+	  					<button onclick="playButtonFunction()">PLAY</button>.</li>
+	  			</ol>
+	  			<p class="gNote">That is the whole instrument in five steps.
+	  				Everything below is a variation on it.</p>
+	  		</div>
+	  	</details>
 
-	  	<h3>Beat #1 &mdash; boom-bap (beginner)</h3>
-	  	<ol>
-	  		<li><b>Clear</b> the pattern first (info drawer / <code>PO33.clearPattern()</code>).</li>
-	  		<li><b>BPM</b> ~<b>90</b>, swing ~<b>18%</b>.</li>
-	  		<li><b>Kick:</b> SOUND &rarr; pad 9 &rarr; SOUND. Audition pads, land on a deep thump.
-	  			WRITE &rarr; steps <b>1, 7, 11</b> &rarr; WRITE.</li>
-	  		<li><b>Snare</b> (same slot 9): find a crack. WRITE &rarr; steps <b>5, 13</b> &rarr; WRITE.
-	  			Each step remembers its own pad, so one drum slot holds the whole kit.</li>
-	  		<li><b>Hats:</b> a tick sound, WRITE &rarr; steps <b>1,3,5,7,9,11,13,15</b> &rarr; WRITE.</li>
-	  		<li>PLAY. Done.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     02 — the one idea
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs02">
+	  		<summary><span class="gNum">02</span>The one idea</summary>
+	  		<div class="gBody">
+	  			<p>The 16 pads are <b>two things at once</b>. In play mode they
+	  				trigger sounds. In <b>WRITE</b> mode the same pads are the
+	  				<b>16 steps</b> of the bar.</p>
+	  			<p>Every mode button works the same way: press it, the pads mean
+	  				something new, press it again to come back. <b>SOUND</b> makes
+	  				them slots. <b>PATTERN</b> makes them patterns. <b>Hold FX</b>
+	  				makes them effects.</p>
+	  			<div class="gKeyRow">
+	  				<span><b>pads</b> sounds</span>
+	  				<span><b>WRITE</b> steps</span>
+	  				<span><b>SOUND</b> slots</span>
+	  				<span><b>PATTERN</b> bars</span>
+	  			</div>
+	  		</div>
+	  	</details>
 
-	  	<h3>Make it groove</h3>
-	  	<ul>
-	  		<li><b>Accent:</b> in WRITE, hold a step to latch it, nudge slider&nbsp;2 up (TONE mode)
-	  			&mdash; louder hit. Off-beat hats = bounce. Pull some down for ghost notes.</li>
-	  		<li><b>Micro-timing:</b> latch the snare, use the on-screen <b>timing &#9664;&#9654;</b>
-	  			(or scroll a step) to push it 6&ndash;12ms late for a laid-back feel.</li>
-	  		<li><b>Swing</b> 15&ndash;22% for hip-hop, 0% for techno. <b>Less is more</b> &mdash; add space, not layers.</li>
-	  	</ul>
+	  	<!-- ============================================================
+	  	     03 — choosing a sound
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs03">
+	  		<summary><span class="gNum">03</span>Choose a sound</summary>
+	  		<div class="gBody">
+	  			<ol>
+	  				<li>Press <button onclick="soundButtonFunction()">SOUND</button>.
+	  					Lit LEDs show which slots have something in them.</li>
+	  				<li>Press a pad to pick the active slot. <b>1&ndash;8</b> are
+	  					<b>melodic</b> &mdash; one sample played at sixteen pitches.
+	  					<b>9&ndash;16</b> are <b>drum</b> &mdash; sixteen separate
+	  					sounds on sixteen pads.</li>
+	  				<li>Press <b>SOUND</b> again to leave.</li>
+	  			</ol>
+	  			<p><b>While SOUND is held the pads wear a dot.</b>
+	  				<i class="gDot on"></i> amber means that slot has steps in the
+	  				bar you are on, so it is part of what you are hearing right now.
+	  				<i class="gDot chop"></i> green means the slot is chopped &mdash;
+	  				its sixteen pads are your slices, so think before you write over
+	  				it. The dots appear only in SOUND, because everywhere else the
+	  				same pads mean something different.</p>
+	  		</div>
+	  	</details>
 
-	  	<h3>Two more beats</h3>
-	  	<ul>
-	  		<li><b>House ~124, swing 0:</b> kick <b>1,5,9,13</b>; open hat <b>3,7,11,15</b>;
-	  			clap <b>5,13</b>; bass note on <b>1,9</b> + a higher note on <b>7,15</b>
-	  			(write each pitch separately).</li>
-	  		<li><b>Trap ~140 half-time:</b> kick <b>1,11</b>; snare <b>9</b>; hats every step, then
-	  			latch a run and nudge alternate hats for rolls.</li>
-	  	</ul>
+	  	<!-- ============================================================
+	  	     04 — library
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs04">
+	  		<summary><span class="gNum">04</span>Load your own samples</summary>
+	  		<div class="gBody">
+	  			<p>The <b>library</b> lives under the screen (on a phone it takes
+	  				the screen over).</p>
+	  			<ol>
+	  				<li>Press <b>SOUND</b> then a pad to choose the slot you are
+	  					filling. The library header says
+	  					<i>loads into SOUND&nbsp;n</i>.</li>
+	  				<li>Pick a pack, press <b>&#9654;</b> to preview, then click the
+	  					sample. It loads instantly.</li>
+	  				<li>Press <b>SOUND</b> to exit. The pads and the keyboard now
+	  					play your sample.</li>
+	  			</ol>
+	  			<p><b>slot&hellip;</b> on a row targets a specific slot without
+	  				changing the selected one. The <b>Slots</b> tab shows the whole
+	  				1&ndash;16 map at once.</p>
+	  		</div>
+	  	</details>
 
-	  	<h3>From beat to song</h3>
-	  	<ol>
-	  		<li><b>Pattern 1</b> = the main loop. Get it right.</li>
-	  		<li><b>Pattern 2</b> = a variation. Copy pattern 1 (PATTERN mode &rarr; WRITE &rarr; source &rarr; empty slot),
-	  			then strip it back &mdash; drop the kick, or mute a part (hold its pad in SOUND).</li>
-	  		<li><b>Pattern 3</b> = a fill / turnaround: busy hats, a snare roll, or a tape-stop at the end.</li>
-	  		<li><b>Chain:</b> hold PATTERN and tap e.g. <b>1 1 1 3 &nbsp; 2 2 2 3</b> for an 8-bar loop that breathes.</li>
-	  	</ol>
-	  	<p>Full arrangement: <b>intro</b> (drums, 4 bars) &rarr; <b>groove</b> (all, 8) &rarr;
-	  		<b>break</b> (melody+hats, 4) &rarr; <b>groove</b> (8) &rarr; <b>outro</b> (LFO filter down, 4).</p>
+	  	<!-- ============================================================
+	  	     05 — recording
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs05">
+	  		<summary><span class="gNum">05</span>Record a sample</summary>
+	  		<div class="gBody">
+	  			<ol>
+	  				<li>Choose the target slot first: <b>SOUND</b> + a pad.</li>
+	  				<li>In the library bar pick <b>&#127897; microphone</b> or
+	  					<b>&#128421; browser tab audio</b>, then press
+	  					<b>&#9679; record</b> &mdash; or the orange <b>RECORD</b> key
+	  					on the unit.</li>
+	  				<li>For tab audio, choose the tab playing the sound in the share
+	  					dialog and tick <b>Share tab audio</b>. Press
+	  					<b>&#9632; stop</b> when done; it stops itself at 20s.</li>
+	  				<li>The clip lands on the selected slot and in the
+	  					<b>&#9733; my recordings</b> pack. <b>download .wav</b> keeps
+	  					it; drop that file in <code>samples/</code> to make it
+	  					permanent.</li>
+	  			</ol>
+	  			<p class="gWarn">Capturing the Spotify or YouTube <i>desktop apps</i>
+	  				is not possible from a browser on macOS. Use their web players in
+	  				a tab, or route audio through a loopback device and pick it as the
+	  				microphone.</p>
+	  		</div>
+	  	</details>
 
-	  	<h3>Advanced</h3>
-	  	<ul>
-	  		<li><b>Fills:</b> latch the last few steps and lock a higher pitch or shorter TRIM length.</li>
-	  		<li><b>Motion-record</b> a filter sweep: utilities &rarr; arm motion rec, PLAY, ride the FILTER slider.</li>
-	  		<li><b>Transitions:</b> hold FX &rarr; <b>4</b> loop shorter to build, <b>15</b> reversed to flip the bar, <b>16</b> to drop back clean.</li>
-	  		<li><b>Chop a break:</b> record 1&ndash;2 bars, <b>&#9986; chop x16</b>, tick <i>lay out + match tempo</i>, re-order the pads.</li>
-	  	</ul>
+	  	<!-- ============================================================
+	  	     06 — trim and chop
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs06">
+	  		<summary><span class="gNum">06</span>Trim &amp; chop</summary>
+	  		<div class="gBody">
+	  			<p>Press <b>TRIM</b> to open the waveform. Drag the two handles to
+	  				set where the sample starts and ends. Tap a pad while it is open
+	  				to hear the result. This is how you get rid of the silence at the
+	  				front of a recording, which is usually why a pad feels late.</p>
+	  			<ul>
+	  				<li><b>set BPM</b> reads the length of what you trimmed and sets
+	  					the tempo so the loop fits the bar.</li>
+	  				<li><b>&#9986; chop</b> cuts the sample into sixteen pieces and
+	  					lays them across a drum slot's sixteen pads, so a two-bar
+	  					break becomes sixteen playable hits.</li>
+	  				<li><b>on transients</b> cuts where the sound actually hits
+	  					rather than at even intervals &mdash; better for breaks,
+	  					worse for pads and drones.</li>
+	  				<li><b>pitch</b> instead lays the sample across sixteen pads as
+	  					sixteen pitches.</li>
+	  			</ul>
+	  			<p class="gNote">Chops go onto <b>drum slots 9&ndash;16</b>. A
+	  				melodic slot holds one sample by design, so there is nowhere to
+	  				put sixteen pieces. A chopped slot gets the green dot.</p>
 
-	  	<h2>Choose a sound</h2>
-	  	<ol>
-	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button>. Lit LEDs show which slots have a sound.</li>
-	  		<li>Press a <button>NUMBER</button> to pick the active slot. 1&ndash;8 are <b>melodic</b> (each NUMBER = a different note); 9&ndash;16 are <b>drum</b> (each NUMBER = a different pad).</li>
-	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button> again to leave sound-select.</li>
-	  	</ol>
+	  			<h4>How long should the sample be?</h4>
+	  			<p>Work backwards from the slice, not the sample. A slice wants to
+	  				be somewhere around a <b>quarter to a half second</b>. Shorter
+	  				than about 0.15s it clicks with no tail; longer than about 0.8s
+	  				it runs into the next step and turns to mud.</p>
+	  			<ul>
+	  				<li><b>chop x16</b> &rarr; sample <b>5 to 6 seconds</b>, which is
+	  					two bars at 85&ndash;95 BPM. This is the classic break chop:
+	  					each pad is an eighth note, so you get whole kick-and-snare
+	  					gestures with their tails.</li>
+	  				<li><b>chop x8</b> &rarr; sample <b>2.5 to 3 seconds</b>, one bar
+	  					at the same tempo.</li>
+	  				<li>Melodic or vocal chops want longer &mdash; half a second to a
+	  					second a slice, so 8 to 16 seconds of source.</li>
+	  			</ul>
+	  			<p class="gWarn">Sampling 10 or 15 seconds and chopping it x16 gives
+	  				you slices near a second each. They overlap the steps after them
+	  				and the loop smears. Trim to the phrase you actually want
+	  				first.</p>
 
-	  	<h2>Load your own samples (Library, bottom of screen)</h2>
-	  	<ol>
-	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button> then a <button>NUMBER</button> to choose which slot you're filling. The Library says "loads into SOUND&nbsp;<i>n</i>".</li>
-	  		<li>Pick a pack, press <b>&#9654;</b> to preview, then <b>click the sample</b> &mdash; it loads onto that slot instantly.</li>
-	  		<li>Press <button onclick="soundButtonFunction()">SOUND</button> to exit. Now the pads (and keys) play your sample. Use it live, or WRITE it into a pattern.</li>
-	  		<li><b>slot&hellip;</b> on a row lets you target a specific slot without changing the selected one. The <b>Slots</b> tab shows the whole 1&ndash;16 map.</li>
-	  	</ol>
+	  			<h4>Getting a chop into a pattern</h4>
+	  			<p>This is the part that catches everyone. In <b>WRITE</b> the pads
+	  				are <i>steps</i>, not slices, so every step you tap gets whichever
+	  				slice is currently selected. Tap out eight steps and you have
+	  				written the same slice eight times &mdash; one note, over and
+	  				over. That is the instrument working as designed, not a
+	  				fault.</p>
+	  			<p>Three ways to get different slices onto different steps:</p>
+	  			<ol>
+	  				<li><b>LIVE &mdash; the one to use.</b> Press <b>LIVE</b> and
+	  					play the pads in time. Each hit records the slice you
+	  					actually struck, at the step you struck it. Re-arranging a
+	  					break is a performance, not data entry.</li>
+	  				<li><b>Hold the step</b> in WRITE to latch it, then drag
+	  					<b>slider 1</b>. The readout shows <i>note 1&ndash;16</i>
+	  					&mdash; that is which slice that one step plays. Good for
+	  					fixing a single hit.</li>
+	  				<li><b>The slow way:</b> leave WRITE, tap the slice you want (in
+	  					perform mode a pad tap also selects it), go back into WRITE,
+	  					place just that slice's steps. Repeat per slice.</li>
+	  			</ol>
+	  		</div>
+	  	</details>
 
-	  	<h2>Record a sample</h2>
-	  	<ol>
-	  		<li>Choose the target slot first (<button onclick="soundButtonFunction()">SOUND</button> + <button>NUMBER</button>).</li>
-	  		<li>In the Library bar pick <b>&#127897; microphone</b> or <b>&#128421; browser tab audio</b>, then press <b>&#9679; record</b> (or tap the orange <button>RECORD</button> pad on the unit).</li>
-	  		<li>For tab audio: in the share dialog choose the Chrome tab playing the sound (YouTube / Spotify web) and tick <b>&ldquo;Share tab audio&rdquo;</b>. Play the part you want; press <b>&#9632; stop</b> (auto-stops at 20s).</li>
-	  		<li>The clip lands on the selected slot and in the <b>&#9733; my recordings</b> pack. <b>download .wav</b> to keep it &mdash; drop it in <code>samples/</code> to make it permanent.</li>
-	  		<li>Capturing the Spotify/YouTube <i>desktop apps</i> isn't possible from a browser on macOS &mdash; use their web players in a tab, or route audio through a loopback device (BlackHole / Loopback) and pick it as the microphone.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     07 — step locks
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs07">
+	  		<summary><span class="gNum">07</span>Locking settings to one step</summary>
+	  		<div class="gBody">
+	  			<p>In <b>WRITE</b> mode, <b>hold a step</b> for a moment instead of
+	  				tapping it. That step latches, and the sliders now change
+	  				<i>only that step</i> rather than the whole part. This is the
+	  				single most useful thing in the instrument and the least
+	  				obvious.</p>
+	  			<ul>
+	  				<li><b>Accents.</b> Latch a hi-hat on the beat and push its
+	  					volume up, pull the off-beats down. Same notes, suddenly a
+	  					pulse.</li>
+	  				<li><b>Micro-timing.</b> With a step latched, the on-screen
+	  					<b>timing &#9664;&#9654;</b> pushes it a few milliseconds
+	  					early or late. A snare 10ms late is the whole "behind the
+	  					beat" feel.</li>
+	  				<li><b>Fills.</b> Latch the last few steps and lock a higher
+	  					pitch or a shorter length onto them.</li>
+	  			</ul>
+	  			<p>The song view counts how many steps carry locks, so you can see
+	  				at a glance whether a part is programmed or played.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Build a pattern</h2>
-	  	<ol>
-	  		<li>Press <button onclick="writeButtonFunction()">WRITE</button> to enter edit mode.</li>
-	  		<li>Press a <button>NUMBER</button> button (a step 1&ndash;16) to add the current sound to that step.</li>
-	  		<li>Press <button onclick="writeButtonFunction()">WRITE</button> again to return to performance mode, then pick a NUMBER to set the pitch / sample used when writing.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     08 — patterns and chaining
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs08">
+	  		<summary><span class="gNum">08</span>Patterns &amp; chaining</summary>
+	  		<div class="gBody">
+	  			<ol>
+	  				<li>Hold <button onclick="patternButtonFunction()">PATTERN</button>
+	  					&mdash; press it to toggle the hold.</li>
+	  				<li>Press a pad to select a pattern. Press more pads to append
+	  					them to the chain.</li>
+	  				<li>Press <b>PATTERN</b> again to exit.</li>
+	  			</ol>
+	  			<p><b>To copy a pattern:</b> in pattern-select mode press
+	  				<b>WRITE</b>, choose the source, then choose an empty slot.</p>
+	  			<p>A chain of <b>1 1 1 3 &nbsp; 2 2 2 3</b> is eight bars that
+	  				breathe: a main loop, a variation, and a turnaround at the end of
+	  				each half.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Chain patterns into a song</h2>
-	  	<ol>
-	  		<li>Hold <button onclick="patternButtonFunction()">PATTERN</button> (press it to toggle the hold).</li>
-	  		<li>Press a <button>NUMBER</button> to select a pattern; press more numbers to append them to the chain.</li>
-	  		<li>Press <button onclick="patternButtonFunction()">PATTERN</button> again to exit.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     09 — tempo
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs09">
+	  		<summary><span class="gNum">09</span>Tempo, swing &amp; volume</summary>
+	  		<div class="gBody">
+	  			<ol>
+	  				<li>Press <button onclick="tempoButtonFunction()">BPM</button>,
+	  					then drag the two sliders. The label says which is
+	  					<b>swing</b> and which is <b>tempo</b>. A mouse wheel over a
+	  					slider works too.</li>
+	  				<li>Double-tap <b>BPM</b> to cycle the presets:
+	  					80 / 120 / 140.</li>
+	  				<li>On this screen the pads preview the selected sound at each
+	  					pitch, so you can judge how it sits while you drag.</li>
+	  			</ol>
+	  			<p>Master volume has its own always-on <b>MASTER</b> slider in the
+	  				control strip.</p>
+	  			<p><b>Swing</b> 15&ndash;22% for hip-hop, 0% for techno.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Tempo, swing &amp; volume</h2>
-	  	<ol>
-	  		<li>Press <button onclick="tempoButtonFunction()">BPM</button>, then drag the two <b>sliders</b> (label shows what they do): <b>swing</b> and <b>tempo</b>. Mouse wheel over a slider also works. While you're dragging either one, a click plays live so you can hear the pace change as you set it.</li>
-	  		<li>Double-tap <button onclick="tempoButtonFunction()">BPM</button> to cycle the preset tempos (80 / 120 / 140).</li>
-	  		<li>On this screen the NUMBER pads <b>preview the selected sound</b> at each pad's pitch, so you can tap through them while you drag the tempo and judge how the sound sits at that speed. Master volume has its own always-on <b>MASTER</b> slider in the control strip &mdash; drag that instead.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     10 — keyboard
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs10">
+	  		<summary><span class="gNum">10</span>The keyboard</summary>
+	  		<div class="gBody">
+	  			<p>The <b>keys</b> tab under the screen is a real instrument, not a
+	  				sample being retuned: an electric piano, a pad, a pluck and a
+	  				bass, all built out of maths rather than audio files, so they add
+	  				nothing to the download.</p>
+	  			<p>The pads are laid out in a <b>scale</b> and show their real note
+	  				names, so there is no wrong note to avoid. If you picked a key in
+	  				UTIL it uses that; otherwise C minor pentatonic, five notes that
+	  				sit well over almost any beat.</p>
+	  			<ul>
+	  				<li><b>in time</b> holds each note until the next sixteenth, so
+	  					a slightly late finger still lands with the drums. It changes
+	  					<i>when</i> you play, never <i>what</i>.</li>
+	  				<li><b>rec</b> writes what you play into the current pattern. The
+	  					keyboard has <b>its own track</b>, kept alongside the sixteen
+	  					sample slots rather than taking one, so it costs you no
+	  					sounds. It appears as the <b>&#9834;</b> row in the song
+	  					view.</li>
+	  				<li><b>clear</b> wipes the keyboard track on this pattern
+	  					only.</li>
+	  			</ul>
+	  			<p>The XY pad's <b>SYNTH</b> mode plays the same notes with your
+	  				finger: left to right picks the note, up and down goes dark to
+	  				bright. With <b>rec</b> armed, sliding writes the note you land
+	  				on each time you cross onto a new one.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>On your phone (install as an app)</h2>
-	  	<ol>
-	  		<li>Open the site in a browser (see the URL your host gives you).</li>
-	  		<li><b>iPhone:</b> Share &rarr; <b>Add to Home Screen</b>. &nbsp; <b>Android:</b> menu &rarr; <b>Install app</b> / <b>Add to Home screen</b>.</li>
-	  		<li>Launch it from the home-screen icon &mdash; runs full-screen and works offline after the first load.</li>
-	  		<li>Everything is touch: tap pads, drag sliders. Tab-audio recording is desktop-Chrome only; mic recording works on Android and recent iOS Safari.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     11 — XY and effects
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs11">
+	  		<summary><span class="gNum">11</span>The XY pad &amp; stacking</summary>
+	  		<div class="gBody">
+	  			<p>Each of the pad's three modes can be <b>locked</b> on its own. Set
+	  				a filter you like, press <b>LOCK</b>, switch to SPACE &mdash; the
+	  				filter keeps running underneath while you play with the echo.
+	  				They stack rather than replace.</p>
+	  			<ul>
+	  				<li>An orange dot on a mode means it is still running in the
+	  					background.</li>
+	  				<li>Faint circles show where each locked mode was left.</li>
+	  				<li>The readout names what else is on, e.g.
+	  					<i>play a lead +tone +space</i>.</li>
+	  				<li><b>Hold LOCK</b> to clear every lock at once.</li>
+	  			</ul>
+	  		</div>
+	  	</details>
 
-	  	<h2>Record &amp; effects</h2>
-	  	<ol>
-	  		<li>While playing, hold <button onclick="writeButtonFunction()">WRITE</button> for 3 seconds to live-record what you play into the pattern.</li>
-	  		<li>Tap <button onclick="fxButtonFunction()">FX</button> to switch what the two sliders do (TONE / FILTER / TRIM). <b>Hold</b> it instead and the 16 pads become punch-in effects.</li>
-	  		<li>In Pattern-select mode press <button onclick="writeButtonFunction()">WRITE</button> to copy a pattern, then choose an empty slot to paste it.</li>
-	  	</ol>
+	  	<!-- ============================================================
+	  	     12 — punch-in effects
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs12">
+	  		<summary><span class="gNum">12</span>The 16 punch-in effects</summary>
+	  		<div class="gBody">
+	  			<p>Same set, same order as the hardware. <b>Hold FX and a pad</b>, or
+	  				use the <b>fx</b> tab. They are momentary: they last exactly as
+	  				long as you hold, and they never change your pattern.</p>
+	  			<p>Most of them are not audio effects at all. They bend the
+	  				sequencer &mdash; shorten the loop, reverse the step pointer,
+	  				stutter it, pin the chain so the bar repeats.</p>
+	  			<ol class="fxList">
+	  				<li><b>loop 16</b> &mdash; loops the whole bar and stops the chain moving on</li>
+	  				<li><b>loop 12</b> &mdash; loops the first 12 steps, so the bar limps</li>
+	  				<li><b>loop short</b> &mdash; loops 4 steps around where you are</li>
+	  				<li><b>loop shorter</b> &mdash; loops 2 steps, near machine-gun</li>
+	  				<li><b>unison</b> &mdash; thickens the beat into one wide layer</li>
+	  				<li><b>unison low</b> &mdash; unison with the low end pushed</li>
+	  				<li><b>octave up</b> &mdash; whole beat an octave up</li>
+	  				<li><b>octave down</b> &mdash; whole beat an octave down</li>
+	  				<li><b>stutter 4</b> &mdash; holds each step across a group of 4</li>
+	  				<li><b>stutter 3</b> &mdash; groups of 3, three-against-four</li>
+	  				<li><b>scratch</b> &mdash; pitch-bends the held step like a hand on a record</li>
+	  				<li><b>scratch fast</b> &mdash; the same, twice the speed</li>
+	  				<li><b>6/8 quantize</b> &mdash; forces a triplet shuffle onto the grid</li>
+	  				<li><b>retrigger</b> &mdash; re-fires from step 1 every 4 steps</li>
+	  				<li><b>reversed</b> &mdash; plays the bar backwards</li>
+	  				<li><b>no effect</b> &mdash; bypass. The safe pad: it kills whatever was running</li>
+	  			</ol>
+	  			<p><b>Transitions:</b> <b>4</b> to build, <b>15</b> to flip the bar,
+	  				<b>16</b> to drop back clean.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>The keyboard, and recording it</h2>
-	  	<p>The <b>keys</b> tab under the screen is a real instrument, not a sample
-	  		being retuned: an electric piano, a pad, a pluck and a bass, all built
-	  		out of maths rather than audio files, so they add nothing to the download.
-	  		Tap the one you want &mdash; they are all on show.</p>
-	  	<p>The pads are laid out in a <b>scale</b> (a chosen set of notes that sound
-	  		good together) and show their real note names, so there is no wrong note
-	  		to avoid. If you have picked a key and scale in UTIL it uses that;
-	  		otherwise it uses C minor pentatonic, five notes that sit well over
-	  		almost any beat.</p>
-	  	<ul>
-	  		<li><b>in time</b> &mdash; holds each note until the next sixteenth of the
-	  			beat, so a slightly late finger still lands with the drums. It changes
-	  			<i>when</i> you play, never <i>what</i>.</li>
-	  		<li><b>rec</b> &mdash; writes what you play into the pattern you are on.
-	  			The keyboard has its own track, kept alongside the sixteen sample
-	  			slots rather than taking one of them, so recording onto it costs you
-	  			no sounds. It shows up as the <b>&#9834;</b> row in the song view.</li>
-	  		<li><b>clear</b> &mdash; wipes the keyboard track on this pattern only.</li>
-	  	</ul>
-	  	<p>The XY pad's <b>SYNTH</b> mode plays the same notes with your finger:
-	  		left-to-right picks the note, up-and-down goes from dark to bright.</p>
-	  	<p><b>It records too.</b> With <b>rec</b> armed, sliding your finger writes
-	  		the note you land on each time you cross onto a new one &mdash; hold
-	  		still and it writes once, slide across and it writes the run you played.
-	  		A slide is smooth and a pattern only has sixteen slots, so what comes
-	  		back is the shape of what you played rather than the exact glide.</p>
+	  	<!-- ============================================================
+	  	     13 — recording the effects
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs13">
+	  		<summary><span class="gNum">13</span>Recording the effects</summary>
+	  		<div class="gBody">
+	  			<p>The effects have their own lane, the same as the keyboard. In the
+	  				<b>fx</b> tab press <b>rec</b> (or arm the device's LIVE REC,
+	  				which does both), press PLAY, and hold an effect. Every step the
+	  				playhead crosses while you hold is written down, so a two-bar
+	  				reverse comes back as a two-bar reverse rather than a blip.</p>
+	  			<p>On playback the lane engages and releases the effect for you.
+	  				Touching a pad always overrides it. <b>clear</b> wipes the lane on
+	  				this pattern.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Stacking the XY effects</h2>
-	  	<p>Each of the pad's three modes can be <b>locked</b> on its own. Set a
-	  		filter you like, press <b>LOCK</b>, then switch to SPACE &mdash; the
-	  		filter keeps running underneath while you play with the echo. They
-	  		stack rather than replacing each other, so you can build a sound up
-	  		layer by layer.</p>
-	  	<ul>
-	  		<li>An orange dot on a mode means it is still running in the background.</li>
-	  		<li>Faint circles on the pad show where each locked mode was left.</li>
-	  		<li>The readout names what else is on, e.g. <i>play a lead +tone +space</i>.</li>
-	  		<li><b>Hold LOCK</b> for a moment to clear every lock at once.</li>
-	  	</ul>
+	  	<!-- ============================================================
+	  	     14 — mix
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs14">
+	  		<summary><span class="gNum">14</span>The MIX tab</summary>
+	  		<div class="gBody">
+	  			<p>Mute and solo, plus the pattern chain, on one screen &mdash; the
+	  				"what is my arrangement actually doing" view.</p>
+	  			<ul>
+	  				<li>Slots with nothing on them <b>in this pattern</b> are dimmed,
+	  					so you can see what you are actually muting.</li>
+	  				<li>The <b>chain</b> row shows your arrangement with the playing
+	  					link lit. <b>Tap a link to remove it.</b></li>
+	  				<li>The <b>add</b> row appends a pattern to the end.</li>
+	  				<li>Every chain edit is a separate undo step.</li>
+	  			</ul>
+	  		</div>
+	  	</details>
 
-	  	<h2>BUILD &mdash; triple-press TRIM</h2>
-	  	<p>A beat is made of a few jobs: <b>drums</b> to keep time, <b>bass</b> to
-	  		hold the bottom, <b>melody</b> to carry the tune. BUILD tells you which
-	  		of those this pattern is missing and offers to fill them.</p>
-	  	<ul>
-	  		<li><b>build a whole beat</b> is the big one. It writes four bars &mdash;
-	  			an <b>intro</b> (drums alone), the <b>main</b> bar, a <b>breakdown</b>
-	  			with the kick dropped so the track can breathe, and a
-	  			<b>turnaround</b> with a fill at the end &mdash; then chains them into
-	  			eight bars and sets the tempo. Press it and press PLAY.</li>
-	  		<li><b>fill what's missing</b> works on this bar only and leaves your
-	  			work alone &mdash; it adds just the jobs that are empty.</li>
-	  		<li><b>replace what's here</b> wipes the bar first, for when you want
-	  			to start it over.</li>
-	  		<li><b>style</b> sets the rhythm, the tempo, the swing and the scale:
-	  			<b>old school</b> (102&ndash;108, straight &mdash; Sugarhill and
-	  			Run-DMC), <b>boom bap</b> (86&ndash;94, swung, snare behind the
-	  			beat), <b>trap</b> (138&ndash;144), <b>house</b> (122&ndash;126) and
-	  			<b>lo-fi</b> (72&ndash;80, heavily swung).</li>
-	  		<li>Every press <b>rolls a new beat</b> inside the rules of the style,
-	  			so <b>roll a different one</b> gives you something else that's still
-	  			correct.</li>
-	  		<li>If a slot is already busy it <b>uses the next free one</b> rather than
-	  			giving up, and the panel lists exactly what it did and where.</li>
-	  		<li>Any build is <b>one undo</b> away &mdash; the button is right there.</li>
-	  	</ul>
-	  	<h3>What BUILD is actually doing</h3>
-	  	<p>It is not listening to your music. It reads your pattern data &mdash;
-	  		which of the 16 slots have steps on them, and roughly how high or low
-	  		the notes sit &mdash; and decides from that which of the three jobs
-	  		(drums, bass, melody) nothing is covering yet. Then it writes a part
-	  		for each missing job, using the rules of whichever style is selected,
-	  		into the first slot that is free and has a sound loaded.</p>
-	  	<ul>
-	  		<li><b>It leaves chopped slots alone.</b> If you chopped a sample onto
-	  			a slot, the arrangement of pieces across its pads is your work and
-	  			the whole point of chopping &mdash; writing a generic kick pattern
-	  			over it would throw that away. The panel lists any slots it is
-	  			skipping for this reason.</li>
-	  		<li><b>Press it as many times as you like.</b> Every press rolls new
-	  			numbers inside the style's rules, and repeated presses now walk
-	  			forward to genuinely unused patterns instead of landing on the
-	  			same ones twice.</li>
-	  		<li>It only ever touches <b>slots with a sound loaded</b> &mdash; by
-	  			default 1&ndash;4 and 9&ndash;12. Load samples into the others and
-	  			it will use them too.</li>
-	  		<li>Undo covers a whole build in one press.</li>
-	  	</ul>
+	  	<!-- ============================================================
+	  	     15 — song view
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs15">
+	  		<summary><span class="gNum">15</span>The song view</summary>
+	  		<div class="gBody">
+	  			<p>Tap <b>song</b> in the top bar of the screen. Every sound that has
+	  				something on it gets a row of sixteen cells, filled where it hits
+	  				and hollow where it rests. The outlined column is the
+	  				playhead.</p>
+	  			<p>Along the top: the pattern, the tempo, the scale, how many parts
+	  				are playing, how many hits in total, how full the bar is, how many
+	  				steps carry locks, anything muted or soloed, and how long a bar
+	  				and a full chain last in seconds. Each row names the sample in
+	  				that slot. Muted parts are drawn hollow, a soloed one underlined.
+	  				Along the bottom: the chain.</p>
+	  			<p>Tap <b>scene</b> to go back to the animation.</p>
+	  		</div>
+	  	</details>
 
-	  	<h3>What makes the beats sound played rather than programmed</h3>
-	  	<p>Three things, and none of them are the notes:</p>
-	  	<ul>
-	  		<li><b>Dynamics.</b> A hi-hat line where every tick is the same volume
-	  			reads as a machine. The beat gets accented and the off-beats drop
-	  			back, so the same notes have a pulse. Boom bap and lo-fi also get
-	  			<b>ghost notes</b> &mdash; very quiet snare taps between the main
-	  			ones that fill space without adding another part.</li>
-	  		<li><b>Swing.</b> Straight sixteenths are a grid. Delaying every second
-	  			one turns it into a groove &mdash; boom bap sits around 56%.</li>
-	  		<li><b>Push and drag.</b> A snare landing 11ms late is the "behind the
-	  			beat" feel that defines 90s hip-hop. Old school gets none of it,
-	  			which is exactly why it sounds stiffer and more upfront.</li>
-	  	</ul>
-	  	<p>And one thing about the notes: <b>the bass follows the kick.</b> Bass and
-	  		kick written separately fight each other in the low end and turn to mud.
-	  		Landing them on the same steps is most of what makes a beat sound
-	  		finished. The melody is written an octave above the bass for the same
-	  		reason &mdash; so the two aren't in each other's way.</p>
-	  	<p>BUILD also sets a <b>scale</b> if you haven't chosen one. The default
-	  		"16-pad classic" layout is the original hardware's fixed note order and
-	  		isn't a scale at all &mdash; the pads don't even run in pitch order &mdash;
-	  		so a melody written across it comes out closer to noise than a tune. If
-	  		you've picked your own key, BUILD leaves it alone.</p>
+	  	<!-- ============================================================
+	  	     16 — drum kits
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs16">
+	  		<summary><span class="gNum">16</span>Drum kits</summary>
+	  		<div class="gBody">
+	  			<p>The <b>keys</b> tab has a <b>drum kit</b> row: <b>808</b>,
+	  				<b>909</b> and <b>lo-fi</b>. Built out of maths rather than files,
+	  				so they add nothing to the download, and they load onto the
+	  				selected drum slot's sixteen pads as real audio &mdash; so you can
+	  				trim them, chop them and lock them per step exactly like a
+	  				sample.</p>
+	  			<p>Kick, snare, hats, clap, toms, rim and cowbell, in that order
+	  				across the pads.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Recording the effects</h2>
-	  	<p>The effects have their own lane now, the same as the keyboard. In the
-	  		<b>fx</b> tab press <b>rec</b> (or arm the device's LIVE REC, which
-	  		does both), press PLAY, and hold an effect &mdash; every step the
-	  		playhead crosses while you hold it is written down. Let go and it
-	  		stops recording there, so a two-bar reverse comes back as a two-bar
-	  		reverse rather than a single blip.</p>
-	  	<p>On playback the lane engages and releases the effect for you. Touching
-	  		a pad always overrides it, so you can play over your own recording
-	  		without the two fighting. <b>clear</b> wipes the lane on this pattern.</p>
+	  	<!-- ============================================================
+	  	     17 — projects
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs17">
+	  		<summary><span class="gNum">17</span>Projects &amp; saving</summary>
+	  		<div class="gBody">
+	  			<p>Your work saves itself. The small dot in the corner of the screen
+	  				blinks green every time the session is written, which is after
+	  				every edit. You never have to remember to save.</p>
+	  			<p>The <b>PROJ</b> button opens the project browser. A project is a
+	  				complete snapshot: patterns, chain, tempo, swing, volume, which
+	  				samples are in which slots, the keyboard track and the effects
+	  				lane.</p>
+	  			<ul>
+	  				<li><b>+ new</b> starts a genuinely empty project, not the
+	  					shipped demo beats.</li>
+	  				<li><b>save as</b> keeps a new copy under the name in the box;
+	  					<b>save</b> updates the one you are in.</li>
+	  				<li><b>Tap a project</b> to select it. Its actions appear
+	  					underneath: open, rename, move to a folder, copy, export,
+	  					delete.</li>
+	  				<li><b>Folders</b> group projects. The chips along the top filter
+	  					by folder; <b>+ folder</b> makes a new one.</li>
+	  				<li><b>export</b> writes a real <i>.po33.json</i> file;
+	  					<b>import</b> reads one back. <b>export all</b> backs up
+	  					everything at once.</li>
+	  			</ul>
+	  			<p class="gWarn">Projects live in the browser's own storage. It
+	  				survives updates, but clearing site data erases it. Exporting is
+	  				how you get a beat off this device.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Drum kits</h2>
-	  	<p>The <b>keys</b> tab has a <b>drum kit</b> row: <b>808</b>, <b>909</b> and
-	  		<b>lo-fi</b>. These are built out of maths rather than loaded from
-	  		files, so they add nothing to the download, and they load onto the
-	  		selected drum slot's 16 pads as real audio &mdash; meaning you can
-	  		trim them, chop them, lock them per step and everything else, exactly
-	  		like a sample. Kick, snare, hats, clap, toms, rim and cowbell, in that
-	  		order across the pads.</p>
+	  	<!-- ============================================================
+	  	     18 — utilities
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs18">
+	  		<summary><span class="gNum">18</span>UTIL &mdash; key, scale &amp; the rest</summary>
+	  		<div class="gBody">
+	  			<p>The <b>UTIL</b> button opens the settings screen.</p>
+	  			<ul>
+	  				<li><b>scale &amp; key</b> sets what the melodic slots and the
+	  					keyboard play. Pick a scale and a root note and every melodic
+	  					pad falls inside it. <b>oct +/-</b> shifts the whole layout up
+	  					or down.</li>
+	  				<li><b>LFO</b> sweeps the filter on its own, with rate and depth.
+	  					Good for a pad that moves without you touching it.</li>
+	  				<li><b>metronome</b> gives you a click to play against.</li>
+	  				<li><b>motion rec</b> records slider movements into the pattern.
+	  					Arm it, press PLAY, ride the filter, and the sweep plays back
+	  					every loop.</li>
+	  				<li><b>haptics</b> turns the tick you feel on every pad on or
+	  					off.</li>
+	  				<li><b>clear</b> wipes this pattern, just the locks, or
+	  					everything &mdash; all of it undoable.</li>
+	  			</ul>
+	  			<p class="gNote">The default "16-pad classic" layout is the original
+	  				hardware's fixed note order and is not a scale at all &mdash; the
+	  				pads do not even run in pitch order. A melody written across it
+	  				comes out closer to noise than a tune. Pick a real scale before
+	  				you write melodies.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Projects</h2>
-	  	<p>The <b>PROJ</b> button on the screen opens the project browser. A
-	  		project is a complete snapshot: patterns, the chain, tempo, swing,
-	  		volume, which samples are in which slots, <b>and</b> the keyboard
-	  		track and the effects lane. Those last two used to be left out
-	  		&mdash; you could save a beat with a synth part in it, reopen it, and
-	  		the synth part would be missing. Anything the sequencer can play is
-	  		saved now.</p>
-	  	<ul>
-	  		<li><b>+ new</b> starts a genuinely empty project &mdash; every
-	  			pattern cleared, not the shipped demo beats.</li>
-	  		<li><b>save as</b> keeps a new copy under the name in the box;
-	  			<b>save</b> updates the one you're in.</li>
-	  		<li><b>Tap a project</b> to select it. Its actions appear underneath:
-	  			open, rename, move to a folder, copy, export, delete.</li>
-	  		<li><b>Folders</b> group your projects &mdash; the chips along the top
-	  			filter by folder, and <b>+ folder</b> makes a new one.</li>
-	  		<li><b>export</b> writes a real <i>.po33.json</i> file to your
-	  			downloads, and <b>import</b> reads one back &mdash; so a beat can
-	  			move between browsers, devices, or to a friend. <b>export all</b>
-	  			backs up everything at once.</li>
-	  	</ul>
-	  	<p>Projects live in the browser's own storage, which survives site
-	  		updates. Exporting is how you get them off this device.</p>
+	  	<!-- ============================================================
+	  	     19 — undo
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs19">
+	  		<summary><span class="gNum">19</span>Undo &amp; redo</summary>
+	  		<div class="gBody">
+	  			<p>Two arrows in the top bar. <b>&#8630; undo</b> steps back,
+	  				<b>&#8631; redo</b> puts it back. Both are also on the keyboard:
+	  				<kbd>&#8984;</kbd><kbd>Z</kbd> and
+	  				<kbd>&#8984;</kbd><kbd>&#8679;</kbd><kbd>Z</kbd>
+	  				(<kbd>Ctrl</kbd> on Windows).</p>
+	  			<p>It covers steps, chain edits, clears and the keyboard track. The
+	  				screen tells you what it just undid, so you are never guessing.
+	  				A greyed-out arrow means there is nothing left in that
+	  				direction.</p>
+	  			<p class="gNote">A run of fast edits collapses into one undo, so
+	  				tapping in sixteen hats and changing your mind is one press, not
+	  				sixteen.</p>
+	  		</div>
+	  	</details>
 
-	  	<h2>Tap the little guy</h2>
-	  	<p>Tap him where he stands on the screen and he climbs out of it. Once
-	  		he's loose he wanders the actual interface &mdash; the real edges of
-	  		the pads, the mode row, the sliders and the perform tabs are the
-	  		ledges he stands on, so he's walking on the instrument rather than on
-	  		a picture of one.</p>
-	  	<p>He takes his time. He strolls, stops to look around, turns at the edge
-	  		of a pad rather than marching off it (though he misjudges it now and
-	  		then, and falls), and occasionally goes to stand under a blinking red
-	  		LED to watch it. Press a pad and he looks over; press one near him and
-	  		he might wander across to see what it was.</p>
-	  	<p><b>Press PLAY and he dances</b> &mdash; turns to face you and bounces
-	  		on every step, harder on the downbeat, with a little side-step each
-	  		half bar. He keeps it up while the sequencer runs.</p>
-	  	<p>He can never get in your way: the layer he's drawn on ignores taps
-	  		entirely, so every pad underneath him still works. <b>Tap him again
-	  		and he goes home</b>; he also lets himself back in after a few
-	  		minutes, and he never survives a reload. He touches nothing &mdash;
-	  		no audio, no patterns, nothing saved.</p>
+	  	<!-- ============================================================
+	  	     20 — recipes
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs20">
+	  		<summary><span class="gNum">20</span>Three beats to copy</summary>
+	  		<div class="gBody">
 
-	  	<h2>The MIX tab</h2>
-	  	<p>Mute and solo, plus the pattern chain, on one screen &mdash; the "what
-	  		is my arrangement actually doing" view.</p>
-	  	<ul>
-	  		<li>Slots with nothing on them <b>in this pattern</b> are dimmed, so
-	  			you can see what you are actually muting.</li>
-	  		<li>The <b>chain</b> row shows your arrangement, with the currently
-	  			playing link lit. <b>Tap a link to remove it</b> &mdash; no more
-	  			starting the whole chain over because of one wrong tap.</li>
-	  		<li>The <b>add</b> row appends a pattern to the end.</li>
-	  		<li>Every chain edit is a separate undo step.</li>
-	  	</ul>
+	  			<h4>Boom-bap &mdash; 90 BPM, swing 18%</h4>
+	  			<div class="gSteps" aria-hidden="true">
+	  				<i class="on"></i><i></i><i></i><i></i><i class="sn"></i><i></i><i class="on"></i><i></i>
+	  				<i></i><i></i><i class="on"></i><i></i><i class="sn"></i><i></i><i></i><i></i>
+	  			</div>
+	  			<ul>
+	  				<li><b>Kick</b> on 1, 7, 11.</li>
+	  				<li><b>Snare</b> on 5, 13 &mdash; same drum slot, different pad.
+	  					Each step remembers its own pad, so one slot holds the whole
+	  					kit.</li>
+	  				<li><b>Hats</b> on every odd step.</li>
+	  			</ul>
 
-	  	<h2>The song view</h2>
-	  	<p>Tap <b>song</b> in the top bar of the screen. Every sound that has
-	  		something on it gets a row of sixteen cells, filled where it hits and
-	  		hollow where it rests &mdash; the whole pattern at a glance. The outlined
-	  		column is where the playhead is. Along the top: which pattern you are on,
-	  		the tempo, the scale, how many parts are playing, how many hits there
-	  		are in total, how full the bar is as a percentage, how many steps have
-	  		parameter locks, anything muted or soloed, and how long a bar and a
-	  		full chain last in seconds. Each row also names the sample loaded in
-	  		that slot. Muted parts are drawn hollow; a soloed one is underlined. Along the bottom: your pattern chain, with the one you are
-	  		playing highlighted. Tap <b>scene</b> to go back to the animation.</p>
+	  			<h4>House &mdash; 124 BPM, swing 0%</h4>
+	  			<div class="gSteps" aria-hidden="true">
+	  				<i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i>
+	  				<i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i>
+	  			</div>
+	  			<ul>
+	  				<li><b>Kick</b> on 1, 5, 9, 13. <b>Open hat</b> on 3, 7, 11, 15.
+	  					<b>Clap</b> on 5, 13.</li>
+	  				<li><b>Bass</b> on 1, 9 with a higher note on 7, 15.</li>
+	  			</ul>
 
-	  	<h2>The 16 punch-in effects</h2>
-	  	<p>Same set, same order as the hardware. <b>Hold FX + a pad</b>, or use the
-	  		<b>fx</b> tab in the performance strip under the screen. They are momentary:
-	  		they last exactly as long as you hold, and they never change your pattern &mdash;
-	  		so you can lean on them while recording the master out.</p>
-	  	<p>Most of them are not audio effects at all. They bend the sequencer: they
-	  		shorten the loop, reverse the step pointer or stutter it, and they pin the
-	  		pattern chain so the bar repeats instead of moving on.</p>
-	  	<ol class="fxList">
-	  		<li><b>loop 16</b> &mdash; loops the whole 16-step bar and stops the chain moving on</li>
-	  		<li><b>loop 12</b> &mdash; loops the first 12 steps, so the bar limps and everything shifts</li>
-	  		<li><b>loop short</b> &mdash; loops 4 steps around where you are</li>
-	  		<li><b>loop shorter</b> &mdash; loops 2 steps, near machine-gun</li>
-	  		<li><b>unison</b> &mdash; thickens the whole beat into one wide layer</li>
-	  		<li><b>unison low</b> &mdash; unison with the low end pushed, good under drums</li>
-	  		<li><b>octave up</b> &mdash; whole beat an octave up</li>
-	  		<li><b>octave down</b> &mdash; whole beat an octave down</li>
-	  		<li><b>stutter 4</b> &mdash; holds each step across a group of 4</li>
-	  		<li><b>stutter 3</b> &mdash; holds each step across a group of 3, three-against-four</li>
-	  		<li><b>scratch</b> &mdash; pitch-bends the held step like a hand on a record</li>
-	  		<li><b>scratch fast</b> &mdash; the same scratch at twice the speed</li>
-	  		<li><b>6/8 quantize</b> &mdash; forces a triplet shuffle onto the grid</li>
-	  		<li><b>retrigger</b> &mdash; re-fires the pattern from step 1 every 4 steps</li>
-	  		<li><b>reversed</b> &mdash; plays the bar backwards</li>
-	  		<li><b>no effect</b> &mdash; bypass. The safe pad: it kills whatever was running</li>
-	  	</ol>
+	  			<h4>Trap &mdash; 140 BPM, half-time</h4>
+	  			<div class="gSteps" aria-hidden="true">
+	  				<i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+	  				<i class="sn"></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i>
+	  			</div>
+	  			<ul>
+	  				<li><b>Kick</b> on 1, 11. <b>Snare</b> on 9 only &mdash; that
+	  					single snare is what makes it half-time.</li>
+	  				<li><b>Hats</b> on every step, then latch a run and nudge
+	  					alternate hats for rolls.</li>
+	  			</ul>
+
+	  			<p class="gNote">Clear the pattern first: UTIL &rarr; clear
+	  				pattern.</p>
+	  		</div>
+	  	</details>
+
+	  	<!-- ============================================================
+	  	     21 — the musical part
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs21">
+	  		<summary><span class="gNum">21</span>Played, not programmed</summary>
+	  		<div class="gBody">
+	  			<p>Three things separate a beat that sounds made from one that
+	  				sounds typed in, and none of them are the notes.</p>
+	  			<ul>
+	  				<li><b>Dynamics.</b> A hi-hat line where every tick is the same
+	  					volume reads as a machine. Accent the beat, drop the
+	  					off-beats back. Add <b>ghost notes</b> &mdash; very quiet
+	  					snare taps between the main ones that fill space without
+	  					adding a part.</li>
+	  				<li><b>Swing.</b> Straight sixteenths are a grid. Delaying every
+	  					second one turns it into a groove. Boom-bap sits around
+	  					56%.</li>
+	  				<li><b>Push and drag.</b> A snare landing 11ms late is the
+	  					"behind the beat" feel that defines 90s hip-hop. Old school
+	  					has none of it, which is exactly why it sounds stiffer and
+	  					more upfront.</li>
+	  			</ul>
+	  			<p>All three are step locks &mdash; see <b>07</b>.</p>
+	  			<p>And one thing about the notes: <b>the bass follows the kick.</b>
+	  				Bass and kick written separately fight each other in the low end
+	  				and turn to mud. Landing them on the same steps is most of what
+	  				makes a beat sound finished. Write the melody an octave above the
+	  				bass for the same reason.</p>
+	  			<p class="gNote"><b>Less is more.</b> When a loop feels wrong the fix
+	  				is almost always removing a part, not adding one.</p>
+	  		</div>
+	  	</details>
+
+	  	<!-- ============================================================
+	  	     22 — phone
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs22">
+	  		<summary><span class="gNum">22</span>On your phone</summary>
+	  		<div class="gBody">
+	  			<ol>
+	  				<li>Open the site in a browser.</li>
+	  				<li><b>iPhone:</b> Share &rarr; <b>Add to Home Screen</b>.
+	  					<b>Android:</b> menu &rarr; <b>Install app</b>.</li>
+	  				<li>Launch it from the icon. It runs full screen and works
+	  					offline after the first load.</li>
+	  			</ol>
+	  			<p>Everything is touch. The keys, effects and mix pads fill the
+	  				panel so they are real finger targets, and every pad gives you a
+	  				tick you can feel. Tab-audio recording is desktop Chrome only;
+	  				mic recording works on Android and recent iOS Safari.</p>
+	  		</div>
+	  	</details>
+
+	  	<!-- ============================================================
+	  	     23 — shortcuts
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs23">
+	  		<summary><span class="gNum">23</span>Keyboard shortcuts</summary>
+	  		<div class="gBody">
+	  			<dl class="gKeys">
+	  				<dt><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></dt><dd>pads 1&ndash;4</dd>
+	  				<dt><kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd></dt><dd>pads 5&ndash;8</dd>
+	  				<dt><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd></dt><dd>pads 9&ndash;12</dd>
+	  				<dt><kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd><kbd>V</kbd></dt><dd>pads 13&ndash;16</dd>
+	  				<dt><kbd>Return</kbd></dt><dd>play / stop</dd>
+	  				<dt><kbd>5</kbd></dt><dd>SOUND</dd>
+	  				<dt><kbd>6</kbd></dt><dd>PATTERN</dd>
+	  				<dt><kbd>7</kbd></dt><dd>BPM</dd>
+	  				<dt><kbd>8</kbd></dt><dd>FX</dd>
+	  				<dt><kbd>9</kbd></dt><dd>WRITE</dd>
+	  				<dt><kbd>&#8984;</kbd><kbd>Z</kbd></dt><dd>undo</dd>
+	  				<dt><kbd>&#8984;</kbd><kbd>&#8679;</kbd><kbd>Z</kbd></dt><dd>redo</dd>
+	  			</dl>
+	  		</div>
+	  	</details>
+
+	  	<!-- ============================================================
+	  	     24 — the little guy
+	  	     ============================================================ -->
+	  	<details class="gSec" id="gs24">
+	  		<summary><span class="gNum">24</span>Tap the little guy</summary>
+	  		<div class="gBody">
+	  			<p>Tap him where he stands on the screen and he climbs out of it.
+	  				Once he is loose he wanders the actual interface &mdash; the real
+	  				edges of the pads, the mode row, the sliders and the perform tabs
+	  				are the ledges he stands on. He is walking on the instrument
+	  				rather than on a picture of one.</p>
+	  			<p>He takes his time. He strolls, stops to look around, turns at the
+	  				edge of a pad rather than marching off it (though he misjudges it
+	  				now and then, and falls), and occasionally goes to stand under a
+	  				blinking red LED to watch it. Press a pad and he looks over.</p>
+	  			<p><b>Press PLAY and he dances</b> &mdash; turns to face you and
+	  				bounces on every step, harder on the downbeat, with a side-step
+	  				each half bar.</p>
+	  			<p>He can never get in your way: his layer ignores taps entirely, so
+	  				every pad underneath still works. Tap him again and he goes home.
+	  				He touches nothing &mdash; no audio, no patterns, nothing
+	  				saved.</p>
+	  		</div>
+	  	</details>
+
+	  	<div class="gFoot">
+	  		<span class="gFootDot"></span>
+	  		<span>stuck? open <b>01</b> and start again &mdash; nothing here can be
+	  			broken that undo cannot fix.</span>
+	  	</div>
+
 	  </nav>
 	</main>
 	<aside id="library"></aside>
 	<footer></footer>
 	
 <script src="js/jquery.min.js"></script>
-<script type="text/javascript" src="js/Tone.js"></script>
+<script type="text/javascript" src="js/Tone.min.js"></script>
 <script src="js/po33.js"></script>
 <script src="js/scale.js"></script>
 <script src="js/boot.js"></script>
@@ -723,4 +1052,5 @@
 <script src="js/build.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/mobile.js"></script>
+<script src="js/ux.js"></script>
 </body></html>

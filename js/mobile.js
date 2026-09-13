@@ -11,7 +11,7 @@
 	/* The guide.
 	 *
 	 * It used to be a fixed slab of HTML written before half the instrument
-	 * existed — no BUILD, no drum kits, no MIX tab, no synth, no effects
+	 * existed — no drum kits, no MIX tab, no synth, no effects
 	 * recording. Worse, the long-form version lives in a <nav> in index.html
 	 * that mobile.css hides outright, so on a phone it was unreachable.
 	 *
@@ -23,7 +23,7 @@
 		["start", "What this is", "A sampler and a 16-step sequencer. It records short sounds into <b>16 slots</b>, then plays them back in a loop. Everything else is built on those two things."],
 		["start", "The two halves", "<b>Slots 1&ndash;8 are melodic</b> &mdash; one sound played at 16 pitches, for tunes. <b>Slots 9&ndash;16 are drums</b> &mdash; 16 different sounds, one per pad. Picking the right half is most of the skill."],
 		["start", "In 60 seconds", "Press <b>PLAY</b>. Press <b>WRITE</b>. Tap pads to place hits. That is a beat. Press WRITE again to stop writing."],
-		["start", "If you get stuck", "Triple-press <b>TRIM</b> for <b>BUILD</b>, then <i>build a whole beat</i>. It writes four bars and chains them. Undo is one press."],
+		["start", "If you get stuck", "Nothing here is permanent. <b>&#8630;</b> undoes, <b>&#8631;</b> puts it back, and UTIL can clear the pattern and start you over. Copy a beat from <i>recipes</i> below and change one thing at a time."],
 		["start", "Keyboard (desktop)", "<kbd>Return</kbd> play &middot; <kbd>1-9,0</kbd> pads &middot; <kbd>5</kbd> sound &middot; <kbd>6</kbd> pattern &middot; <kbd>7</kbd> bpm &middot; <kbd>9</kbd> write"],
 
 		["beats", "Pick a sound", "Press <b>SOUND</b>, then a pad. Lit LEDs show which slots have something in them; the screen names what you picked."],
@@ -31,12 +31,15 @@
 		["beats", "Play it in instead", "Press <b>LIVE</b> and play the pads in time; what you play is recorded into the bar. It starts the sequencer for you if it is not already running."],
 		["beats", "Chain patterns", "Hold <b>PATTERN</b> and tap pattern numbers, or use the <b>mix</b> tab where you can see the chain, reorder links and remove one without starting over."],
 		["beats", "Tempo &amp; swing", "Press <b>BPM</b> and drag the two sliders. A click plays while you drag so you can hear the pace. Swing delays every other step &mdash; it is most of what makes a beat feel human."],
-		["beats", "BUILD (triple-press TRIM)", "Tells you which of <b>drums / bass / melody</b> the bar is missing and fills them. <i>build a whole beat</i> writes an intro, a main bar, a breakdown and a turnaround and chains them into eight bars. It never writes over a slot you chopped onto."],
+		["beats", "The three jobs", "A beat needs <b>drums</b> to keep time, <b>bass</b> to hold the bottom and <b>melody</b> to carry the tune. If a loop sounds thin, one of the three is missing. If it sounds muddy, two are fighting &mdash; write the bass on the same steps as the kick."],
+		["beats", "Recipes", "<b>Boom-bap 90:</b> kick 1,7,11 &middot; snare 5,13 &middot; hats on the odd steps, swing 18%. <b>House 124:</b> kick 1,5,9,13 &middot; open hat 3,7,11,15 &middot; clap 5,13, swing 0. <b>Trap 140:</b> kick 1,11 &middot; snare on 9 alone &middot; hats everywhere."],
 		["beats", "Accent &amp; ghost notes", "In WRITE, hold a step to latch it, then use slider 2 for its volume. Loud hits read as accents, very quiet ones as ghost notes &mdash; the difference between a beat that plods and one that moves."],
 		["beats", "Micro-timing", "Hold a step and nudge it a few milliseconds early or late. A snare sitting slightly late is the classic behind-the-beat feel."],
 
 		["sample", "Record a sound", "Open <b>library</b>, pick a source, press <b>record</b>. <i>microphone</i> works everywhere; <i>tab audio</i> is desktop Chrome only and captures whatever is playing in another tab."],
 		["sample", "Load one in", "The library lists the built-in packs and anything you have recorded. Tap <b>slot...</b> on a row to put it in a slot. <b>import</b> loads a file from your device."],
+		["sample", "Sequencing a chop", "In WRITE the pads are <b>steps</b>, not slices &mdash; every step you tap gets the slice that is currently selected, so tapping eight steps writes one note eight times. That is normal. To get different slices on different steps use <b>LIVE</b> and play them in time, or hold a step and drag slider 1 to set <i>note 1-16</i> for that step alone."],
+		["sample", "How long to sample", "Aim for the slice, not the sample. A slice wants to be about a quarter to a half second. <b>chop x16</b> &rarr; sample <b>5-6s</b> (two bars at 85-95 BPM). <b>chop x8</b> &rarr; <b>2.5-3s</b>. Sampling 13s and chopping x16 gives you one-second slices that overlap and smear."],
 		["sample", "Trim", "Press <b>TRIM</b>. Drag the handles, or drag anywhere on the waveform &mdash; it grabs the nearer one. Tapping a pad previews the trimmed sound live."],
 		["sample", "Match the tempo", "The trim screen works out the BPM that makes your selection fill exactly one bar, and offers to set it. One tap, no arithmetic."],
 		["sample", "Chop", "Cuts the trimmed part into pieces and spreads them across the pads &mdash; <b>16 is what the real hardware does</b>. Each piece lands on its own pad; nothing is duplicated. Chops never change pitch."],
@@ -58,7 +61,7 @@
 		["manage", "Projects", "<b>PROJ</b> opens the browser. A project saves everything &mdash; patterns, chain, tempo, slots, and the keyboard and effects tracks. <b>+ new</b> starts genuinely empty."],
 		["manage", "Folders &amp; files", "Tap a project to select it, then rename, move to a folder, copy, export or delete. <b>export</b> writes a real file to your downloads and <b>import</b> reads it back &mdash; that is how a beat moves between devices."],
 		["manage", "Mute &amp; solo", "The <b>mix</b> tab. Tap a slot to cycle mute / solo / on. Slots with nothing on them in this pattern are dimmed, so you can see what you are actually muting."],
-		["manage", "Undo", "The arrow in the top bar. It covers steps, builds, chain edits and the keyboard track. A whole build undoes in one press; chain edits undo one link at a time."],
+		["manage", "Undo &amp; redo", "Two arrows in the top bar &mdash; <b>&#8630;</b> back, <b>&#8631;</b> forward. They cover steps, chain edits, clears and the keyboard track, and the screen names what it just undid. On a keyboard: <kbd>cmd Z</kbd> and <kbd>cmd shift Z</kbd>. A fast run of edits collapses into one press."],
 		["manage", "Metronome &amp; feel", "UTIL has a click track, haptics on touch, and motion recording, which captures slider moves into the pattern as you make them."],
 		["manage", "LFO", "UTIL has an automatic filter sweep across everything &mdash; rate, depth and waveform."],
 		["manage", "Install it", "<b>iPhone:</b> Share, then Add to Home Screen. <b>Android:</b> menu, then Install app. It runs full screen and works offline."],

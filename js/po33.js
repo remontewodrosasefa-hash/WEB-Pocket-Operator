@@ -989,6 +989,17 @@ var editPattern = function(channel,beat){
 		chan.fxFilterFreq = chanSettings.fxFilterFreq;
 		chan.fxResonance = chanSettings.fxResonance;
 		chan.fxFilterRes = chanSettings.fxFilterRes
+
+		//AUDITION THE STEP YOU JUST WROTE.
+		//Writing a step used to be silent, so the only way to hear what you
+		//had placed was to run the pattern. On a phone that turns every edit
+		//into a play/stop round trip. Placing a note now plays it, exactly as
+		//tapping the pad outside WRITE would — but only when the sequencer is
+		//stopped, because while it is running the step will sound on its own
+		//a moment later and two hits would just flam.
+		if(!play){
+			try { playSound(channel, chan.notePitch); } catch(e) {}
+		}
 	}
 	//AUTOSAVE THE FULL SESSION (patterns, chain, tempo, swing...), NOT JUST
 	//THIS ARRAY, SO A RELOAD RESTORES EVERYTHING, NOT JUST STEP DATA.

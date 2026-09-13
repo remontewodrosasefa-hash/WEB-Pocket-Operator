@@ -80,11 +80,28 @@ async function reload(page, settle) {
 	await powerOn(page, settle);
 }
 
+// Several panels rebuild themselves in response to the very tap we are
+// sending — the mix row redraws on every mute change, for instance. That
+// leaves a window where the handle we just resolved is replaced before the
+// tap lands, and puppeteer reports "Node is detached from document". The
+// product is behaving correctly; the harness just has to re-aim. Re-resolve
+// and try again rather than failing a green build on a race.
 async function tap(page, sel) {
-	const el = await page.$(sel);
-	assert(el, "no element " + sel);
-	await el.tap();
-	await sleep(250);
+	let lastErr;
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const el = await page.$(sel);
+		assert(el, "no element " + sel);
+		try {
+			await el.tap();
+			await sleep(250);
+			return;
+		} catch (e) {
+			if (!/detached/i.test(e.message)) { throw e; }
+			lastErr = e;
+			await sleep(120);
+		}
+	}
+	throw lastErr;
 }
 
 const ev = (page, fn, ...args) => page.evaluate(fn, ...args);

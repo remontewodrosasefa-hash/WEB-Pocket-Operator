@@ -14,7 +14,7 @@
 	"use strict";
 
 	var LIMIT = 40, COALESCE = 500;
-	var past = [], future = [], lastPush = 0, busy = false;
+	var past = [], future = [], lastPush = 0, busy = false, btn = null, redoBtn = null;
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "info"); } }
@@ -238,10 +238,16 @@
 
 	var btn;
 	function paint() {
-		if (!btn) { return; }
-		btn.disabled = !past.length;
-		btn.title = past.length ? ("undo " + past[past.length - 1].label + " (" + past.length + ")")
-			: "nothing to undo";
+		if (btn) {
+			btn.disabled = !past.length;
+			btn.title = past.length ? ("undo " + past[past.length - 1].label + " (" + past.length + ")")
+				: "nothing to undo";
+		}
+		if (redoBtn) {
+			redoBtn.disabled = !future.length;
+			redoBtn.title = future.length ? ("redo " + future[future.length - 1].label + " (" + future.length + ")")
+				: "nothing to redo";
+		}
 	}
 
 	function build() {
@@ -258,8 +264,18 @@
 		["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) {
 			btn.addEventListener(ev, function () { clearTimeout(t); });
 		});
+		// A dedicated redo button. Long-pressing undo already redid, but a
+		// hidden gesture is not a feature — this is the cmd+shift+Z twin, visible.
+		redoBtn = document.createElement("button");
+		redoBtn.id = "redoBtn";
+		redoBtn.type = "button";
+		redoBtn.innerHTML = "&#8631;";            // ↷
+		redoBtn.title = "redo (cmd/ctrl + shift + Z)";
+		redoBtn.addEventListener("click", function (e) { e.stopPropagation(); redo(); });
+
 		var proj = document.getElementById("projBtn");
 		top.insertBefore(btn, proj || top.lastChild);
+		top.insertBefore(redoBtn, proj || top.lastChild);
 		paint();
 		return true;
 	}

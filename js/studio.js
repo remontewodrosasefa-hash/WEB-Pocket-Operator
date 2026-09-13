@@ -426,7 +426,11 @@
 			var item = e.target.closest("[id^='btn']");
 			if (!item) { return; }
 			var id = item.id;
-			try { if (localStorage.getItem("po33.haptics") !== "0" && navigator.vibrate) { navigator.vibrate(8); } } catch (e) {}
+			// ux.js ticks on pointerdown, which beats this click by ~100ms on a
+			// touchscreen. Only buzz here if that module did not load.
+			if (!window.PO33.hapticsOwned) {
+				try { if (localStorage.getItem("po33.haptics") !== "0" && navigator.vibrate) { navigator.vibrate(8); } } catch (e) {}
+			}
 			if (BTN_INFO[id]) { flash(BTN_INFO[id], "info"); return; }
 			if (/^btn([1-9]|1[0-6])$/.test(id)) {
 				var n = +id.slice(3);

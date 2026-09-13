@@ -462,28 +462,370 @@ body.drawer-lib  #fabLib  .btnText { color: #ffb060; }
 
 /* ================================================================
  * guide
- * ================================================================ */
+ *
+ * The manual is styled as part of the instrument, not as a web page
+ * sitting next to one. It borrows the three materials the device is
+ * made of: the dark anodised body, the orange legend printed on it,
+ * and the pale-green LCD. Sections are accordions because the manual
+ * is long and a wall of text is not a manual anyone reads.
+ * ============================================================== */
 
-nav h1 { margin: 10px 0 4px; color: #ff7a1a; font-family: 'Delius Unicase', cursive; font-size: 19px; }
-nav h2 {
-	margin: 16px 0 4px; font-size: 13px; text-transform: uppercase;
-	letter-spacing: 0.06em; color: #ff9a4d; border-bottom: 1px solid #333; padding-bottom: 3px;
+nav#guide {
+	--gInk: #e2e2e2;
+	--gDim: #9a9a9f;
+	--gOrange: #ff7a1a;
+	--gOrangeSoft: #ff9a4d;
+	--gLine: #2e2e33;
+	--gPanel: #202024;
+	--gLcdBg: #23301c;
+	--gLcdInk: #cfe6c2;
+	padding: 10px 12px 40px;
+	scroll-behavior: smooth;
 }
-nav ol, nav ul { margin: 0; padding-left: 20px; font-size: 12.5px; line-height: 1.5; }
-nav li { margin: 2px 0; }
+
+/* ---- the screen at the top ---- */
+.gHead { margin: 2px 0 12px; }
+.gLcd {
+	position: relative;
+	display: block;
+	padding: 12px 13px 13px;
+	border-radius: 6px;
+	background:
+		repeating-linear-gradient(
+			to bottom,
+			rgba(255, 255, 255, 0.022) 0 1px,
+			rgba(0, 0, 0, 0) 1px 3px),
+		linear-gradient(160deg, #2a3a22 0%, var(--gLcdBg) 60%, #1b2416 100%);
+	border: 1px solid #3d5130;
+	box-shadow:
+		inset 0 0 24px rgba(0, 0, 0, 0.55),
+		0 1px 0 rgba(255, 255, 255, 0.05);
+	color: var(--gLcdInk);
+	font-family: "Roboto Mono", ui-monospace, Menlo, monospace;
+	overflow: hidden;
+}
+.gLcdTop {
+	display: block;
+	font-size: 9px;
+	letter-spacing: 0.28em;
+	text-transform: uppercase;
+	color: rgba(207, 230, 194, 0.55);
+}
+.gLcdBig {
+	display: block;
+	margin: 5px 0 6px;
+	font-family: 'Delius Unicase', 'Roboto Mono', cursive;
+	font-size: 21px;
+	line-height: 1.08;
+	color: #f2fbea;
+	text-shadow: 0 0 12px rgba(160, 220, 130, 0.35);
+}
+.gLcdSub {
+	display: block;
+	font-size: 9.5px;
+	letter-spacing: 0.05em;
+	color: rgba(207, 230, 194, 0.66);
+}
+/* the power LED, blinking the way the real one does */
+.gLcdDot {
+	position: absolute;
+	top: 11px;
+	right: 11px;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--gOrange);
+	box-shadow: 0 0 8px rgba(255, 122, 26, 0.85);
+	animation: gPulse 2.4s ease-in-out infinite;
+}
+@keyframes gPulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.25; }
+}
+
+.gLede {
+	margin: 0 0 11px;
+	font-size: 12px;
+	line-height: 1.55;
+	color: var(--gDim);
+}
+.gLede b { color: var(--gOrangeSoft); }
+
+/* ---- jump chips, like the perform tabs ---- */
+.gJump {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 0 0 16px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--gLine);
+}
+.gJump a {
+	padding: 3px 8px;
+	border: 1px solid #3a3a40;
+	border-radius: 20px;
+	background: #26262b;
+	color: #c9c9cf;
+	font-size: 10px;
+	letter-spacing: 0.04em;
+	text-decoration: none;
+	transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.gJump a:hover {
+	background: var(--gOrange);
+	border-color: var(--gOrange);
+	color: #141410;
+}
+
+/* ---- a section is a panel on the body ---- */
+.gSec {
+	margin: 0 0 6px;
+	border: 1px solid var(--gLine);
+	border-radius: 6px;
+	background: var(--gPanel);
+	overflow: hidden;
+	transition: border-color 0.18s;
+}
+.gSec[open] { border-color: #44444c; }
+.gSec:target { border-color: var(--gOrange); }
+
+.gSec > summary {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 9px 10px;
+	cursor: pointer;
+	list-style: none;
+	font-size: 12.5px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: #ededf0;
+	user-select: none;
+	transition: background 0.15s;
+}
+.gSec > summary::-webkit-details-marker { display: none; }
+.gSec > summary::marker { content: ""; }
+.gSec > summary:hover { background: #26262b; }
+
+/* the number reads as the legend silk-screened under a pad */
+.gNum {
+	flex: 0 0 auto;
+	min-width: 22px;
+	padding: 2px 0;
+	border-radius: 3px;
+	background: #141416;
+	border: 1px solid #35353c;
+	color: var(--gDim);
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 10px;
+	font-weight: 700;
+	text-align: center;
+	transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.gSec[open] > summary .gNum {
+	background: var(--gOrange);
+	border-color: var(--gOrange);
+	color: #141410;
+}
+
+/* a little chevron on the right, drawn not imported */
+.gSec > summary::after {
+	content: "";
+	flex: 0 0 auto;
+	margin-left: auto;
+	width: 6px;
+	height: 6px;
+	border-right: 1.5px solid var(--gDim);
+	border-bottom: 1.5px solid var(--gDim);
+	transform: rotate(45deg) translate(-2px, -2px);
+	transition: transform 0.2s;
+}
+.gSec[open] > summary::after {
+	transform: rotate(225deg) translate(-1px, -1px);
+	border-color: var(--gOrangeSoft);
+}
+
+.gBody {
+	padding: 2px 12px 12px;
+	border-top: 1px solid #2a2a30;
+	font-size: 12.5px;
+	line-height: 1.58;
+	color: var(--gInk);
+}
+.gBody p { margin: 9px 0; }
+.gBody h4 {
+	margin: 14px 0 5px;
+	font-size: 11px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--gOrangeSoft);
+}
+.gBody ol, .gBody ul { margin: 8px 0; padding-left: 19px; }
+.gBody li { margin: 4px 0; }
+.gBody b { color: #fff; }
+.gBody i { color: #c4c4ca; }
+
+/* ---- call-outs ---- */
+.gNote, .gWarn {
+	margin: 10px 0 4px;
+	padding: 7px 9px;
+	border-left: 2px solid var(--gOrange);
+	border-radius: 0 4px 4px 0;
+	background: rgba(255, 122, 26, 0.07);
+	font-size: 11.5px;
+	line-height: 1.5;
+	color: #d8d8dd;
+}
+.gWarn {
+	border-left-color: #d8b23c;
+	background: rgba(216, 178, 60, 0.08);
+}
+
+/* ---- the four-mode strip in 02 ---- */
+.gKeyRow {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 4px;
+	margin: 10px 0 2px;
+}
+.gKeyRow span {
+	padding: 6px 7px;
+	border: 1px solid #35353c;
+	border-radius: 4px;
+	background: #18181b;
+	font-size: 10.5px;
+	color: var(--gDim);
+}
+.gKeyRow b {
+	display: block;
+	color: var(--gOrangeSoft);
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 10px;
+	letter-spacing: 0.08em;
+}
+
+/* ---- inline pad dots, matching the real ones ---- */
+.gDot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	margin: 0 1px;
+	border-radius: 50%;
+	vertical-align: middle;
+}
+.gDot.on { background: #ff9d3d; box-shadow: 0 0 4px rgba(255, 157, 61, 0.8); }
+.gDot.chop { background: #7fd06b; box-shadow: 0 0 4px rgba(127, 208, 107, 0.8); }
+
+/* ---- a 16-step strip, so a recipe is readable at a glance ---- */
+.gSteps {
+	display: grid;
+	grid-template-columns: repeat(16, 1fr);
+	gap: 2px;
+	margin: 6px 0 8px;
+	padding: 6px;
+	border-radius: 4px;
+	background: #141416;
+	border: 1px solid #2c2c32;
+}
+.gSteps i {
+	aspect-ratio: 1;
+	border-radius: 2px;
+	background: #26262b;
+	box-shadow: inset 0 0 0 1px #303036;
+}
+.gSteps i.on { background: var(--gOrange); box-shadow: 0 0 5px rgba(255, 122, 26, 0.6); }
+.gSteps i.sn { background: #7fd06b; box-shadow: 0 0 5px rgba(127, 208, 107, 0.5); }
+
+/* ---- shortcut table ---- */
+.gKeys {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 5px 10px;
+	margin: 10px 0 2px;
+	align-items: center;
+}
+.gKeys dt { margin: 0; white-space: nowrap; }
+.gKeys dd {
+	margin: 0;
+	font-size: 11.5px;
+	color: var(--gDim);
+}
+
+/* ---- inline controls ---- */
 nav button {
-	font-size: 11px; font-weight: 700; padding: 1px 6px; margin: 0 1px;
-	color: #141410; background: #ff7a1a; border: none; border-radius: 4px; cursor: pointer;
+	font-size: 11px; font-weight: 700; padding: 1px 7px; margin: 0 1px;
+	color: #141410; background: var(--gOrange); border: none; border-radius: 4px;
+	cursor: pointer; letter-spacing: 0.02em;
 }
-nav button:hover { filter: brightness(1.08); }
+nav button:hover { filter: brightness(1.1); }
+nav button:active { transform: translateY(1px); }
 nav kbd {
-	display: inline-block; min-width: 0.9em; padding: 0 4px; margin: 0 1px;
-	font-family: ui-monospace, Menlo, monospace; font-size: 11px;
-	color: #e8e8e8; background: #2a2a2d; border: 1px solid #444;
+	display: inline-block; min-width: 0.9em; padding: 1px 5px; margin: 0 1px;
+	font-family: ui-monospace, Menlo, monospace; font-size: 10.5px;
+	color: #e8e8e8; background: linear-gradient(#34343a, #26262b);
+	border: 1px solid #4a4a52;
 	border-bottom-width: 2px; border-radius: 3px;
 }
-nav b { color: #fff; }
-nav code { font-size: 11px; background: #2a2a2d; padding: 0 3px; border-radius: 3px; }
+nav code {
+	font-size: 11px; background: #141416; color: var(--gOrangeSoft);
+	padding: 1px 4px; border-radius: 3px; border: 1px solid #2c2c32;
+}
+
+/* ---- the effect list reads as a numbered pad map ---- */
+.fxList { counter-reset: fx; list-style: none; padding-left: 0; }
+.fxList li {
+	position: relative;
+	padding-left: 26px;
+	margin: 5px 0;
+	font-size: 11.5px;
+	line-height: 1.45;
+}
+.fxList li::before {
+	counter-increment: fx;
+	content: counter(fx);
+	position: absolute;
+	left: 0;
+	top: 1px;
+	width: 18px;
+	padding: 1px 0;
+	border-radius: 3px;
+	background: #141416;
+	border: 1px solid #35353c;
+	color: var(--gOrangeSoft);
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 9.5px;
+	font-weight: 700;
+	text-align: center;
+}
+
+/* ---- footer ---- */
+.gFoot {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin-top: 18px;
+	padding-top: 13px;
+	border-top: 1px solid var(--gLine);
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--gDim);
+}
+.gFootDot {
+	flex: 0 0 auto;
+	margin-top: 4px;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #7fd06b;
+	box-shadow: 0 0 6px rgba(127, 208, 107, 0.7);
+}
+.gFoot b { color: var(--gOrangeSoft); }
+
+/* respect a reduced-motion preference — the blinking LED is decoration */
+@media (prefers-reduced-motion: reduce) {
+	.gLcdDot { animation: none; }
+	nav#guide { scroll-behavior: auto; }
+}
 
 /* ================================================================
  * mobile / touch
@@ -541,15 +883,8 @@ input, textarea, select, #infoDrawer p, #infoDrawer li { -webkit-user-select: au
 	letter-spacing: 0.06em;
 }
 
-/* numbered effect list in the guide */
-.fxList { counter-reset: fxn; list-style: none; padding-left: 0; }
-.fxList li { counter-increment: fxn; padding: 2px 0 2px 30px; position: relative; }
-.fxList li::before {
-	content: counter(fxn);
-	position: absolute; left: 0; top: 2px;
-	width: 20px; text-align: right;
-	color: #ff7a1a; font-size: 11px; font-variant-numeric: tabular-nums;
-}
+/* the numbered effect list is styled once, up in the guide block —
+ * an older copy lived here and, loading later, quietly won. */
 
 /* ================================================================
  * info / library as plain links

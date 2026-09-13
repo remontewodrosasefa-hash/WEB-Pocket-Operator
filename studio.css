@@ -534,7 +534,7 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 #tvSlice button[data-tv="more"] { min-width: 24px; font-weight: 700; }
 
 /* undo button on the LCD top bar */
-#undoBtn {
+#undoBtn, #redoBtn {
 	font: 700 12px/1 ui-monospace, Menlo, monospace;
 	padding: 2px 7px 3px;
 	margin-right: 6px;
@@ -546,8 +546,9 @@ body.motionRec #hudMode { background: #7a2a15; animation: motionPulse 0.8s ease-
 	-webkit-appearance: none;
 	appearance: none;
 }
-#undoBtn:disabled { opacity: 0.3; cursor: default; }
-#undoBtn:active:not(:disabled) { background: #1b2411; color: #c4cdae; }
+#undoBtn:disabled, #redoBtn:disabled { opacity: 0.3; cursor: default; }
+#undoBtn:active:not(:disabled), #redoBtn:active:not(:disabled) { background: #1b2411; color: #c4cdae; }
+#redoBtn { margin-left: 2px; }
 
 /* ---------- UTIL panel (LCD overlay) ---------- */
 
@@ -1381,3 +1382,97 @@ body.utilOpen #hudFlash { bottom: 0; }
 	color: #1b2411;
 }
 .pvEmpty { padding: 14px 6px; font-size: 11px; opacity: 0.6; }
+
+/* ================================================================
+ * pad status dots — does this pad have a sound in it, and was it chopped?
+ * Sits in the pad's own corner so it never covers the number.
+ * ============================================================== */
+.buttonGridItem { }
+.padDot {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: transparent;
+	pointer-events: none;
+	z-index: 6;
+	transition: background 0.2s, box-shadow 0.2s;
+}
+.padDot.on { background: #ff9d3d; box-shadow: 0 0 4px rgba(255, 157, 61, 0.75); }
+.padDot.chop { background: #7fd06b; box-shadow: 0 0 4px rgba(127, 208, 107, 0.75); }
+
+/* ================================================================
+ * autosave indicator — bottom-right of the screen. Dim when idle,
+ * a short green pulse when the session actually hits localStorage.
+ * ============================================================== */
+#saveDot {
+	position: absolute;
+	right: 7px;
+	bottom: 6px;
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: rgba(30, 40, 26, 0.55);
+	pointer-events: none;
+	z-index: 7;
+	transition: background 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+#saveDot.wrote {
+	background: #7fd06b;
+	box-shadow: 0 0 6px rgba(127, 208, 107, 0.9);
+	transform: scale(1.35);
+}
+
+/* ================================================================
+ * first-run coach card — one screen-sized note, shown once ever.
+ * Lives inside the LCD so it reads as the device talking, not as a
+ * web dialog bolted on top.
+ * ============================================================== */
+#coachCard {
+	position: absolute;
+	/* starts below the hud's top bar, so undo, proj and the song toggle stay
+	 * visible and usable while the card is up */
+	inset: 22px 4px 4px;
+	z-index: 30;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 3px;
+	padding: 8px 11px;
+	box-sizing: border-box;
+	/* the desktop LCD is only ~145px tall — the card must fit inside it
+	 * rather than spilling past the bezel */
+	overflow: hidden;
+	background: rgba(18, 26, 16, 0.94);
+	border: 1px solid rgba(127, 208, 107, 0.35);
+	border-radius: 4px;
+	color: #cfe6c2;
+	font-family: "Roboto Mono", ui-monospace, monospace;
+	font-size: 10px;
+	line-height: 1.35;
+	opacity: 0;
+	transform: translateY(6px);
+	transition: opacity 0.24s ease, transform 0.24s ease;
+	/* invisible to hit-testing on purpose. Any touch anywhere dismisses the
+	 * card (see ux.js), and that touch goes straight through to the control
+	 * underneath — so a first-run note can never cost you a tap. */
+	pointer-events: none;
+}
+#coachCard.show { opacity: 1; transform: translateY(0); }
+#coachCard .coachHead {
+	font-size: 11px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: #ff9d3d;
+}
+#coachCard ul { margin: 0; padding: 0 0 0 14px; }
+#coachCard li { margin: 1px 0; }
+#coachCard b { color: #fff; font-weight: 700; }
+#coachCard .coachFoot {
+	margin-top: 2px;
+	font-size: 9px;
+	letter-spacing: 0.08em;
+	color: rgba(207, 230, 194, 0.6);
+}

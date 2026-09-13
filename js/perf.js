@@ -427,6 +427,9 @@
 
 	function render() {
 		if (!panel) { return; }
+		// keep the attribute true even on the first render, before any tab
+		// has been clicked
+		try { document.body.setAttribute("data-perftab", tab); } catch (e) {}
 		var slot = document.getElementById("perfViews");
 		if (!slot) {
 			slot = document.createElement("div");
@@ -452,6 +455,10 @@
 			b.addEventListener("click", function () {
 				tab = b.getAttribute("data-perf");
 				Array.prototype.forEach.call(tabs, function (o) { o.classList.toggle("on", o === b); });
+				// CSS needs to know which tab is up: the fx grid is 4 rows deep
+				// and only fits on a phone if the screen gives a little height
+				// back while it is showing.
+				try { document.body.setAttribute("data-perftab", tab); } catch (e) {}
 				render();
 			});
 		});

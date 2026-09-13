@@ -1,4 +1,8 @@
-/* build.js — the BUILD screen. Triple-press TRIM to open it.
+/* build.js — the "aaa" screen. Triple-tap the empty part of the LCD to open it.
+ *
+ * Unreleased/experimental: deliberately NOT in the guide, and deliberately
+ * not on a labelled button. The triple-tap on the screen's empty space is a
+ * developer door, not a feature.
  *
  * WHAT IT IS FOR
  * A beat is made of a few jobs: drums to keep time, bass to hold the bottom,
@@ -654,7 +658,7 @@
 	function html() {
 		var st = state();
 		var missing = ["drums", "bass", "melody"].filter(function (k) { return !st[k]; });
-		var s = '<div class="uvHead"><span>BUILD</span>' +
+		var s = '<div class="uvHead"><span>aaa</span>' +
 			'<button type="button" data-bd="close">&times;</button></div>' +
 			'<div id="bdBody">';
 
@@ -791,24 +795,25 @@
 
 	window.PO33.build = { show: show, hide: hide, toggle: toggle };
 
-	/* ---------- triple-press TRIM ----------
-	 * One press is trim, as always. Three quick presses open BUILD. Listening
-	 * in the capture phase lets us count before trim.js reacts, and we close
-	 * trim on the way in so the two panels never stack. */
+	/* ---------- triple-tap the screen's empty space ----------
+	 * TRIM is a real feature and its button should only ever do TRIM. This is
+	 * an experiment, so it lives behind a gesture on the blank area of the LCD
+	 * (where the little scene is drawn) rather than on any labelled control.
+	 * The scene's own tap handler still runs — tapping there also nudges the
+	 * character, which is harmless. */
 	function wireTriple() {
-		var b = document.getElementById("btnTrim");
-		if (!b) { return false; }
-		if (b.dataset.bdWired) { return true; }
-		b.dataset.bdWired = "1";
+		var host = document.getElementById("hudArt");
+		if (!host) { return false; }
+		if (host.dataset.bdWired) { return true; }
+		host.dataset.bdWired = "1";
 		var n = 0, t = null;
-		b.addEventListener("click", function () {
+		host.addEventListener("pointerdown", function () {
 			n++;
 			clearTimeout(t);
-			t = setTimeout(function () { n = 0; }, 650);
+			t = setTimeout(function () { n = 0; }, 700);
 			if (n >= 3) {
 				n = 0;
 				clearTimeout(t);
-				try { PO33.trim.close(); } catch (e) {}
 				show();
 			}
 		}, true);
