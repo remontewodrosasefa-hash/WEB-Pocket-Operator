@@ -1476,3 +1476,107 @@ body.utilOpen #hudFlash { bottom: 0; }
 	letter-spacing: 0.08em;
 	color: rgba(207, 230, 194, 0.6);
 }
+
+/* ================================================================
+ * assistant panel — same screen furniture as UTIL and aaa, so it
+ * reads as part of the device rather than a web chat bolted on.
+ * ============================================================== */
+#aiView { display: none; }
+body.aiOpen #aiView { display: flex; }
+#aiView {
+	position: absolute;
+	inset: 0;
+	z-index: 8;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 10px 10px;
+	background: linear-gradient(180deg, #c4cdae, #a3ad8a);
+	color: #1b2411;
+	font-family: ui-monospace, Menlo, monospace;
+}
+#aiBody {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+#aiView .uvSec { flex: 0 0 auto; }
+#aiView .uvSec:has(#aiLog) {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+#aiView .uvRow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+#aiView input[type="text"],
+#aiView input[type="password"] {
+	flex: 1 1 120px;
+	min-width: 0;
+	padding: 6px 8px;
+	border: 1px solid #6d7a5b;
+	border-radius: 4px;
+	background: rgba(27, 36, 17, 0.08);
+	color: #1b2411;
+	font-family: inherit;
+	font-size: 12px;
+}
+#aiView input::placeholder { color: rgba(27, 36, 17, 0.45); }
+#aiView button {
+	border: 1px solid #6d7a5b;
+	background: rgba(27, 36, 17, 0.10);
+	color: #1b2411;
+	padding: 6px 9px;
+	border-radius: 4px;
+	font-family: inherit;
+	font-size: 11.5px;
+	cursor: pointer;
+}
+#aiView button:hover:not(:disabled) { background: rgba(27, 36, 17, 0.2); }
+#aiView button:disabled { opacity: 0.45; cursor: default; }
+#aiView select {
+	padding: 5px 6px;
+	border: 1px solid #6d7a5b;
+	border-radius: 4px;
+	background: rgba(27, 36, 17, 0.08);
+	color: #1b2411;
+	font-family: inherit;
+	font-size: 11.5px;
+}
+
+.aiNote {
+	font-size: 10.5px;
+	line-height: 1.45;
+	color: rgba(27, 36, 17, 0.72);
+	margin: 2px 0 4px;
+}
+.aiQuick { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
+.aiQuick button { font-size: 11px; padding: 5px 8px; }
+
+#aiLog {
+	flex: 1 1 auto;
+	min-height: 60px;
+	overflow-y: auto;
+	padding: 6px;
+	border: 1px solid rgba(27, 36, 17, 0.25);
+	border-radius: 4px;
+	background: rgba(27, 36, 17, 0.06);
+	font-size: 11.5px;
+	line-height: 1.5;
+}
+.aiMsg { margin: 0 0 8px; }
+.aiMsg b {
+	display: block;
+	font-size: 9.5px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	opacity: 0.6;
+	margin-bottom: 1px;
+}
+.aiMsg.user { opacity: 0.82; }
+.aiMsg.assistant {
+	padding-left: 7px;
+	border-left: 2px solid rgba(27, 36, 17, 0.4);
+}
+.aiAsk { margin-top: 5px; }

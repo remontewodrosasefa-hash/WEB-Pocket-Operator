@@ -201,7 +201,7 @@
 
 	// any panel that has taken the screen over — a card on top of the trim
 	// waveform or the project list is noise, not help
-	var PANEL_OPEN = /\b(trimOpen|utilOpen|projOpen|buildOpen|lib-lcd|libOpen|infoOpen)\b/;
+	var PANEL_OPEN = /\b(trimOpen|utilOpen|projOpen|buildOpen|aiOpen|lib-lcd|libOpen|infoOpen)\b/;
 
 	function panelOpen() {
 		return PANEL_OPEN.test(document.body.className || "");

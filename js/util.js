@@ -51,6 +51,11 @@
 					'</select>' +
 				'</div></div>' +
 
+			'<div class="uvSec"><h4>assistant <i>(optional, needs your own API key)</i></h4>' +
+				'<div class="uvRow">' +
+					'<button type="button" data-uv="ai">open assistant</button>' +
+				'</div></div>' +
+
 			'<div class="uvSec"><h4>recording</h4>' +
 				'<div class="uvRow">' +
 					'<button type="button" data-uv="live">&#9679; arm live rec</button>' +
@@ -102,6 +107,7 @@
 		var P = window.PO33 || {};
 		switch (a) {
 			case "close":  hide(); break;
+			case "ai":     if (P.ai) { hide(); P.ai.show(); } break;
 			case "octup":  if (P.scale) { P.scale.octave(1); } break;
 			case "octdn":  if (P.scale) { P.scale.octave(-1); } break;
 			case "live":   if (P.liveRec) { hide(); P.liveRec(); } break;

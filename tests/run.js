@@ -349,6 +349,70 @@ test("guide: opens, search filters across tabs, closes", async b => {
 	assert(!(await ev(p, () => document.body.classList.contains("drawer-info"))), "closed");
 });
 
+/* The assistant. No network here: the gate and the context builder are the two
+ * parts that can be wrong without anyone noticing, and both are local.
+ *
+ * The context builder matters most. The whole design rests on local code
+ * MEASURING and the model only talking, so if these numbers drift the model is
+ * being told fiction and will answer confidently about a beat that isn't there. */
+test("ai: locked by default, opens on the code, and reports the real pattern", async b => {
+	const p = await boot(b);
+
+	eq(await ev(p, () => PO33.ai.unlocked()), false, "starts locked");
+
+	await ev(p, () => PO33.ai.show());
+	await sleep(300);
+	assert(await ev(p, () => getComputedStyle(document.getElementById("aiView")).display !== "none"),
+		"the assistant panel should be on screen");
+	assert(await ev(p, () => !document.getElementById("aiInput")),
+		"no ask box should exist while locked");
+
+	// a wrong code changes nothing
+	await ev(p, () => {
+		document.getElementById("aiName").value = "remon";
+		document.getElementById("aiCode").value = "wrong";
+		document.querySelector('[data-ai="unlock"]').click();
+	});
+	await sleep(200);
+	eq(await ev(p, () => PO33.ai.unlocked()), false, "a wrong code must not unlock");
+
+	await ev(p, () => {
+		document.getElementById("aiName").value = "remon";
+		document.getElementById("aiCode").value = "ko33";
+		document.querySelector('[data-ai="unlock"]').click();
+	});
+	await sleep(200);
+	eq(await ev(p, () => PO33.ai.unlocked()), true, "the right code unlocks");
+
+	// still no chat until a key is supplied — the cost gate is the key, not the code
+	assert(await ev(p, () => !!document.getElementById("aiKey")), "should ask for a key next");
+	assert(await ev(p, () => !document.getElementById("aiInput")), "no ask box before a key");
+
+	// now the part that must never drift: does it describe what is actually written?
+	await ev(p, () => {
+		PO33.ai.hide();
+		PO33.clearPattern();
+		window.selectedChannel = 9;
+		window.selectedPitch = 3;
+		[0, 6, 10].forEach(i => editPattern(9, i));
+		window.tempo = 90;
+	});
+	await sleep(300);
+	const ctx = await ev(p, () => PO33.ai.describeBeat());
+	assert(/TEMPO 90 BPM/.test(ctx), "tempo should be reported: " + ctx.slice(0, 80));
+	assert(/slot 10 \(drum\) hits on steps: 1 7 11/.test(ctx),
+		"should report the exact steps written, got:\n" + ctx);
+	assert(/one step = 0\.167s/.test(ctx), "should compute step length from tempo:\n" + ctx);
+
+	// and an empty bar must say so rather than silently describing nothing
+	await ev(p, () => PO33.clearPattern());
+	await sleep(250);
+	assert(/EMPTY/.test(await ev(p, () => PO33.ai.describeBeat())), "an empty pattern should say so");
+
+	await ev(p, () => PO33.ai.lock());
+	eq(await ev(p, () => PO33.ai.unlocked()), false, "lock() puts it back");
+});
+
 /* The manual lives in exactly one place (js/guide.js) and renders into the one
  * drawer. It used to exist twice — a desktop-only <nav> and a separate phone
  * list — and when the duplicate was deleted the drawer was still being built

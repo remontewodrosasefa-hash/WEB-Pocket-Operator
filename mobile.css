@@ -591,14 +591,14 @@ body.drawer-lib #infoDrawer { transform: translateX(-102%); }
 	 * while the fx tab happened to be selected left the panel squeezed into
 	 * 148px instead of filling the screen. Any new full-screen panel class
 	 * has to be added here too. */
-	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) .lcd {
+	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen):not(.aiOpen) .lcd {
 		max-height: 18vh;
 	}
 	/* the scene has a 72px floor so it never gets squashed to nothing.
 	 * At this height that floor pushes the sound name and the hint off
 	 * the top of the screen, so on this tab the scene yields first —
 	 * the words matter more than the picture. */
-	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) #hudArt {
+	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen):not(.aiOpen) #hudArt {
 		min-height: 24px;
 	}
 	.perfCells.mute button {
@@ -849,4 +849,12 @@ body.drawer-lib #infoDrawer { transform: translateX(-102%); }
 /* on a phone the drawer sets its own side padding, so cancel the pull-out */
 @media (max-width: 720px), (pointer: coarse) {
 	.drawerHead { margin: 0 0 8px; padding: 12px 14px; }
+}
+
+/* the assistant takes the screen over on a phone, like util and proj */
+@media (max-width: 720px), (pointer: coarse) {
+	body.aiOpen .controlStrip,
+	body.aiOpen .gridArea,
+	body.aiOpen .perfStrip { display: none; }
+	body.aiOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
 }
