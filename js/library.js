@@ -36,7 +36,10 @@
 			els.target.innerHTML = "click a sample &rarr; <b>SOUND " + s + "</b> (melodic)";
 		} else {
 			var pad = 1;
-			try { pad = (window.channelSettingsArr[s - 1].notePitch % 16) + 1; } catch (e) {}
+			try {
+				var csH = window.channelSettingsArr[s - 1];
+				pad = (csH.lastPad != null ? csH.lastPad : csH.notePitch % 16) + 1;
+			} catch (e) {}
 			els.target.innerHTML = "click a sample &rarr; <b>SOUND " + s + "</b> pad <b>" + pad +
 				"</b> · <button class=\"libFill\" id=\"libKit\">whole kit</button>";
 		}
@@ -94,9 +97,13 @@
 			}
 			var perPad = mode !== "kit" && drumArr[di] && drumArr[di].add;
 			if (perPad) {
-				// replace just the currently selected pad's sample
+				// replace the pad you just heard. lastPad is set by playSound;
+				// falling back to notePitch only if you never auditioned one.
 				var pad = 0;
-				try { pad = window.channelSettingsArr[idx].notePitch % 16; } catch (e) {}
+				try {
+					var csD = window.channelSettingsArr[idx];
+					pad = (csD.lastPad != null ? csD.lastPad : csD.notePitch % 16);
+				} catch (e) {}
 				drumArr[di].add(noteArray[pad], url);
 				drumPadIds[idx] = drumPadIds[idx] || {};
 				drumPadIds[idx][pad] = sample.id;
@@ -130,6 +137,7 @@
 		Object.keys(picks).forEach(function (slot) {
 			var idx = slot - 1;
 			if (slotSampleIds[idx]) { return; }               // user already chose one
+			if (window.PO33 && PO33.chops && PO33.chops.isChopped(+slot)) { return; }
 			var smp = s[picks[slot] % s.length];
 			assign(+slot, smp, true, "kit");
 		});
@@ -166,6 +174,17 @@
 		}
 		toast("filled slots " + base + "–" + (base + n - 1));
 		if (window.PO33 && PO33.flash) { PO33.flash("auto-filled " + n + " " + (base === 1 ? "melodic" : "drum") + " slots", "tip"); }
+	}
+
+	// slice.js calls this after a chop: the slot now holds audio that has no
+	// library id, so give it a sentinel one. restoreSlots() skips it (no such
+	// sample) and fillDefaults() skips it (not empty) — instead of both
+	// treating a chopped slot as free and writing a kit over it.
+	function markChopped(slot1to16) {
+		slotSampleIds[slot1to16 - 1] = "chopped";
+		drumPadIds[slot1to16 - 1] = {};
+		saveSlots();
+		rerender();
 	}
 
 	function clearSlot(slot1to16) {
@@ -228,6 +247,7 @@
 			try { saved = JSON.parse(raw); } catch (e) { saved = null; }
 			if (saved) {
 				saved.forEach(function (id, idx) {
+					if (window.PO33 && PO33.chops && PO33.chops.isChopped(idx + 1)) { return; }
 					var smp = id && findSample(id);
 					if (smp) { assign(idx + 1, smp, true, "kit"); }
 				});
@@ -434,9 +454,19 @@
 		document.addEventListener("keydown", function () { setTimeout(refreshTarget, 0); }, true);
 
 		renderSamples();
-		setTimeout(restoreSlots, 1200); // let po33.js finish building its nodes
-		setTimeout(fillDefaults, 1500); // no silent slots — fill any empty ones
+		// Restore saved slots, then fill any still-empty ones, then tell the
+		// world we're done. chopstore.js waits on `ready` before putting chops
+		// back on their pads, so it always runs AFTER every write here — on a
+		// slow phone as well as on a desktop. Before, three independent timers
+		// (1200 / 1400 / 1500 ms) raced, and whichever landed last won.
+		setTimeout(function () {
+			restoreSlots();
+			fillDefaults();
+			readyResolve();
+		}, 1200); // let po33.js finish building its nodes
 	}
+	var readyResolve;
+	var ready = new Promise(function (res) { readyResolve = res; });
 
 	function init() {
 		fetch("samples.json")
@@ -463,6 +493,8 @@
 		slotName: function (slot1to16) { return slotSampleIds[slot1to16 - 1] || null; },
 		slotIds: function () { return slotSampleIds.slice(); },
 		restoreSlots: function () { restoreSlots(); },
+		markChopped: markChopped,
+		ready: function () { return ready; },
 		toast: toast
 	};
 

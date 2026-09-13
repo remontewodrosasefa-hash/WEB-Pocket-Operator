@@ -497,3 +497,30 @@
 	color: #7a7a82;
 }
 #infoNone[hidden] { display: none; }
+
+/* ================================================================
+ * Bigger keyboard pads for live playing. The keys tab is 16 notes
+ * in an 8-wide grid (2 rows); left at the default cell size they were
+ * tiny finger targets. Fill the panel height so each key is a big pad,
+ * the way you'd actually want to perform a melody on a phone. The
+ * panel is flex:1 inside the fluid board, so this grows the KEYS
+ * within it without pushing the board past the viewport.
+ * ================================================================ */
+@media (max-width: 720px), (pointer: coarse) {
+	.perfCells.keys {
+		height: 100%;
+		grid-auto-rows: 1fr;
+		align-content: stretch;
+		gap: 5px;
+	}
+	.perfCells.keys button {
+		min-height: 46px;
+		padding: 4px 1px;
+		font-size: 12px;
+		border-radius: 8px;
+	}
+	.perfCells.keys button b { font-size: 12px; font-weight: 700; }
+	/* the voice/kit picker row above the keys stays compact so the pads
+	 * get the lion's share of the height */
+	.keysBar { flex: 0 0 auto; }
+}

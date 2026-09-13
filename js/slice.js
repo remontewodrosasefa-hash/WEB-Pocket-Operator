@@ -200,6 +200,9 @@
 			cs.notePitch = 0;
 		} catch (e) {}
 
+		// the library must know this slot is spoken for, or its boot-time
+		// fill will write a kit over the chop
+		try { if (window.PO33Lib && PO33Lib.markChopped) { PO33Lib.markChopped(slot); } } catch (e) {}
 		if (opts.matchTempo) { matchTempo(buf.duration); }
 		if (opts.layout) { layoutSteps(slot - 1, Math.min(16, slices.length)); }
 

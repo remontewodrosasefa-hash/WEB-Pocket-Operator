@@ -500,8 +500,13 @@ window.PO33 = window.PO33 || {};
 			tempo: window.tempo || 120,
 			swing: window.swing || 0,
 			volume: (typeof window.volume === "number") ? window.volume : 8,
-			currentPattern: window.currentPattern || 0,
-			slots: (window.PO33Lib && PO33Lib.slotIds) ? PO33Lib.slotIds() : null
+			currentPattern: window.currentPattern || 0
+			// NO slot ids here. library.js owns "po33.slots" and writes it the
+			// moment a slot changes. Carrying a second copy in the session meant
+			// two writers for one fact — and a snapshot taken in the first second
+			// after boot (before the library had restored anything) could be
+			// persisted by a killed tab and then overwrite the real list on the
+			// next launch. That is how a slot "randomly" came back empty.
 		};
 	}
 
@@ -551,9 +556,7 @@ window.PO33 = window.PO33 || {};
 			if (typeof raw.volume === "number") { window.volume = raw.volume; }
 			window.currentPattern = raw.currentPattern || 0;
 			window.patternCount = 0;
-			if (raw.slots) {
-				try { localStorage.setItem("po33.slots", JSON.stringify(raw.slots)); } catch (e) {}
-			}
+			// older sessions carried raw.slots — deliberately ignored now (see snapshot)
 			return true;
 		} catch (e) { return false; }
 	}
@@ -955,6 +958,13 @@ var playSound = function(channel,pitch){
 
 		drumArr[channel-8].volume.value = vol;
 		drumArr[channel-8].get(noteArray[pitch]).start("+0", offset, duration);
+
+		//REMEMBER WHICH PAD JUST SOUNDED. Selecting a drum slot in SOUND mode
+		//advances notePitch to the NEXT pad, so "load onto the pad I just heard"
+		//and "load onto notePitch" pointed at different pads — the sample landed
+		//one pad off from what you auditioned. library.js reads this so a load
+		//lands on the pad you actually heard.
+		chan.lastPad = pitch;
 	}
 
 }
@@ -1561,7 +1571,7 @@ var rotateDial = function(event,dialNumber) {
 
 }
 var dialLock=0;
-$('#dial1').draggable({
+if ($.fn && $.fn.draggable) { $('#dial1').draggable({
   handle: '#dial1BG',
   opacity: 0.001,
   helper: 'clone',
@@ -1579,7 +1589,7 @@ $('#dial1').draggable({
   }
 });
 
-$('#dial2').draggable({
+} if ($.fn && $.fn.draggable) { $('#dial2').draggable({
   handle: '#dial2BG',
   opacity: 0.001,
   helper: 'clone',
@@ -1587,7 +1597,7 @@ $('#dial2').draggable({
   	rotateDial(event, "2");
   	dialFunction(2);
   }
-});
+}); }
 
 /*
 //https://stackoverflow.com/questions/846221/logarithmic-slider

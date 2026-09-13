@@ -177,9 +177,14 @@
 		restore: restore
 	};
 
-	// Wait for po33.js to have built its audio nodes, the same way library.js
-	// waits before re-applying slots.
-	function boot() { setTimeout(function () { restore(); }, 1400); }
+	// Put the chops back only AFTER the library has restored and filled its
+	// slots, so nothing can dispose a Players we just wrote into. If the
+	// library isn't present (it always is), fall back to the old timer.
+	function boot() {
+		var lib = window.PO33Lib;
+		if (lib && lib.ready) { lib.ready().then(function () { restore(); }); }
+		else { setTimeout(function () { restore(); }, 1400); }
+	}
 	if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", boot); }
 	else { boot(); }
 })();

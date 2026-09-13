@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "start": "npx --yes serve -l 5000 .",
-    "serve": "python3 -m http.server 5000"
+    "serve": "python3 -m http.server 5000",
+    "test": "cd tests && npm install --silent --no-audit --no-fund && node run.js"
   }
 }

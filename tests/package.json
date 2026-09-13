@@ -1,0 +1,7 @@
+{
+  "name": "po33-tests",
+  "private": true,
+  "description": "Integration tests: drives the real app in headless Chrome.",
+  "scripts": { "test": "node run.js" },
+  "devDependencies": { "puppeteer-core": "^23.0.0" }
+}
