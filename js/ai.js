@@ -79,7 +79,7 @@
 						"anthropic-dangerous-direct-browser-access": "true"
 					},
 					body: JSON.stringify({
-						model: model, max_tokens: 900, system: system,
+						model: model, max_tokens: 4096, system: system,
 						messages: messages.map(function (m) {
 							return { role: m.role, content: m.text };
 						})
@@ -124,13 +124,27 @@
 							return { role: m.role === "assistant" ? "model" : "user",
 								parts: [{ text: m.text }] };
 						}),
-						generationConfig: { maxOutputTokens: 900 }
+						generationConfig: { maxOutputTokens: 4096 }
 					})
 				}).then(readJson).then(function (j) {
 					if (j.error) { throw new Error(j.error.message || "api error"); }
 					var c = (j.candidates || [])[0];
 					if (!c) { throw new Error("no answer came back"); }
-					return (c.content.parts || []).map(function (p) { return p.text || ""; }).join("").trim();
+					// A thinking model can burn the whole budget before it writes a
+					// word, and then content/parts is simply absent. Reading
+					// c.content.parts blind throws a TypeError that surfaces as a
+					// meaningless error, so treat "no parts" as its own case.
+					var parts = (c.content && c.content.parts) || [];
+					var txt = parts.map(function (p) { return p.text || ""; }).join("").trim();
+					if (!txt) {
+						throw new Error(c.finishReason === "MAX_TOKENS"
+							? "the model ran out of room before it wrote anything — ask for less at once"
+							: "the model returned nothing (" + (c.finishReason || "no reason given") + ")");
+					}
+					// A cut-off answer is truncated PROSE and a truncated json block.
+					// Say so, rather than letting a half-written plan look complete.
+					if (c.finishReason === "MAX_TOKENS") { txt += "\n\n[cut off: the answer hit the length limit]"; }
+					return txt;
 				});
 			}
 		}

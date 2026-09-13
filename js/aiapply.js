@@ -63,14 +63,32 @@
 	function extract(text) {
 		if (!text) { return null; }
 		var m = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*(\{[\s\S]*?\})\s*```/);
+		// A CLOSED block that will not parse is malformed, not cut off. It gets
+		// no plan and no excuse — guessing at it is exactly the failure mode
+		// this whole file refuses.
+		if (m) {
+			try { return JSON.parse(m[1]); } catch (e) { return null; }
+		}
+		/* An answer that hit the length limit ends mid-block: the opening fence
+		 * is there, the closing one never arrived. The old code required both,
+		 * so a cut-off plan matched nothing, no proposal was ever shown, and the
+		 * raw json fell through into the chat bubble as text — which reads as
+		 * "it said it changed the tempo and nothing happened".
+		 *
+		 * We do NOT try to repair the json. Half an ops array is a real edit
+		 * nobody asked for, which is the one thing this file exists to prevent.
+		 * We only detect it, so the panel can say it was cut off. */
+		m = text.match(/```json\s*([\s\S]*)$/i) || text.match(/```\s*(\{[\s\S]*)$/);
 		if (!m) { return null; }
-		try { return JSON.parse(m[1]); } catch (e) { return null; }
+		try { return JSON.parse(m[1]); } catch (e) { return { __truncated: true }; }
 	}
 
-	// the prose, with the machine-readable part taken out
+	// the prose, with the machine-readable part taken out — including an
+	// unterminated block, so a truncated plan never leaks into the bubble
 	function prose(text) {
 		return String(text || "").replace(/```json[\s\S]*?```/gi, "")
-			.replace(/```[\s\S]*?```/g, "").trim();
+			.replace(/```[\s\S]*?```/g, "")
+			.replace(/```[\s\S]*$/, "").trim();
 	}
 
 	/* ---------- 2. validate: reject, never clamp ---------- */
@@ -86,6 +104,9 @@
 	function validate(plan) {
 		var errs = [], ops = [];
 		if (!plan || typeof plan !== "object") { return { errs: ["no plan"], ops: [] }; }
+		if (plan.__truncated) {
+			return { errs: ["the answer was cut off mid-change — nothing was applied; ask again"], ops: [] };
+		}
 		if (!Array.isArray(plan.ops) || !plan.ops.length) { return { errs: ["no operations"], ops: [] }; }
 		if (plan.ops.length > 24) { return { errs: ["too many operations (" + plan.ops.length + ")"], ops: [] }; }
 
@@ -148,8 +169,31 @@
 		var touched = 0;
 		ops.forEach(function (o) {
 			var ch, i, b;
-			if (o.op === "tempo") { window.tempo = o.bpm; touched++; return; }
-			if (o.op === "swing") { window.swing = o.percent; touched++; return; }
+			/* The clock the machine actually runs on is Tone.Transport, not these
+			 * globals. Setting window.tempo alone changes the number the app
+			 * reports and nothing you can hear — the transport keeps running at
+			 * the old bpm — which is why an applied tempo change did nothing.
+			 * Drive both, the same way session restore and the builder do. */
+			if (o.op === "tempo") {
+				window.tempo = o.bpm;
+				try { Tone.Transport.bpm.value = o.bpm; } catch (e) {}
+				touched++;
+				return;
+			}
+			/* Swing has a second trap: the model speaks in percent (0-60), but
+			 * window.swing is the dial's own 0-1000 unit (Tone.Transport.swing =
+			 * swing/1000, and the app prints swing/10 as the percentage). Storing
+			 * the percent raw made "18% swing" mean 1.8%, i.e. straight. */
+			if (o.op === "swing") {
+				var dial = o.percent * 10;
+				window.swing = dial;
+				try {
+					Tone.Transport.swing = dial / 1000;
+					Tone.Transport.swingSubdivision = "16n";
+				} catch (e) {}
+				touched++;
+				return;
+			}
 
 			ch = o.slot - 1;
 			if (o.op === "clearSlot") {

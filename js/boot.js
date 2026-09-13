@@ -2,7 +2,7 @@
 // Modern browsers (incl. Safari/Chrome on macOS) start the AudioContext
 // suspended until a user gesture. This unlocks it once, up front.
 (function () {
-	var APP_VERSION = "78";   // keep in sync with sw.js VERSION (po33-v<n>)
+	var APP_VERSION = "79";   // keep in sync with sw.js VERSION (po33-v<n>)
 
 	// small always-on version chip at the very top; doubles as the update button
 	function versionTag() {
