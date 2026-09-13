@@ -68,25 +68,45 @@
 		["manage", "The little guy", "Tap him on the screen and he climbs out and wanders the interface, using the real buttons as ledges. Press PLAY and he dances. Tap him again to send him home. He can never block a tap."]
 	];
 
-	var INFO_TABS = [["start", "start"], ["beats", "beats"], ["sample", "sampling"],
-		["perform", "perform"], ["manage", "manage"]];
+	/* The guide drawer.
+	 *
+	 * Content comes from guide.js so there is exactly one copy of it. Each
+	 * section is a <details> accordion with a numbered badge, which is the
+	 * only shape that works for a 24-section manual on a phone: everything
+	 * is one thumb-scroll away collapsed, and opening one does not lose
+	 * your place.
+	 *
+	 * The chips filter by group. Search ignores them and looks everywhere,
+	 * because when you have a question you do not know which chip it is
+	 * filed under. A search hit opens itself so you can read the answer
+	 * without a second tap.
+	 */
+	function guideData() {
+		return window.PO33Guide || { groups: [["all", "all"]], sections: [] };
+	}
 
 	function infoMarkup() {
+		var G = guideData();
 		var h = '<div class="drawerHead"><h2>Guide</h2>' +
 			'<button class="drawerClose" data-close aria-label="close">&times;</button></div>' +
+			'<div class="gLcd gLcdSlim">' +
+				'<span class="gLcdTop">MANUAL</span>' +
+				'<span class="gLcdBig">HOW TO PLAY ME!</span>' +
+				'<span class="gLcdSub">' + G.sections.length + ' sections &middot; tap one to open</span>' +
+				'<i class="gLcdDot"></i>' +
+			'</div>' +
 			'<input id="infoSearch" type="search" placeholder="search the guide" autocomplete="off">' +
 			'<div id="infoNav">';
-		INFO_TABS.forEach(function (t, i) {
+		G.groups.forEach(function (t, i) {
 			h += '<button data-iv="' + t[0] + '"' + (i === 0 ? ' class="on"' : '') + '>' + t[1] + '</button>';
 		});
 		h += '</div><div id="infoBody">';
-		INFO_TABS.forEach(function (t, i) {
-			h += '<section data-view="' + t[0] + '"' + (i ? ' hidden' : '') + '>';
-			INFO.forEach(function (e) {
-				if (e[0] !== t[0]) { return; }
-				h += '<div class="infoItem"><h3>' + e[1] + '</h3><p>' + e[2] + '</p></div>';
-			});
-			h += '</section>';
+		G.sections.forEach(function (e) {
+			// .infoItem is what search filters on; data-view is what the chips filter on
+			h += '<details class="gSec infoItem" data-view="' + e.g + '">' +
+					'<summary><span class="gNum">' + e.n + '</span>' + e.t + '</summary>' +
+					'<div class="gBody">' + e.b + '</div>' +
+				'</details>';
 		});
 		h += '</div><div id="infoNone" hidden>nothing matches that</div>';
 		return h;
@@ -112,7 +132,9 @@
 		document.body.append(scrim, info);
 
 		if (fabInfo) { fabInfo.addEventListener("click", function () { toggle("info"); }); }
-		if (fabLib) { fabLib.addEventListener("click", function () { toggle("lib"); }); }
+		// the library is already on screen on desktop; the link only drives
+		// the drawer on a phone
+		if (fabLib) { fabLib.addEventListener("click", function () { if (mq.matches) { toggle("lib"); } }); }
 		scrim.addEventListener("click", close);
 		info.addEventListener("click", function (e) {
 			if (e.target.closest("[data-close]")) { close(); }
@@ -122,6 +144,19 @@
 		});
 		/* search across every entry, in all tabs at once — the fastest way to
 		 * find one answer without knowing which tab it lives under */
+		function applyGroup(info) {
+			var nav = info.querySelector("#infoNav");
+			var active = nav ? nav.querySelector("button.on") : null;
+			var want = active ? active.getAttribute("data-iv") : "all";
+			info.querySelectorAll(".infoItem").forEach(function (it) {
+				it.hidden = !(want === "all" || it.getAttribute("data-view") === want);
+			});
+		}
+
+		/* search across every section, ignoring the chips — the fastest way
+		 * to find one answer without knowing which group it lives under. A
+		 * hit opens itself: making you tap twice to read a result you already
+		 * searched for is a waste of a tap. */
 		info.addEventListener("input", function (e) {
 			if (!e.target || e.target.id !== "infoSearch") { return; }
 			var q = e.target.value.trim().toLowerCase();
@@ -132,40 +167,35 @@
 			if (!q) {
 				nav.hidden = false;
 				none.hidden = true;
-				var active = nav.querySelector("button.on");
-				var want = active ? active.getAttribute("data-iv") : "start";
-				info.querySelectorAll("#infoBody section").forEach(function (sec) {
-					sec.hidden = sec.getAttribute("data-view") !== want;
-				});
-				info.querySelectorAll(".infoItem").forEach(function (it) { it.hidden = false; });
+				info.querySelectorAll(".infoItem").forEach(function (it) { it.open = false; });
+				applyGroup(info);
 				return;
 			}
 
-			// searching ignores the tabs entirely and shows every match
 			nav.hidden = true;
-			info.querySelectorAll("#infoBody section").forEach(function (sec) { sec.hidden = false; });
 			info.querySelectorAll(".infoItem").forEach(function (it) {
 				var match = it.textContent.toLowerCase().indexOf(q) !== -1;
 				it.hidden = !match;
+				it.open = match;
 				if (match) { hits++; }
 			});
 			none.hidden = hits > 0;
 		});
 
-		// info-drawer tabs
+		// group chips
 		info.addEventListener("click", function (e) {
 			var t = e.target.closest("#infoNav button");
 			if (!t) { return; }
-			var v = t.getAttribute("data-iv");
 			info.querySelectorAll("#infoNav button").forEach(function (b) {
 				b.classList.toggle("on", b === t);
 			});
-			info.querySelectorAll("#infoBody section").forEach(function (sec) {
-				sec.hidden = sec.getAttribute("data-view") !== v;
-			});
+			applyGroup(info);
 			var body = info.querySelector("#infoBody");
 			if (body) { body.scrollTop = 0; }
 		});
+
+		applyGroup(info);
+
 		document.addEventListener("input", function (e) {
 			if (!window.PO33 || !PO33.fx) { return; }
 			var id = e.target && e.target.id;
@@ -296,8 +326,13 @@
 
 	var watching = false;
 	function sync() {
+		// The guide drawer is built on EVERY form factor now. It used to be
+		// phone-only, because desktop had its own copy of the manual as a
+		// sidebar in index.html — that copy is gone, so gating this on the
+		// media query would leave desktop with an info button that does
+		// nothing. Only the viewport-fitting work below is phone-only.
+		build();
 		if (mq.matches) {
-			build();
 			if (!watching) { watching = true; watchFit(); }
 		} else {
 			close();

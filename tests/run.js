@@ -349,6 +349,78 @@ test("guide: opens, search filters across tabs, closes", async b => {
 	assert(!(await ev(p, () => document.body.classList.contains("drawer-info"))), "closed");
 });
 
+/* The manual lives in exactly one place (js/guide.js) and renders into the one
+ * drawer. It used to exist twice — a desktop-only <nav> and a separate phone
+ * list — and when the duplicate was deleted the drawer was still being built
+ * only when the phone media query matched, which left desktop with an info
+ * button that opened nothing. Both form factors, every time. */
+test("guide: all 24 sections render in the drawer on phone and desktop", async b => {
+	const p = await boot(b);
+
+	for (const [label, vp] of [
+		["desktop", { width: 1440, height: 900 }],
+		["phone", { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true }]
+	]) {
+		await p.setViewport(vp);
+		await sleep(500);
+		await ev(p, () => {
+			const c = document.getElementById("coachCard"); if (c) { c.remove(); }
+			document.getElementById("fabInfo").click();
+		});
+		await sleep(500);
+
+		const r = await ev(p, () => {
+			const d = document.getElementById("infoDrawer");
+			const secs = [...document.querySelectorAll("#infoBody .gSec")];
+			return {
+				built: !!d,
+				visible: d ? getComputedStyle(d).display !== "none" : false,
+				open: document.body.classList.contains("drawer-info"),
+				n: secs.length,
+				numbered: secs.filter(x => /^\d\d$/.test((x.querySelector(".gNum") || {}).textContent || "")).length,
+				offLeft: d ? Math.round(d.getBoundingClientRect().left) : null
+			};
+		});
+		assert(r.built, label + ": the guide drawer was never built");
+		assert(r.visible, label + ": the guide drawer is display:none");
+		assert(r.open, label + ": clicking info did not open the guide");
+		eq(r.n, 24, label + ": section count");
+		eq(r.numbered, 24, label + ": every section carries its 01-24 badge");
+		assert(r.offLeft >= -2, label + ": the drawer is still parked off-screen at " + r.offLeft);
+
+		await ev(p, () => document.querySelector(".drawerClose").click());
+		await sleep(300);
+	}
+});
+
+/* A full-screen panel must fill the screen no matter which perform tab is
+ * selected. The fx tab caps the LCD so its four rows of effects fit, and that
+ * cap has the same CSS specificity as the five rules that expand the screen
+ * for a panel — so whichever is written last wins. It was written last, and
+ * aaa / util / proj opened at 148px instead of 786px. */
+test("a full-screen panel fills the screen on every perform tab", async b => {
+	const p = await boot(b);
+	await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+	await sleep(400);
+	const lcdH = () => ev(p, () => Math.round(document.querySelector(".lcd").getBoundingClientRect().height));
+
+	for (const tab of ["xy", "fx", "mute", "keys"]) {
+		await ev(p, t => document.querySelector('[data-perf="' + t + '"]').click(), tab);
+		await sleep(350);
+		const shut = await lcdH();
+
+		await ev(p, () => PO33.build.show());
+		await sleep(400);
+		const open = await lcdH();
+		await ev(p, () => PO33.build.hide());
+		await sleep(250);
+
+		assert(open > shut * 2, "aaa on the " + tab + " tab: screen went " + shut + " -> " + open +
+			", expected it to take over the screen");
+		assert(open > 400, "aaa on the " + tab + " tab is only " + open + "px tall");
+	}
+});
+
 test("nothing invisible covers the screen's buttons when panels are closed", async b => {
 	const p = await boot(b);
 	const blocked = await ev(p, () => ["#projBtn", "#hudView", "#undoBtn", "#btnPlay", "#btn1", "#fabInfo", '[data-perf="fx"]'].filter(s => {

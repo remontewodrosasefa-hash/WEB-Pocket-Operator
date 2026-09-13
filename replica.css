@@ -38,17 +38,7 @@ main {
 	overflow: hidden;
 }
 
-nav {
-	flex: 0 0 clamp(270px, 26%, 350px);
-	order: -1;
-	min-height: 0;
-	overflow-y: auto;
-	background: #1a1a1d;
-	border-radius: 8px;
-	color: #e2e2e2;
-	font-size: 12.5px;
-	padding: 4px 14px 28px;
-}
+/* the guide sidebar is gone — the manual lives in the drawer now */
 
 article {
 	flex: 1 1 auto;
@@ -470,7 +460,7 @@ body.drawer-lib  #fabLib  .btnText { color: #ffb060; }
  * is long and a wall of text is not a manual anyone reads.
  * ============================================================== */
 
-nav#guide {
+#infoDrawer {
 	--gInk: #e2e2e2;
 	--gDim: #9a9a9f;
 	--gOrange: #ff7a1a;
@@ -752,21 +742,21 @@ nav#guide {
 }
 
 /* ---- inline controls ---- */
-nav button {
+#infoDrawer .gBody button {
 	font-size: 11px; font-weight: 700; padding: 1px 7px; margin: 0 1px;
 	color: #141410; background: var(--gOrange); border: none; border-radius: 4px;
 	cursor: pointer; letter-spacing: 0.02em;
 }
-nav button:hover { filter: brightness(1.1); }
-nav button:active { transform: translateY(1px); }
-nav kbd {
+#infoDrawer .gBody button:hover { filter: brightness(1.1); }
+#infoDrawer .gBody button:active { transform: translateY(1px); }
+#infoDrawer kbd {
 	display: inline-block; min-width: 0.9em; padding: 1px 5px; margin: 0 1px;
 	font-family: ui-monospace, Menlo, monospace; font-size: 10.5px;
 	color: #e8e8e8; background: linear-gradient(#34343a, #26262b);
 	border: 1px solid #4a4a52;
 	border-bottom-width: 2px; border-radius: 3px;
 }
-nav code {
+#infoDrawer code {
 	font-size: 11px; background: #141416; color: var(--gOrangeSoft);
 	padding: 1px 4px; border-radius: 3px; border: 1px solid #2c2c32;
 }
@@ -824,7 +814,7 @@ nav code {
 /* respect a reduced-motion preference — the blinking LED is decoration */
 @media (prefers-reduced-motion: reduce) {
 	.gLcdDot { animation: none; }
-	nav#guide { scroll-behavior: auto; }
+	#infoDrawer { scroll-behavior: auto; }
 }
 
 /* ================================================================

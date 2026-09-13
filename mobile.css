@@ -4,9 +4,48 @@
  * two buttons built into the bottom of the unit. Loaded after replica.css.
  */
 
-/* drawer chrome + back button are inert on desktop */
-#drawerScrim, #infoDrawer { display: none; }
 #libBack { display: none; }
+
+/* ================================================================
+ * The guide drawer on DESKTOP.
+ *
+ * The manual used to be a static sidebar here and a drawer on phones.
+ * There is one guide now, and this is the desktop half of it: the same
+ * drawer, narrower, sliding in over the left of the page. Phone sizing
+ * overrides all of this further down.
+ * ============================================================== */
+#drawerScrim {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 840;
+	background: rgba(0, 0, 0, 0.55);
+}
+body.drawer-open #drawerScrim { display: block; }
+
+#infoDrawer {
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: min(440px, 92vw);
+	z-index: 850;
+	padding: 0 16px 24px;
+	box-sizing: border-box;
+	background: #17171a;
+	border-right: 1px solid #2c2c30;
+	box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+	transform: translateX(-102%);
+	transition: transform 0.32s cubic-bezier(.4, .0, .2, 1);
+	overflow: hidden;
+}
+body.drawer-info #infoDrawer { transform: translateX(0); }
+
+/* the drawer is the only thing the library link drives on a phone, so on
+ * desktop that class must not move anything */
+body.drawer-lib #infoDrawer { transform: translateX(-102%); }
 
 @media (max-width: 720px), (pointer: coarse) {
 
@@ -14,7 +53,6 @@
 	body { height: 100vh; height: 100dvh; }
 
 	header { display: none !important; }
-	nav { display: none !important; }
 
 	main {
 		flex-direction: column;
@@ -473,31 +511,13 @@
 }
 #infoNav button.on { background: #ff7a1a; color: #141410; border-color: #ff7a1a; }
 
-.infoItem {
-	padding: 9px 0;
-	border-bottom: 1px solid #26262b;
-}
-.infoItem[hidden] { display: none; }
-.infoItem h3 {
-	margin: 0 0 3px;
-	font: 700 13px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-	color: #ffb060;
-	letter-spacing: 0.01em;
-}
-.infoItem p {
-	margin: 0;
-	font-size: 12.5px;
-	line-height: 1.5;
-	color: #cfcfd4;
-}
-.infoItem b { color: #fff; font-weight: 600; }
-.infoItem kbd {
-	font: 600 11px/1 ui-monospace, Menlo, monospace;
-	background: #26262b;
-	border: 1px solid #3a3a40;
-	border-radius: 3px;
-	padding: 1px 4px;
-}
+/* The guide entries used to be flat <div>s with an <h3> and a <p>, and this
+ * block dressed them. They are accordions now, styled with the rest of the
+ * .gSec rules, so all that survives here is the one declaration the search
+ * filter depends on. Leaving the old padding and divider in place stacked a
+ * second box around every card. */
+.infoItem[hidden] { display: none !important; }
+
 #infoNone {
 	padding: 20px 2px;
 	font-size: 12.5px;
@@ -563,12 +583,24 @@
 	 * while fx is showing and takes it straight back when you leave — you
 	 * are performing on this tab, not reading it. perf.js sets the
 	 * attribute. Without this the fourth row sits below the fold. */
-	body[data-perftab="fx"] .lcd { max-height: 18vh; }
+	/* The :not() chain is load-bearing, not decoration. Five panels take the
+	 * screen over by setting `max-height: none` on .lcd, and they are all
+	 * written as `body.<class> .lcd` — exactly the same specificity as the
+	 * selector below. This rule sits later in the file, so without the
+	 * guards it WINS, and opening aaa / trim / util / proj / the library
+	 * while the fx tab happened to be selected left the panel squeezed into
+	 * 148px instead of filling the screen. Any new full-screen panel class
+	 * has to be added here too. */
+	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) .lcd {
+		max-height: 18vh;
+	}
 	/* the scene has a 72px floor so it never gets squashed to nothing.
 	 * At this height that floor pushes the sound name and the hint off
 	 * the top of the screen, so on this tab the scene yields first —
 	 * the words matter more than the picture. */
-	body[data-perftab="fx"] #hudArt { min-height: 24px; }
+	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) #hudArt {
+		min-height: 24px;
+	}
 	.perfCells.mute button {
 		min-height: 44px;
 		padding: 4px 1px;
@@ -636,4 +668,185 @@
 /* pad dots scale up with the touch layout so they read at arm's length */
 @media (max-width: 720px), (pointer: coarse) {
 	.padDot { width: 6px; height: 6px; top: 4px; right: 4px; }
+}
+
+/* ================================================================
+ * The guide drawer — the manual, on the device's own terms.
+ *
+ * 24 accordion sections from guide.js. Collapsed they are a list of
+ * numbered rows you can thumb through in a couple of scrolls; open,
+ * one reads like a page. The chrome borrows the three materials the
+ * hardware is made of: the anodised body, the orange legend, and the
+ * pale-green screen at the top.
+ *
+ * These rules load after replica.css, so they win where they overlap —
+ * which is deliberate: the shared .gSec / .gBody styling lives there,
+ * and the drawer-specific sizing lives here.
+ * ============================================================== */
+
+#infoDrawer .gLcdSlim {
+	margin: 0 0 9px;
+	padding: 9px 11px 10px;
+}
+#infoDrawer .gLcdSlim .gLcdBig {
+	margin: 3px 0 4px;
+	font-size: 17px;
+	line-height: 1.1;
+}
+#infoDrawer .gLcdSlim .gLcdSub { font-size: 9px; }
+
+/* the old flat list styling would fight the accordions */
+#infoBody section > h3:first-child { margin-top: 0; }
+#infoBody { border-top: 0; padding-top: 2px; }
+
+#infoBody .gSec {
+	margin: 0 0 6px;
+	background: #202024;
+	border: 1px solid #2e2e33;
+	border-radius: 7px;
+	overflow: hidden;
+}
+#infoBody .gSec[open] { border-color: #46464f; }
+
+#infoBody .gSec > summary {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	/* a 44px row: this is the thing a thumb actually has to hit */
+	min-height: 44px;
+	padding: 8px 11px;
+	box-sizing: border-box;
+	font-size: 13px;
+	font-weight: 600;
+	color: #ededf0;
+	cursor: pointer;
+	list-style: none;
+	-webkit-tap-highlight-color: transparent;
+}
+#infoBody .gSec > summary::-webkit-details-marker { display: none; }
+#infoBody .gSec > summary::marker { content: ""; }
+#infoBody .gSec[open] > summary { background: #26262b; }
+
+#infoBody .gSec .gNum {
+	flex: 0 0 auto;
+	min-width: 24px;
+	padding: 3px 0;
+	border-radius: 4px;
+	background: #141416;
+	border: 1px solid #35353c;
+	color: #9a9a9f;
+	font-family: ui-monospace, Menlo, monospace;
+	font-size: 10.5px;
+	font-weight: 700;
+	text-align: center;
+}
+#infoBody .gSec[open] .gNum {
+	background: #ff7a1a;
+	border-color: #ff7a1a;
+	color: #141410;
+}
+
+#infoBody .gSec > summary::after {
+	content: "";
+	flex: 0 0 auto;
+	margin-left: auto;
+	width: 7px;
+	height: 7px;
+	border-right: 1.5px solid #9a9a9f;
+	border-bottom: 1.5px solid #9a9a9f;
+	transform: rotate(45deg) translate(-2px, -2px);
+	transition: transform 0.2s;
+}
+#infoBody .gSec[open] > summary::after {
+	transform: rotate(225deg) translate(-1px, -1px);
+	border-color: #ff9a4d;
+}
+
+#infoBody .gSec .gBody {
+	padding: 2px 12px 13px;
+	border-top: 1px solid #2a2a30;
+	font-size: 13px;
+	line-height: 1.6;
+	color: #e2e2e2;
+}
+#infoBody .gSec .gBody p { margin: 9px 0; }
+#infoBody .gSec .gBody ol,
+#infoBody .gSec .gBody ul { margin: 8px 0; padding-left: 19px; }
+#infoBody .gSec .gBody li { margin: 5px 0; }
+#infoBody .gSec .gBody h4 {
+	margin: 14px 0 5px;
+	font-size: 11px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: #ff9a4d;
+}
+
+/* the chips scroll rather than wrap, so the list never pushes the
+ * sections down the screen */
+#infoNav {
+	display: flex;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	gap: 4px;
+	padding-bottom: 8px;
+}
+#infoNav::-webkit-scrollbar { display: none; }
+#infoNav button { flex: 0 0 auto; min-height: 30px; }
+
+/* on a phone the drawer is the whole screen, so the type can breathe */
+@media (max-width: 720px), (pointer: coarse) {
+	#infoBody .gSec > summary { font-size: 13.5px; min-height: 46px; }
+	#infoBody .gSec .gBody { font-size: 13.5px; }
+	#infoDrawer .gSteps { gap: 2px; }
+}
+
+/* The drawer is a flex column, so the screen header would otherwise be
+ * squeezed by the scrolling body below it and clip its own title. */
+#infoDrawer .gLcd { flex: 0 0 auto; }
+#infoDrawer #infoNav,
+#infoDrawer #infoSearch { flex: 0 0 auto; }
+
+/* ================================================================
+ * Drawer header, at every width.
+ *
+ * These used to live inside the phone media query, because the drawer
+ * itself was phone-only. Now that the same drawer is the guide on
+ * desktop too, the header has to be laid out everywhere or the title
+ * and the close button stack in the corner.
+ * ============================================================== */
+.drawerHead {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0 -16px 10px;
+	padding: 13px 16px;
+	border-bottom: 1px solid #2c2c30;
+}
+.drawerHead h2 {
+	margin: 0;
+	font: 700 15px/1 'Delius Unicase', cursive;
+	color: #ff7a1a;
+	letter-spacing: 0.04em;
+}
+.drawerClose {
+	flex: 0 0 auto;
+	border: none;
+	background: #26262b;
+	color: #cfcfcf;
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	font-size: 17px;
+	line-height: 1;
+	cursor: pointer;
+}
+.drawerClose:hover { background: #33333a; color: #fff; }
+
+/* on a phone the drawer sets its own side padding, so cancel the pull-out */
+@media (max-width: 720px), (pointer: coarse) {
+	.drawerHead { margin: 0 0 8px; padding: 12px 14px; }
 }
