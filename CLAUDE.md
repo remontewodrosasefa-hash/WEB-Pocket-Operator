@@ -18,7 +18,7 @@ Git remote: `origin` → that GitHub repo, branch `main`.
 **Always use absolute paths.** The shell's cwd defaults to
 `/Users/remontewodros/Downloads/po-33-master`, which is stale — the real
 project lives at
-`/Users/remontewodros/Downloads/Plattenfix Webflow (1)/WEB-Pocket-Operator/`.
+`/Users/remontewodros/Projects/WEB-Pocket-Operator/`.
 
 ## Core architecture
 
