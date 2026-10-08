@@ -43,19 +43,22 @@
 	}
 	restore();
 
-	// Armed by this module's own toggle OR by the device's LIVE REC, the same
-	// way the keyboard works — one obvious switch shouldn't do half the job.
-	function armed() { return ownArm || window.mode === 11; }
+	// Armed by this module's own toggle, by the device's LIVE REC, or — the
+	// hardware's way — by holding FX + a pad while WRITE is on and playing.
+	function armed() { return ownArm || window.mode === 11 || (window.mode === 1 && !!window.play); }
 
 	/* ---------- recording ---------- */
 
 	// called by studio.js when an effect pad goes down / comes up
-	function down(n) { holding = n || 0; }
+	var marked = false;      // one undo step per hold, not one per sixteenth
+	function down(n) { holding = n || 0; marked = false; }
 	function up() { holding = 0; }
 
 	// called once per sixteenth by the sequencer: stamp whatever is held
 	function stamp(step) {
-		if (!armed() || !holding) { return; }
+		// 16 is "no effect" — on the device FX + 16 clears the lane, it never writes
+		if (!armed() || !holding || holding === 16) { return; }
+		if (!marked) { marked = true; try { PO33.undo.mark("fx rec"); } catch (e) {} }
 		forPattern(curPattern())[step] = holding;
 		save();
 	}
@@ -79,6 +82,7 @@
 	/* ---------- editing ---------- */
 
 	function clear(pat) {
+		try { PO33.undo.mark("clear fx", false); } catch (e) {}
 		delete lane[pat == null ? curPattern() : pat];
 		save();
 		try { PO33.fx.punch(0, false); } catch (e) {}
@@ -97,6 +101,12 @@
 		clear: clear, info: info,
 		armed: armed,
 		lane: function () { return lane[curPattern()] || null; },
+		// one pattern's lane, for undo snapshots and pattern copies
+		getPattern: function (pat) { return lane[pat] ? lane[pat].slice() : null; },
+		setPattern: function (pat, arr) {
+			if (arr) { lane[pat] = arr.slice(); } else { delete lane[pat]; }
+			save();
+		},
 		snapshot: function () { try { return JSON.parse(JSON.stringify(lane)); } catch (e) { return null; } },
 		load: function (v) { if (v && typeof v === "object") { lane = v; save(); } },
 		toggleArm: function () {

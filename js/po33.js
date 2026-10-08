@@ -261,8 +261,16 @@ var keys = new Tone.Players({
 				if(!(beat >= 0 && beat <= 15)) beat = rawBeat;
 			}
 			beatCount = beat;
-			updateDisplay();
-			$("#beatCount").html(beatCount);
+			//THE CALLBACK RUNS A LOOKAHEAD AHEAD OF THE AUDIO; Tone.Draw LIGHTS
+			//THE PADS WHEN THIS STEP IS ACTUALLY HEARD
+			Tone.Draw.schedule(function(){
+				heardBeat = beat;
+				heardTime = time;
+				var live = beatCount;
+				beatCount = beat;
+				updateDisplay();
+				beatCount = live;
+			}, time);
 
 			for(i=0;i<MELODIC_CHANNELS;i++){
 				var thisChannel = newChannelArr[i][currentPattern][beat];
@@ -388,6 +396,9 @@ var keys = new Tone.Players({
 
 
 var levelMeterFunction = function(){
+	//js/studio.js DRAWS ITS SCREEN OVER THESE ORIGINAL LCD SEGMENTS, SO ONCE IT
+	//EXISTS THIS 50Hz LOOP ONLY REDRAWS SOMETHING NOBODY CAN SEE
+	if(document.getElementById("lcdHud")) return;
 	const level = meter.getLevel();
 	!segmentDisplayLock && updateLevelMeter(0, level+18);
 
@@ -672,25 +683,45 @@ $(document).ready(function(){
 		});
 	}
 
-		//SOUND BUTTON
-	  $("#btnSound").click(function() {
-		soundButtonFunction();
+	//SOUND / PATTERN / BPM / WRITE / RECORD ARE WIRED BY js/hold.js, WHICH
+	//GIVES THEM THE HARDWARE'S HOLD-A-KEY-AND-PRESS-A-PAD BEHAVIOUR.
+
+	  //FX BUTTON
+	  $("#btnFX").click(function() {
+		fxButtonFunction();
 	  });
 
-	  //PATTERN BUTTON
-	  $("#btnPattern").click(function() {
-		patternButtonFunction();
-	  });
-
-	  //TEMPO BUTTON
-	 $("#btnBPM").click(function() {
-		tempoButtonFunction();
-	  });
+});
 
 
-	//BPM DOUBLE CLICK CYCLES PRESET TEMPOS
-	  $("#btnBPM").dblclick(function() {
 
+
+  //FUNCTION CALLED BY BUTTON AND KEYBOARD
+  var soundButtonFunction = function(){
+  	changeState(2);
+	updateDisplay();
+  }
+
+
+
+
+
+  //FUNCTION CALLED BY BUTTON AND KEYBOARD
+  var patternButtonFunction = function(){
+  	changeState(3);
+	resetPatternChain = 1;
+	updateDisplay();
+	//updateView();
+  }
+
+
+
+
+
+
+
+  //BPM TAP CYCLES THE PRESET TEMPOS (HIP-HOP 80 / DISCO 120 / TECHNO 140)
+var cycleTempoPreset = function(){
 	 	tempoState = (tempoState+1)%3;
 
 	 	//HIDE LCD LABELS
@@ -738,43 +769,7 @@ $(document).ready(function(){
 
 		//SHOW CLOCK IN 3 SECONDS
 		screenTimeOut()
-
-
-	});
-
-
-	  //FX BUTTON
-	  $("#btnFX").click(function() {
-		fxButtonFunction();
-	  });
-
-});
-
-
-
-
-  //FUNCTION CALLED BY BUTTON AND KEYBOARD
-  var soundButtonFunction = function(){
-  	changeState(2);
-	updateDisplay();
-  }
-
-
-
-
-
-  //FUNCTION CALLED BY BUTTON AND KEYBOARD
-  var patternButtonFunction = function(){
-  	changeState(3);
-	resetPatternChain = 1;
-	updateDisplay();
-	//updateView();
-  }
-
-
-
-
-
+}
 
 
   //FUNCTION CALLED BY BUTTON AND KEYBOARD
@@ -848,26 +843,8 @@ var playButtonFunction = function(){
     	loop.start();
     }
 }
-var btnWriteMouseUpTimer;
+//SET BY PO33.liveRec SO THE NEXT writeButtonFunction LANDS ON LIVE RECORD
 var btnWriteHold = false;
-
-
-  //WRITE EDIT BUTTON
-$("#btnWrite").mousedown(function() {
-	btnWriteHold = false;
-	btnWriteMouseUpTimer = setTimeout(function(){
-		btnWriteHold = true;
-	},3000)
-  });
-
-$("#btnWrite").mouseup(function() {
-	clearTimeout(btnWriteMouseUpTimer);
-  });
-
-
-  $("#btnWrite").click(function() {
-  	writeButtonFunction();
-  });
 
   var writeButtonFunction = function(){
   	var value;
@@ -907,6 +884,29 @@ $("#btnWrite").mouseup(function() {
 	screenTimeOut();
   }
 
+//WHEN A LIVE HIT SHOULD SOUND: NOW. Tone.now() is currentTime PLUS the
+//scheduler's lookahead (100ms), which is right for the sequencer and wrong
+//for a finger — every pad tap used to land a tenth of a second late.
+var liveTime = function(){
+	var c = Tone.context;
+	return (c._context || c).currentTime + 0.005;
+}
+
+//THE STEP A LIVE HIT BELONGS TO. beatCount is the step being SCHEDULED, which
+//runs a lookahead ahead of what you hear, so a hit right on the beat you hear
+//used to land on the next step. This rounds to the nearest step you hear.
+var heardBeat = 0, heardTime = 0;
+var liveStep = function(){
+	if(!play) return beatCount;
+	try {
+		var c = Tone.context, now = (c._context || c).currentTime;
+		var dur = Tone.Time("16n").toSeconds();
+		var into = (now - heardTime) / dur;
+		if(into < 0 || into > 2) return beatCount;
+		return into > 0.5 ? (heardBeat + 1) % 16 : heardBeat;
+	} catch(e) { return beatCount; }
+}
+
 //PLAYER PLAY SOUND FOR LIVE PLAYBACK
 var playSound = function(channel,pitch){
 	//MUTED / NON-SOLOED CHANNELS STAY SILENT WHEN PLAYED LIVE TOO
@@ -934,10 +934,10 @@ var playSound = function(channel,pitch){
 		var noteName = window.melodicNote?window.melodicNote(pitch):noteArray[pitch];
 		try{
 			var mSampleLen = melodicArr[channel].buffers.get(61).duration;
-			melodicArr[channel].triggerAttackExt(noteName, Tone.now(), 1,
+			melodicArr[channel].triggerAttackExt(noteName, liveTime(), 1,
 				mSampleLen*mTrim, mSampleLen*mLen);
 		}catch(e){
-			melodicArr[channel].triggerAttack(noteName);
+			melodicArr[channel].triggerAttack(noteName, liveTime());
 		}
 	}else{
 
@@ -957,7 +957,7 @@ var playSound = function(channel,pitch){
 		var offset = (sampleLength/1000)*trim;
 
 		drumArr[channel-8].volume.value = vol;
-		drumArr[channel-8].get(noteArray[pitch]).start("+0", offset, duration);
+		drumArr[channel-8].get(noteArray[pitch]).start(liveTime(), offset, duration);
 
 		//REMEMBER WHICH PAD JUST SOUNDED. Selecting a drum slot in SOUND mode
 		//advances notePitch to the NEXT pad, so "load onto the pad I just heard"
@@ -1113,9 +1113,10 @@ var updateDisplay = function(){
 
   			//TURN ON LED FOR EACH CHANNEL WITH SAMPLE LOADED
 			for(i=0;i<BTNLEDS;i++){
+				//__empty marks a slot whose sound was deleted (RECORD + SOUND)
 				if(i<MELODIC_CHANNELS){
 					try {
-						if(melodicArr[i].loaded==true){
+						if(melodicArr[i].loaded==true && !melodicArr[i].__empty){
 							ledArr[i].addClass("ledOnHalf");
 						}
 					}catch (err){
@@ -1125,7 +1126,7 @@ var updateDisplay = function(){
 
 				}else{
 					try{
-						if(drumArr[i-8].loaded==true){
+						if(drumArr[i-8].loaded==true && !drumArr[i-8].__empty){
 							ledArr[i].addClass("ledOnHalf");
 						}
 					}catch(err){
@@ -1237,7 +1238,7 @@ var buttonFunction = function(buttonNumber){
 			selectedPitch = btnNum;
 			playSound(selectedChannel,selectedPitch);
 
-			editPattern(selectedChannel,beatCount);
+			editPattern(selectedChannel,liveStep());
 
 			break;
 
@@ -1345,19 +1346,15 @@ var buttonFunction = function(buttonNumber){
 
 		case 4: //BPM
 
-			//PREVIEW THE SELECTED SOUND AT THIS PAD'S PITCH, SAME AS THE PERF
-			//SCREEN — so you can tap through pads while dragging the tempo/swing
-			//sliders and judge how the sound sits at that speed by ear, which is
-			//what was actually being asked for here.
-			//
-			//This used to set the master volume instead (16 steps, one per pad).
-			//That's redundant now: the always-visible MASTER slider in the
-			//control strip sets this exact same Tone.Master.volume, at a finer
-			//0-100% resolution, on every screen, all the time — so nothing is
-			//lost by freeing the pads up on this one screen.
-			selectedPitch = btnNum;
-			channelSettingsArr[selectedChannel].notePitch = selectedPitch;
-			playSound(selectedChannel,selectedPitch);
+			//BPM + PAD SETS MASTER VOLUME IN 16 STEPS, AS ON THE HARDWARE.
+			//Driven through the MASTER slider so the two can never disagree.
+			var vol = document.getElementById("sliderVol");
+			if(vol){
+				vol.value = Math.round((btnNum+1)/16*100);
+				vol.dispatchEvent(new Event("input", { bubbles: true }));
+			}
+			volume = btnNum;
+			updateSegmentDisplay("V"+("0"+(btnNum+1)).slice(-2));
 
 			break;
 	}
@@ -1536,106 +1533,6 @@ var updateLevelMeter = function(meterMode, level, length){
 
 
 
-var rotateDial = function(event,dialNumber) {
-
-	//taken from https://codepen.io/graphilla/pen/MybXwy
-	 var // get center of div to rotate
-      pw = document.getElementById('dial'+dialNumber+'Rotate'),
-      //pw = $("#dial1 > .dialBG > .dialCircle"),
-      pwBox = pw.getBoundingClientRect();
-      center_x = (pwBox.left + pwBox.right) / 2;
-      center_y = (pwBox.top + pwBox.bottom) / 2;
-    //  center_y= center_y - 100;
-      // get mouse position
-      mouse_x = event.pageX;
-      mouse_y = event.pageY;
-      radians = Math.atan2(mouse_x - center_x, mouse_y - center_y);
-      degree = Math.round((radians * (180 / Math.PI) * -1) + 0);
-
-      if ( (degree < 35)&&(degree > -35 ) ){
-      	//do nothing
-
-      }else{
-      	 if(degree<0) degree+=360;
-	    var rotateCSS = 'rotate(' + (degree + 170) + 'deg)';
-
-	    $('#dial'+dialNumber+'Rotate').css({
-	    	'transform' : rotateCSS,
-	      '-moz-transform': rotateCSS,
-	      '-webkit-transform': rotateCSS
-	    });
-	    var currentValue = Math.floor(((degree -35)/290)*1000);
-	   /* if(currentValue<0)currentValue=0;
-	    if(currentValue>127)currentValue=127;*/
-
-		if(dialNumber==1){
-			dial1Value = currentValue;
-			//$('#dial1Disp').html(currentValue);
-		}else{
-			dial2Value = currentValue;
-			//$('#dial2Disp').html(currentValue);
-		}
-
-      }
-
-
-
-}
-var dialLock=0;
-if ($.fn && $.fn.draggable) { $('#dial1').draggable({
-  handle: '#dial1BG',
-  opacity: 0.001,
-  helper: 'clone',
-  drag: function(event) {
-  	rotateDial(event, "1");
-
-  	var dialTimer = setTimeout(function(){
-  		dialLock=0;
-  	},100);
-
-  	if(!dialLock){
-  		dialFunction(1);
-  		dialLock=1;
-  	}
-  }
-});
-
-} if ($.fn && $.fn.draggable) { $('#dial2').draggable({
-  handle: '#dial2BG',
-  opacity: 0.001,
-  helper: 'clone',
-  drag: function(event) {
-  	rotateDial(event, "2");
-  	dialFunction(2);
-  }
-}); }
-
-/*
-//https://stackoverflow.com/questions/846221/logarithmic-slider
-function LogSlider(options) {
-   options = options || {};
-   this.minpos = options.minpos || 0;
-   this.maxpos = options.maxpos || 100;
-   this.minlval = Math.log(options.minval || 1);
-   this.maxlval = Math.log(options.maxval || 100000);
-
-   this.scale = (this.maxlval - this.minlval) / (this.maxpos - this.minpos);
-}
-
-LogSlider.prototype = {
-   // Calculate value from a slider position
-   value: function(position) {
-      return Math.exp((position - this.minpos) * this.scale + this.minlval);
-   },
-   // Calculate slider position from a value
-   position: function(value) {
-      return this.minpos + (Math.log(value) - this.minlval) / this.scale;
-   }
-};
-
-
-var logsl = new LogSlider({minpos:0, maxpos:475, minval: 20, maxval: 12000});
-*/
 
 
 

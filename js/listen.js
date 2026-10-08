@@ -1,20 +1,10 @@
 /* listen.js — measuring the actual audio in a slot.
  *
- * This is how the assistant "hears". Not by streaming a WAV to a language
- * model and asking it to guess, but by measuring the AudioBuffer that is
- * already sitting in memory and handing over the numbers.
- *
- * The difference matters. Asked to listen to four seconds of a drum break,
- * a model will tell you it sounds like a warm vintage loop. It will not
- * tell you the first transient is 41ms in, the loop is 5.31s long, and that
- * makes it two bars at 90.4 BPM. Those three facts are what actually change
- * what you should press, they are arithmetic, and the browser can do them
- * exactly, instantly, offline and for nothing.
- *
- * So: this file measures, ai.js sends the measurements, the model reasons
- * about them. (ai.js can additionally send the raw audio to a provider that
- * accepts it, for the subjective half — "does this sound warm or thin" —
- * but never for the numbers.)
+ * Measures the AudioBuffer already in memory: length, onsets, tempo (two
+ * independent ways), lead-in silence, tail, crest factor, brightness. TRIM's
+ * "auto" button uses it to cut dead air off the front of a recording (the
+ * usual reason a pad feels late) and to suggest the tempo the loop implies.
+ * All of it is arithmetic the browser can do exactly, offline, for free.
  *
  * Exposes window.PO33.listen
  */
@@ -246,6 +236,7 @@
 		bufferForSlot: bufferForSlot,
 		analyse: function (slot) { var b = bufferForSlot(slot); return b ? analyse(b) : null; },
 		analyseBuffer: analyse,
+		tempoForLength: tempoByLength,
 		describeSlot: describeSlot
 	};
 })();

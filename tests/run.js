@@ -142,7 +142,7 @@ const test = (name, fn) => tests.push({ name, fn });
 
 test("boot: engine up, no errors, all modules present", async b => {
 	const p = await boot(b);
-	const mods = await ev(p, () => ["session", "undo", "projects", "slice", "chops", "keys", "fxRec", "build", "scene", "escape", "trim", "util"]
+	const mods = await ev(p, () => ["session", "undo", "projects", "slice", "chops", "keys", "fxRec", "build", "scene", "escape", "trim", "util", "hold", "rec", "listen"]
 		.filter(k => !window.PO33[k]));
 	eq(mods.length, 0, "missing PO33 modules: " + mods.join(","));
 	assert(await ev(p, () => Array.isArray(newChannelArr) && newChannelArr.length === 16), "newChannelArr");
@@ -194,16 +194,23 @@ test("live: LIVE starts the transport and arms recording", async b => {
 	assert(st.play, "LIVE should start playback"); eq(st.mode, 11, "mode 11 = live rec");
 });
 
-test("bpm: slider sets tempo; pads on the BPM screen preview, not volume", async b => {
+test("bpm: tap cycles presets; latched BPM slider sets tempo; BPM + pad sets volume", async b => {
 	const p = await boot(b);
+	const t0 = await ev(p, () => window.tempo);
 	await tap(p, "#btnBPM");
+	const t1 = await ev(p, () => ({ tempo: window.tempo, state: window.state }));
+	assert(t1.tempo !== t0 && [80, 120, 140].includes(t1.tempo), "a tap cycles the preset, got " + t1.tempo);
+	eq(t1.state, 0, "a tap does not open BPM mode");
+	await ev(p, () => window.tempoButtonFunction());           // keyboard 7 / latched BPM
 	await ev(p, () => { const s = document.getElementById("slider2"); s.value = 800; s.dispatchEvent(new Event("input", { bubbles: true })); });
 	await sleep(200);
 	const tempo = await ev(p, () => window.tempo);
 	assert(tempo > 150, "tempo should follow slider, got " + tempo);
-	const vol = await ev(p, () => window.volume);
-	await tap(p, "#btn9");
-	eq(await ev(p, () => window.volume), vol, "pad tap must not change master volume");
+	await tap(p, "#btn16");
+	const v = await ev(p, () => ({ volume: window.volume, slider: +document.getElementById("sliderVol").value }));
+	eq(v.volume, 15, "BPM + pad 16 = full volume"); eq(v.slider, 100, "master slider follows");
+	await tap(p, "#btn8");
+	eq(await ev(p, () => +document.getElementById("sliderVol").value), 50, "pad 8 = half");
 });
 
 test("trim: handles set trim/length; apply-to-steps writes existing steps; BPM match", async b => {
@@ -356,87 +363,7 @@ test("guide: opens, search filters across tabs, closes", async b => {
  * so it is the only place where being "roughly right" is not good enough. Every
  * one of these must be REJECTED, not clamped: clamping step 21 to step 16 makes
  * a real edit nobody asked for. */
-test("ai: every malformed proposal is rejected, never clamped", async b => {
-	const p = await boot(b);
-	const r = await ev(p, () => {
-		const A = PO33.aiApply;
-		const t = {
-			good:        { ops: [{ op: "setSteps", slot: 9, pitch: 0, steps: [1, 7, 11] }] },
-			stepTooHigh: { ops: [{ op: "addSteps", slot: 9, steps: [1, 21] }] },
-			stepZero:    { ops: [{ op: "addSteps", slot: 9, steps: [0] }] },
-			slotZero:    { ops: [{ op: "setSteps", slot: 0, steps: [1] }] },
-			slot17:      { ops: [{ op: "setSteps", slot: 17, steps: [1] }] },
-            pitchBad:    { ops: [{ op: "setSteps", slot: 9, pitch: 99, steps: [1] }] },
-			bpmSilly:    { ops: [{ op: "tempo", bpm: 9000 }] },
-			swingSilly:  { ops: [{ op: "swing", percent: 900 }] },
-			unknownOp:   { ops: [{ op: "deleteEverything" }] },
-			notInteger:  { ops: [{ op: "setSteps", slot: 9, steps: [1.5] }] },
-			noOps:       { ops: [] },
-			junk:        { nonsense: true }
-		};
-		const out = {};
-		for (const k in t) { out[k] = A.validate(t[k]).ops.length; }
-		out.notJson = A.extract("just a sentence, no block at all") === null;
-		out.brokenJson = A.extract("```json\n{not valid}\n```") === null;
-		return out;
-	});
-	eq(r.good, 1, "a well-formed op is accepted");
-	["stepTooHigh", "stepZero", "slotZero", "slot17", "pitchBad", "bpmSilly",
-	 "swingSilly", "unknownOp", "notInteger", "noOps", "junk"].forEach(k => {
-		eq(r[k], 0, k + " must be rejected outright");
-	});
-	assert(r.notJson, "prose with no json block yields no plan");
-	assert(r.brokenJson, "unparseable json yields no plan, not a guess");
-});
-
-/* A chopped slot holds the user's own arrangement of their own sample across 16
- * pads. Writing a generated part over it destroys work the pattern data cannot
- * rebuild. aaa already refuses; so must this. */
-test("ai: refuses to write over a chopped slot", async b => {
-	const p = await boot(b);
-	const r = await ev(p, (mk) => {
-		const buf = (new Function("return " + mk))()();
-		PO33.slice.toSlot(buf, 11, 16, { layout: false, matchTempo: false });
-		const v = PO33.aiApply.validate({ ops: [{ op: "setSteps", slot: 11, steps: [1, 5] }] });
-		return { accepted: v.ops.length, err: v.errs.join(" ") };
-	}, MAKE_SIGNATURE_BUFFER.toString());
-	eq(r.accepted, 0, "must not accept a write to a chopped slot");
-	assert(/chopped/.test(r.err), "should say why: " + r.err);
-});
-
-/* The whole round trip, and the promise that one undo puts it all back. */
-test("ai: a proposal previews, applies as one undo step, and reverts", async b => {
-	const p = await boot(b);
-	const r = await ev(p, () => {
-		const A = PO33.aiApply;
-		PO33.clearPattern();
-		const reply = "Your bar has no kick.\n\n```json\n" + JSON.stringify({
-			summary: "add a boom-bap kick",
-			ops: [{ op: "setSteps", slot: 9, pitch: 0, steps: [1, 7, 11] }, { op: "tempo", bpm: 90 }]
-		}) + "\n```\nThat sits under the snare.";
-		const v = A.validate(A.extract(reply));
-		const preview = A.describe(v.ops);
-		A.apply(v.ops);
-		const after = PO33.ai.describeBeat();
-		PO33.undo.undo();
-		return {
-			preview: preview,
-			proseKeepsText: /no kick/.test(A.prose(reply)) && !/json/i.test(A.prose(reply)),
-			applied: /slot 9 \(drum\) hits on steps: 1 7 11/.test(after),
-			tempo: window.tempo,
-			reverted: !/slot 9 \(drum\) hits on steps: 1 7 11/.test(PO33.ai.describeBeat())
-		};
-	});
-	assert(r.proseKeepsText, "the explanation survives, the json block is stripped");
-	assert(/slot 9/.test(r.preview.join(" ")), "preview names the slot: " + r.preview.join(" | "));
-	assert(r.applied, "the steps were written");
-	eq(r.tempo, 90, "tempo op applied");
-	assert(r.reverted, "ONE undo must remove the whole proposal");
-});
-
-/* "Hearing" is arithmetic. If these numbers drift the model is being told
- * fiction about audio it cannot check. */
-test("ai: listen measures real properties of a known buffer", async b => {
+test("listen: measures real properties of a known buffer", async b => {
 	const p = await boot(b);
 	const r = await ev(p, () => {
 		const ctx = Tone.context._context || Tone.context;
@@ -461,76 +388,7 @@ test("ai: listen measures real properties of a known buffer", async b => {
 	assert(!r.silent, "a buffer with clicks is not silent");
 });
 
-/* The assistant. No network here: the gate and the context builder are the two
- * parts that can be wrong without anyone noticing, and both are local.
- *
- * The context builder matters most. The whole design rests on local code
- * MEASURING and the model only talking, so if these numbers drift the model is
- * being told fiction and will answer confidently about a beat that isn't there. */
-test("ai: locked by default, opens on the code, and reports the real pattern", async b => {
-	const p = await boot(b);
-
-	eq(await ev(p, () => PO33.ai.unlocked()), false, "starts locked");
-
-	await ev(p, () => PO33.ai.show());
-	await sleep(300);
-	assert(await ev(p, () => getComputedStyle(document.getElementById("aiView")).display !== "none"),
-		"the assistant panel should be on screen");
-	assert(await ev(p, () => !document.getElementById("aiInput")),
-		"no ask box should exist while locked");
-
-	// a wrong code changes nothing
-	await ev(p, () => {
-		document.getElementById("aiName").value = "remon";
-		document.getElementById("aiCode").value = "wrong";
-		document.querySelector('[data-ai="unlock"]').click();
-	});
-	await sleep(200);
-	eq(await ev(p, () => PO33.ai.unlocked()), false, "a wrong code must not unlock");
-
-	await ev(p, () => {
-		document.getElementById("aiName").value = "remon";
-		document.getElementById("aiCode").value = "ko33";
-		document.querySelector('[data-ai="unlock"]').click();
-	});
-	await sleep(200);
-	eq(await ev(p, () => PO33.ai.unlocked()), true, "the right code unlocks");
-
-	// still no chat until a key is supplied — the cost gate is the key, not the code
-	assert(await ev(p, () => !!document.getElementById("aiKey")), "should ask for a key next");
-	assert(await ev(p, () => !document.getElementById("aiInput")), "no ask box before a key");
-
-	// now the part that must never drift: does it describe what is actually written?
-	await ev(p, () => {
-		PO33.ai.hide();
-		PO33.clearPattern();
-		window.selectedChannel = 9;
-		window.selectedPitch = 3;
-		[0, 6, 10].forEach(i => editPattern(9, i));
-		window.tempo = 90;
-	});
-	await sleep(300);
-	const ctx = await ev(p, () => PO33.ai.describeBeat());
-	assert(/TEMPO 90 BPM/.test(ctx), "tempo should be reported: " + ctx.slice(0, 80));
-	assert(/slot 10 \(drum\) hits on steps: 1 7 11/.test(ctx),
-		"should report the exact steps written, got:\n" + ctx);
-	assert(/one step = 0\.167s/.test(ctx), "should compute step length from tempo:\n" + ctx);
-
-	// and an empty bar must say so rather than silently describing nothing
-	await ev(p, () => PO33.clearPattern());
-	await sleep(250);
-	assert(/EMPTY/.test(await ev(p, () => PO33.ai.describeBeat())), "an empty pattern should say so");
-
-	await ev(p, () => PO33.ai.lock());
-	eq(await ev(p, () => PO33.ai.unlocked()), false, "lock() puts it back");
-});
-
-/* The manual lives in exactly one place (js/guide.js) and renders into the one
- * drawer. It used to exist twice — a desktop-only <nav> and a separate phone
- * list — and when the duplicate was deleted the drawer was still being built
- * only when the phone media query matched, which left desktop with an info
- * button that opened nothing. Both form factors, every time. */
-test("guide: all 24 sections render in the drawer on phone and desktop", async b => {
+test("guide: all 25 sections render in the drawer on phone and desktop", async b => {
 	const p = await boot(b);
 
 	for (const [label, vp] of [
@@ -560,8 +418,8 @@ test("guide: all 24 sections render in the drawer on phone and desktop", async b
 		assert(r.built, label + ": the guide drawer was never built");
 		assert(r.visible, label + ": the guide drawer is display:none");
 		assert(r.open, label + ": clicking info did not open the guide");
-		eq(r.n, 24, label + ": section count");
-		eq(r.numbered, 24, label + ": every section carries its 01-24 badge");
+		eq(r.n, 25, label + ": section count");
+		eq(r.numbered, 25, label + ": every section carries its 01-25 badge");
 		assert(r.offLeft >= -2, label + ": the drawer is still parked off-screen at " + r.offLeft);
 
 		await ev(p, () => document.querySelector(".drawerClose").click());
@@ -605,6 +463,152 @@ test("nothing invisible covers the screen's buttons when panels are closed", asy
 		return !(h === e || e.contains(h));
 	}));
 	eq(blocked.length, 0, "covered: " + blocked.join(","));
+});
+
+/* ---------- the hardware's button grammar (js/hold.js) ----------
+ *
+ * These need real multi-touch: a function key held by one finger while
+ * another presses a pad. elementHandle.tap() is one finger, so these drive
+ * CDP touch events directly. Lifting sends ONLY the finger being lifted —
+ * sending the remaining fingers releases those instead. */
+async function fingers(p) {
+	const cdp = await p.target().createCDPSession();
+	const pts = {};
+	let id = 1;
+	const at = sel => p.evaluate(s => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, sel);
+	return {
+		async down(sel) { const c = await at(sel); pts[sel] = { x: c.x, y: c.y, id: id++ }; await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: Object.values(pts) }); await sleep(50); },
+		async up(sel) { const f = pts[sel]; delete pts[sel]; await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [f] }); await sleep(80); },
+		async tap(sel, ms) { await this.down(sel); await sleep(ms || 40); await this.up(sel); await sleep(60); }
+	};
+}
+
+test("hardware: a pad sounds on touch-down, not when the finger lifts", async b => {
+	const p = await boot(b);
+	const f = await fingers(p);
+	await ev(p, () => { window.__plays = 0; const o = window.playSound; window.playSound = function () { window.__plays++; return o.apply(this, arguments); }; });
+	await f.down("#btn1");
+	eq(await ev(p, () => window.__plays), 1, "sound on touch-down");
+	await f.up("#btn1");
+	eq(await ev(p, () => window.__plays), 1, "and not again on release");
+});
+
+test("hardware: hold SOUND / PATTERN + pads, let go and it returns; a tap still latches", async b => {
+	const p = await boot(b);
+	const f = await fingers(p);
+	const st = () => ev(p, () => ({ state: window.state, sel: window.selectedChannel, chain: patternChain.join(",") }));
+	await f.down("#btnSound"); await f.tap("#btn10"); await f.up("#btnSound");
+	let s = await st(); eq(s.sel, 9, "SOUND + 10 picks slot 10"); eq(s.state, 0, "release returns");
+	await f.down("#btnPattern"); await f.tap("#btn2"); await f.tap("#btn3"); await f.up("#btnPattern");
+	s = await st(); eq(s.chain, "1,2", "PATTERN + 2, 3 chains"); eq(s.state, 0, "release returns");
+	await f.tap("#btnSound");
+	eq((await st()).state, 2, "a tap on SOUND latches");
+	await f.tap("#btn12");
+	s = await st(); eq(s.sel, 11, "latched SOUND + pad picks"); eq(s.state, 2, "and stays");
+	await f.tap("#btnSound");
+	eq((await st()).state, 0, "a second tap leaves");
+});
+
+test("hardware: WRITE + PATTERN + pad copies the pattern in one undo", async b => {
+	const p = await boot(b);
+	const f = await fingers(p);
+	await ev(p, () => { currentPattern = 0; for (let c = 0; c < 16; c++) for (let x = 0; x < 16; x++) newChannelArr[c][4][x].noteOn = 0; newChannelArr[9][0][3].noteOn = 1; });
+	await f.down("#btnWrite"); await f.down("#btnPattern"); await f.tap("#btn5"); await f.up("#btnPattern"); await f.up("#btnWrite");
+	const r = await ev(p, () => ({ copied: newChannelArr[9][4][3].noteOn, mode: window.mode, state: window.state, cur: currentPattern }));
+	eq(r.copied, 1, "pattern 1 copied to 5"); eq(r.mode, 0, "WRITE not toggled"); eq(r.state, 0, "PATTERN let go"); eq(r.cur, 0, "still on pattern 1");
+	await ev(p, () => PO33.undo.undo());
+	eq(await ev(p, () => newChannelArr[9][4][3].noteOn), 0, "one undo reverts the copy");
+});
+
+test("hardware: RECORD + PATTERN clears; RECORD + SOUND twice deletes and stays deleted", async b => {
+	const p = await boot(b);
+	const f = await fingers(p);
+	await ev(p, () => { newChannelArr[9][currentPattern][3].noteOn = 1; });
+	await f.down("#btnRecord"); await f.tap("#btnPattern"); await f.up("#btnRecord");
+	const left = await ev(p, () => newChannelArr.reduce((n, ch) => n + ch[currentPattern].filter(x => x.noteOn).length, 0));
+	eq(left, 0, "pattern cleared");
+	assert(!(await ev(p, () => PO33.rec.isRecording() || PO33.rec.isStarting())), "no recording started");
+	await ev(p, () => { selectedChannel = 13; });
+	await f.down("#btnRecord"); await f.tap("#btnSound"); await f.up("#btnRecord");
+	assert((await ev(p, () => PO33Lib.slotName(14))) !== "empty", "the first press only asks");
+	await f.down("#btnRecord"); await f.tap("#btnSound"); await f.up("#btnRecord");
+	eq(await ev(p, () => PO33Lib.slotName(14)), "empty", "the second deletes");
+	await reload(p);
+	eq(await ev(p, () => PO33Lib.slotName(14)), "empty", "fillDefaults must not bring it back");
+	eq(await ev(p, () => !!drumArr[5].__empty), true, "the slot is silent after reload");
+});
+
+test("hardware: hold WRITE while playing punches in; FX + pad with WRITE on records, FX + 16 clears", async b => {
+	const p = await boot(b);
+	const f = await fingers(p);
+	await ev(p, () => { selectedChannel = 9; patternChain = [0]; currentPattern = 0; for (let x = 0; x < 16; x++) newChannelArr[9][0][x].noteOn = 0; window.playButtonFunction(); });
+	await sleep(400);
+	await f.down("#btnWrite"); await sleep(350); await f.tap("#btn4"); await f.up("#btnWrite");
+	const r = await ev(p, () => ({ hits: newChannelArr[9][0].filter(x => x.noteOn).length, mode: window.mode, motion: PO33.motion.isArmed() }));
+	eq(r.hits, 1, "one step punched in"); eq(r.mode, 0, "WRITE not toggled by a used hold"); eq(r.motion, false, "slider recording ends with the hold");
+	await f.tap("#btnWrite");
+	await f.down("#btnFX"); await sleep(60); await f.down("#btn15"); await sleep(700); await f.up("#btn15"); await f.up("#btnFX");
+	assert((await ev(p, () => PO33.fxRec.info().steps)) > 0, "FX + 15 with WRITE on records the lane");
+	await f.down("#btnFX"); await sleep(60); await f.tap("#btn16"); await f.up("#btnFX");
+	eq(await ev(p, () => PO33.fxRec.info().steps), 0, "FX + 16 clears it");
+	await ev(p, () => { PO33.undo.undo(); });
+	assert((await ev(p, () => PO33.fxRec.info().steps)) > 0, "undo brings the fx lane back");
+	await ev(p, () => { PO33.clearPattern(); });
+	eq(await ev(p, () => PO33.fxRec.info().steps), 0, "clear pattern clears the fx lane too");
+	await ev(p, () => window.playButtonFunction());
+});
+
+test("hardware: RECORD + hold a pad samples into that slot until you let go", async b => {
+	const p = await boot(b);
+	const f = await fingers(p);
+	await ev(p, () => { selectedChannel = 0; });
+	const sample = async pad => {
+		await f.down("#btnRecord"); await f.down("#btn" + pad);
+		await sleep(1400);
+		const live = await ev(p, () => PO33.rec.isRecording());
+		await f.up("#btn" + pad); await f.up("#btnRecord");
+		await sleep(1500);
+		return live;
+	};
+	assert(await sample(3), "recording while RECORD + pad 3 are held");
+	const m = await ev(p, () => ({ rec: PO33.rec.isRecording(), name: PO33Lib.slotName(3), sel: selectedChannel }));
+	eq(m.rec, false, "letting go of the pad stops it");
+	assert(/^recordings\//.test(m.name || ""), "melodic slot 3 holds the recording, got " + m.name);
+	eq(m.sel, 0, "the selected sound did not change");
+	assert(await sample(13), "recording while RECORD + pad 13 are held");
+	eq(await ev(p, () => PO33.chops.isChopped(13)), true, "a drum slot gets the recording as 16 slices, as on the hardware");
+});
+
+test("perform strip: starts collapsed; a tab opens it, the same tab closes it", async b => {
+	const p = await boot(b);
+	const c = () => ev(p, () => document.body.classList.contains("perfCollapsed"));
+	eq(await c(), true, "collapsed on load");
+	await tap(p, '[data-perf="fx"]');
+	eq(await c(), false, "a tab opens it");
+	await tap(p, '[data-perf="keys"]');
+	eq(await c(), false, "another tab switches, stays open");
+	await tap(p, '[data-perf="keys"]');
+	eq(await c(), true, "the open tab closes it");
+	const fits = await ev(p, () => document.documentElement.scrollHeight <= innerHeight);
+	assert(fits, "no page scroll with the strip collapsed");
+});
+
+test("trim: auto cuts the silence off the front", async b => {
+	const p = await boot(b);
+	const r = await ev(p, () => {
+		const ctx = Tone.context._context || Tone.context, sr = ctx.sampleRate;
+		const buf = ctx.createBuffer(1, Math.floor(sr * 2), sr), d = buf.getChannelData(0);
+		for (let k = 0; k < 4; k++) { const at = Math.floor(sr * (0.3 + k * 0.4)); for (let i = 0; i < sr * 0.05; i++) d[at + i] = Math.sin(i / 6); }
+		selectedChannel = 0;
+		melodicArr[0].dispose();
+		melodicArr[0] = new Tone.Sampler({ "C#4": buf }); melodicArr[0].connect(melodicFilterArr[0]);
+		return true;
+	});
+	assert(r);
+	await tap(p, "#btnTrim"); await sleep(500);
+	await tap(p, '[data-tv="auto"]');
+	const t = await ev(p, () => channelSettingsArr[0].fxTrim / 1000 * 2);
+	assert(Math.abs(t - 0.3) < 0.03, "trim start lands on the first hit (0.3s), got " + t.toFixed(3) + "s");
 });
 
 /* ---------- the sample-loss bugs ---------- */
@@ -692,7 +696,9 @@ test("SAMPLE: melodic slot plays the trimmed region on a pad tap", async b => {
 	const only = process.argv[2];
 	const server = await startServer();
 	const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new",
-		args: ["--no-sandbox", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--disable-gpu"] });
+		args: ["--no-sandbox", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--disable-gpu",
+			// a fake microphone (a steady beep) with no permission prompt, for RECORD + pad
+			"--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] });
 	let pass = 0, fail = 0; const failures = [];
 	const t0 = Date.now();
 	for (const t of tests) {

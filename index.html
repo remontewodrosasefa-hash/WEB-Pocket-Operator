@@ -4,8 +4,6 @@
 	<meta charset="utf-8">
  	<meta http-equiv="X-UA-Compatible" content="IE=edge">
  	<link href="style.css" rel="stylesheet">
- 	<link href="https://fonts.googleapis.com/css?family=Alegreya+Sans:100&display=swap" rel="stylesheet">
- 	<link href="https://fonts.googleapis.com/css?family=Delius+Unicase:700&display=swap" rel="stylesheet">
  	<link href="po33.css" rel="stylesheet">
  	<link href="replica.css" rel="stylesheet">
  	<link href="library.css" rel="stylesheet">
@@ -48,8 +46,6 @@
 				<div class="topBtns">
 					<a href="#" id="fabInfo" class="topLink" role="button">info</a>
 					<a href="#" id="fabLib" class="topLink" role="button">library</a>
-					<!-- only shown once the assistant is unlocked AND has a key; ai.js owns it -->
-					<a href="#" id="fabAi" class="topLink" role="button" hidden>ai</a>
 				</div>
 			</div>
 			<div class="lcd">
@@ -323,13 +319,13 @@
 			</div>
 			<div class="perfStrip">
 				<div class="perfTabs">
-					<button data-perf="xy" class="on">xy</button>
+					<button data-perf="xy">xy</button>
 					<button data-perf="mute">mix</button>
 					<button data-perf="fx">fx</button>
 					<button data-perf="keys">keys</button>
 				</div>
 				<div id="perfPanel">
-					<div id="xyPad" data-mode="tone"><canvas id="xyCanvas"></canvas><div id="xyModes"><button type="button" data-xy="tone" class="on">TONE</button><button type="button" data-xy="synth">SYNTH</button><button type="button" data-xy="space">SPACE</button><button type="button" id="xyLock" title="keep this one running while you use the others">LOCK</button></div><span id="xyLabel">muffled &harr; bright</span></div>
+					<div id="xyPad" data-mode="tone"><canvas id="xyCanvas"></canvas><div id="xyModes"><button type="button" data-xy="tone" class="on">TONE</button><button type="button" data-xy="space">SPACE</button><button type="button" id="xyLock" title="keep this one running while you use the others">LOCK</button></div><span id="xyLabel">muffled &harr; bright</span></div>
 				</div>
 			</div>
 		</div>
@@ -367,9 +363,8 @@
 <script src="js/build.js"></script>
 <script src="js/perf.js"></script>
 <script src="js/listen.js"></script>
-<script src="js/aiapply.js"></script>
-<script src="js/ai.js"></script>
 <script src="js/guide.js"></script>
 <script src="js/mobile.js"></script>
 <script src="js/ux.js"></script>
+<script src="js/hold.js"></script>
 </body></html>

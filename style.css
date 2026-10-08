@@ -1,3 +1,19 @@
+/* self-hosted (latin subset) so the installed app looks the same offline */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url(fonts/alegreya-sans-100.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Delius Unicase';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(fonts/delius-unicase-700.woff2) format('woff2');
+}
+
 body {
   display: flex;
   flex-direction: column;

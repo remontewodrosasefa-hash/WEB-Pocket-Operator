@@ -201,7 +201,7 @@
 
 	// any panel that has taken the screen over — a card on top of the trim
 	// waveform or the project list is noise, not help
-	var PANEL_OPEN = /\b(trimOpen|utilOpen|projOpen|buildOpen|aiOpen|lib-lcd|libOpen|infoOpen)\b/;
+	var PANEL_OPEN = /\b(trimOpen|utilOpen|projOpen|buildOpen|lib-lcd|libOpen|infoOpen)\b/;
 
 	function panelOpen() {
 		return PANEL_OPEN.test(document.body.className || "");
@@ -217,9 +217,9 @@
 		c.innerHTML =
 			'<div class="coachHead">first time?</div>' +
 			'<ul>' +
-				'<li><b>SOUND</b> then a pad picks what you play</li>' +
-				'<li><b>WRITE</b> then a pad puts it on a step</li>' +
-				'<li><b>PLAY</b> runs the pattern · <b>REC</b> samples the mic</li>' +
+				'<li>hold <b>SOUND</b> + a pad: pick what you play</li>' +
+				'<li><b>WRITE</b>, then pads: put it on steps</li>' +
+				'<li>hold <b>RECORD</b> + a pad: sample into it</li>' +
 			'</ul>' +
 			'<div class="coachFoot">tap to start · full guide in the menu</div>';
 		host.appendChild(c);

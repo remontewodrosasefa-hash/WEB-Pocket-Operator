@@ -90,39 +90,32 @@ It is a clone of the Teenage Engineering Pocket Operator 33 Knock Out!
 
 I aim to update this project to use better techniques and make it easier to use!
 
-## Things that work!
+## Controls — the same as the hardware
 
-### Play
-Play Patterns, Chain Patterns, Play sounds live when playback is stopped. Play sounds with keyboard (Number keys = 1234,qwer,asdf,zxcv);
+Every function key works the PO-33 way: **hold it and press a pad**, and let
+go to return. Anything shown in a PO-33 tutorial or the
+[official guide](https://teenage.engineering/guides/po-33/en) works as shown.
+If you only have one thumb free, **tap** SOUND or PATTERN instead and it stays
+on until you tap it again.
 
-### Edit
-In PRF mode select a pitch or sample, in EDT mode add that sound to the pattern.
+| Hold | + press | Does |
+|---|---|---|
+| SOUND | pad | pick a sound (1&ndash;8 melodic, 9&ndash;16 drum) |
+| PATTERN | pads | pick / chain patterns |
+| BPM | *(tap alone)* | cycle 80 / 120 / 140 |
+| BPM | sliders · pad | swing / tempo · master volume |
+| WRITE | *(tap alone)* | write mode: pads are the 16 steps |
+| WRITE | pads, while playing | punch notes in |
+| WRITE | sliders, while playing | record the moves onto the steps |
+| FX | pad | punch-in effect (saved to the pattern if WRITE is on) |
+| FX | 16 | clear saved effects |
+| RECORD | hold a pad | sample into that slot while held (drum slots are sliced 16 ways) |
+| RECORD | PATTERN | clear this pattern |
+| RECORD | SOUND, twice | delete this sound |
+| WRITE + PATTERN | pad | copy this pattern there |
+| WRITE + SOUND | pad | copy this sound there |
 
-### Copy Patterns
-In Pattern Select mode, press Write to enter Pattern Copy mode. Select a Pattern to copy (Slots with patterns are shown with lit LEDs). Paste the pattern by selecting a new Pattern Slot.
-
-### Select Sounds
-Press the Sound button then select a sound using the number keys. (Available sounds are shown with lit LEDs.) Melodic sounds play a note. Drum sounds will cycle all samples in that kit when pressed repeatedly.
-
-Exit Sound mode by pressing Sound again.
-
-Melodic sounds (Nos.1-8) can be played in a scale.
-
-Drum sounds (Nos. 9-16) play different Samples for each number button.
-
-
-### Record Patterns
-Whilst playing, hold down write button for 3 seconds. Sounds played will be recorded into the pattern.
-
-### Change Tempo and Swing
-Press the BPM button. The dials control Tempo and Swing.
-Numbers 1 to 16 control master volume.
-
-Double tap BPM to cycle around the preset Tempos
-
-### Filter Sounds
-When in PRF mode cycle through fx modes to FLT. The dials apply different filters. The sounds can be added to Patterns in Edit mode.
-
+Pads sound the moment your finger lands, several at once.
 
 ## Added in the browser edition
 
@@ -133,13 +126,14 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
 * **Library dock** (`js/library.js`) — browse the packs under `samples/`,
   preview, load onto the selected slot; per-pad drum kits; `fill 4/8/surprise`
 * **Recorder** (`js/studio.js`) — mic or browser-tab audio onto a slot,
-  persisted in IndexedDB; `.wav` and **MP3** export
+  persisted in IndexedDB; `.wav` and **MP3** export (encoder bundled, works offline)
 * **PWA** — installable, offline after first load; **mobile drawer build** with
   scale-to-fit, the two knobs replaced by three sliders (A / B / master)
 
 **Sound design (Tier 1)**
 * **Waveform trim editor** (`js/trim.js`) — FX → TRIM shows the waveform with
-  drag handles; per-step and channel-wide; drum trim fixed in the sequencer
+  drag handles; per-step and channel-wide; **auto** measures the sound
+  (`js/listen.js`), cuts the silence off both ends and suggests the tempo
 * **Auto-slice** (`js/slice.js`) — chop a sample 4 / 8 / 16 ways across a drum
   slot's pads, optionally lay out across the steps + match tempo
 * **Per-step parameter locks + accent** (`js/locks.js`) — hold a lit step to
@@ -152,18 +146,24 @@ When in PRF mode cycle through fx modes to FLT. The dials apply different filter
   original layout. Patterns unchanged (still a 0–15 index per step).
 
 **Performance (Tier 2)**
-* **16 punch-in effects** — crush · lo-fi · filter down/up · delay · stutter ·
-  pitch up/down · reverb · wide 6/9 · phaser · tape stop · roll · ping-pong ·
-  wobble · kill (bypassed master chain, built on first FX hold)
+* **16 punch-in effects**, same set and order as the hardware — loop 16 / 12 /
+  short / shorter · unison / low · octave up / down · stutter 4 / 3 · scratch /
+  fast · 6/8 quantize · retrigger · reversed · no effect — with their own
+  recordable lane per pattern
 * **On-screen parameter readout** while dragging any slider
 * **Metronome** (Transport-scheduled), **mute / solo** (hold a pad in SOUND),
   **motion recording** (arm, play, sweep a slider), **micro-timing / nudge**
-  (±60 ms per step), **LFO** → master filter (rate / depth / wave)
+  (±60 ms per step)
+* **Perform strip** (`js/perf.js`) — XY pad (TONE filter / SPACE echo+reverb,
+  lockable), MIX (mute/solo + chain editor), FX, KEYS (8 synth voices with
+  their own track). Starts collapsed so the pads get the room.
+* **Hardware button grammar** (`js/hold.js`) — hold-a-key combos, pads on
+  touch-down, live hits on the beat you hear
 * **Projects** (`js/projects.js`) — save / load / on-screen browser, in
   `localStorage` (survives deploys)
 * **Version chip + "update ready"** prompt at the top of the screen
-* **4-tab in-app guide** (play / make music / sound design / utilities) with a
-  full "let's make a song" walkthrough
+* **In-app guide** (`js/guide.js`, 25 sections) including a hardware combo
+  cheat sheet
 
 ## Still to do
 

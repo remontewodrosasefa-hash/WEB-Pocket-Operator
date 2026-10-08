@@ -166,9 +166,10 @@
 	 */
 	var motionArmed = false;
 
-	function armMotion(on) {
+	function armMotion(on, quiet) {
 		motionArmed = on;
 		document.body.classList.toggle("motionRec", on);
+		if (quiet) { return; }
 		flash(on ? "motion rec ARMED — play, then move a slider" : "motion rec off", on ? "warn" : "tip");
 	}
 
@@ -401,7 +402,9 @@
 	};
 	window.PO33.motion = {
 		toggle: function () { armMotion(!motionArmed); return motionArmed; },
-		isArmed: function () { return motionArmed; }
+		isArmed: function () { return motionArmed; },
+		// hold WRITE while playing: sliders write to the steps as they pass
+		set: function (on) { armMotion(!!on, true); if (!on) { persist(); } }
 	};
 	window.PO33.haptics = {
 		toggle: function () {

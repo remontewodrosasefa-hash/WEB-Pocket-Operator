@@ -28,7 +28,6 @@
 	var inTime = false;
 	var built = {};          // voiceName -> Tone instrument
 	var out = null;          // shared output gain
-	var lead = null, leadFilt = null, leadOn = false;
 
 	function flash(m, k) { if (window.PO33 && PO33.flash) { PO33.flash(m, k || "tip"); } }
 
@@ -213,6 +212,7 @@
 	// except that a note played in the back half of a step was almost certainly
 	// meant for the next one, so it rounds forward.
 	function writeStep() {
+		if (window.liveStep) { return liveStep(); }
 		var b = (typeof window.beatCount === "number") ? window.beatCount : 0;
 		try {
 			if (window.Tone && Tone.Transport.state === "started") {
@@ -245,13 +245,6 @@
 		if (!e) { return; }
 		var when = time != null ? time : Tone.now();
 		var len = Tone.Time("8n").toSeconds();
-		// notes captured from the XY pad replay on the same lead voice
-		if (e.voice === "lead") {
-			var Lv = leadRig();
-			if (!Lv) { return; }
-			try { Lv.triggerAttackRelease(e.note, len, when, 0.75); } catch (err) {}
-			return;
-		}
 		var v = make(e.voice || voiceName);
 		if (!v) { return; }
 		try { v.triggerAttackRelease(e.note, len, when, 0.8); } catch (err) {}
@@ -303,7 +296,7 @@
 				v.triggerAttackRelease(n, len, Tone.now() + wait, vel || 0.8);
 			} else {
 				held[pad] = n;
-				v.triggerAttack(n, Tone.now(), vel || 0.8);
+				v.triggerAttack(n, window.liveTime ? liveTime() : Tone.now(), vel || 0.8);
 			}
 		} catch (e) {}
 		return n;
@@ -314,7 +307,7 @@
 		var n = held[pad];
 		delete held[pad];
 		if (!v || !n) { return; }
-		try { v.triggerRelease(n, Tone.now()); } catch (e) {}
+		try { v.triggerRelease(n, window.liveTime ? liveTime() : Tone.now()); } catch (e) {}
 	}
 
 	function allOff() {
@@ -322,65 +315,6 @@
 		Object.keys(built).forEach(function (k) {
 			try { built[k].releaseAll ? built[k].releaseAll() : null; } catch (e) {}
 		});
-	}
-
-	/* ---------- the XY pad's synth mode ---------- */
-
-	// A single sliding lead voice. Left-to-right picks the note (snapped to the
-	// same scale as the pads, so it can't land on a wrong one); up-and-down
-	// opens the tone from muffled to bright.
-	function leadRig() {
-		if (lead || !window.Tone || !output()) { return lead; }
-		try {
-			leadFilt = new Tone.Filter(800, "lowpass");
-			leadFilt.Q.value = 3;
-			lead = new Tone.MonoSynth({
-				oscillator: { type: "sawtooth" },
-				envelope: { attack: 0.02, decay: 0.2, sustain: 0.85, release: 0.25 },
-				filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 1, release: 0.3,
-					baseFrequency: 200, octaves: 3 }
-			});
-			lead.volume.value = -14;
-			lead.chain(leadFilt, output());
-		} catch (e) { lead = null; }
-		return lead;
-	}
-
-	function xyNote(nx) {
-		// two octaves of the current layout spread across the pad's width
-		var pad = Math.max(0, Math.min(15, Math.round(nx * 15)));
-		return note(pad);
-	}
-
-	var lastXyNote = null;
-
-	function xySynth(nx, ny, on) {
-		var L = leadRig();
-		if (!L) { return; }
-		try {
-			if (!on) {
-				if (leadOn) { L.triggerRelease(Tone.now()); leadOn = false; }
-				lastXyNote = null;
-				return;
-			}
-			var n = xyNote(nx);
-			var cutoff = 260 * Math.pow(28, Math.max(0, Math.min(1, ny)));   // 260Hz..7kHz
-			leadFilt.frequency.rampTo(cutoff, 0.04);
-			if (!leadOn) { L.triggerAttack(n, Tone.now(), 0.8); leadOn = true; }
-			else { L.setNote(n, Tone.now()); }
-
-			/* Recording a sliding finger.
-			 *
-			 * The pad is continuous, but a pattern only has sixteen slots, so
-			 * what gets written is the note you are ON each time you cross onto
-			 * a new one. Holding still writes once, not sixteen times; sliding
-			 * across writes the notes you passed through. That turns a gesture
-			 * into something the sequencer can replay. */
-			if (n !== lastXyNote) {
-				lastXyNote = n;
-				recordNote(n, "lead");
-			}
-		} catch (e) {}
 	}
 
 	/* ---------- public API ---------- */
@@ -437,7 +371,6 @@
 		track: function () { return track[curPattern()] || null; },
 		down: down,
 		up: up,
-		allOff: allOff,
-		xy: xySynth
+		allOff: allOff
 	};
 })();

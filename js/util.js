@@ -1,9 +1,9 @@
 /* util.js — the UTIL panel.
  *
  * Everything that used to be buried in the info drawer now lives on a proper
- * screen you reach from the UTIL button: scale & key, LFO, metronome, motion
- * rec, haptics, undo and the clear actions. The info drawer keeps the
- * explanations; this holds the actual controls.
+ * screen you reach from the UTIL button: scale & key, metronome, motion rec,
+ * haptics and the clear actions. Anything that already has its own button
+ * (LIVE, undo/redo, PROJ) is not repeated here.
  *
  * Exposes window.PO33.util
  */
@@ -40,25 +40,8 @@
 					'<button type="button" data-uv="octup">+</button>' +
 				'</div></div>' +
 
-			'<div class="uvSec"><h4>LFO <i>(auto filter sweep)</i></h4>' +
-				'<div class="uvRow">' +
-					'<button id="lfoBtn" type="button">LFO off</button>' +
-					'<label>rate <input type="range" id="lfoRate" min="1" max="1200" value="400"></label>' +
-					'<label>depth <input type="range" id="lfoDepth" min="0" max="100" value="60"></label>' +
-					'<select id="lfoWave">' +
-						'<option value="sine">sine</option><option value="triangle">triangle</option>' +
-						'<option value="square">square</option><option value="sawtooth">saw</option>' +
-					'</select>' +
-				'</div></div>' +
-
-			'<div class="uvSec"><h4>assistant <i>(optional, needs your own API key)</i></h4>' +
-				'<div class="uvRow">' +
-					'<button type="button" data-uv="ai">open assistant</button>' +
-				'</div></div>' +
-
 			'<div class="uvSec"><h4>recording</h4>' +
 				'<div class="uvRow">' +
-					'<button type="button" data-uv="live">&#9679; arm live rec</button>' +
 					'<button type="button" data-uv="motion">arm motion rec</button>' +
 				'</div></div>' +
 
@@ -67,13 +50,6 @@
 					'<button type="button" data-uv="metro">metronome</button>' +
 					'<button type="button" data-uv="haptic">haptics</button>' +
 					'<button type="button" data-uv="unmute">un-mute all</button>' +
-				'</div></div>' +
-
-			'<div class="uvSec"><h4>history &amp; projects</h4>' +
-				'<div class="uvRow">' +
-					'<button type="button" data-uv="undo">&#8630; undo</button>' +
-					'<button type="button" data-uv="redo">&#8631; redo</button>' +
-					'<button type="button" data-uv="proj">projects</button>' +
 				'</div></div>' +
 
 			'<div class="uvSec danger"><h4>clear</h4>' +
@@ -107,17 +83,12 @@
 		var P = window.PO33 || {};
 		switch (a) {
 			case "close":  hide(); break;
-			case "ai":     if (P.ai) { hide(); P.ai.show(); } break;
 			case "octup":  if (P.scale) { P.scale.octave(1); } break;
 			case "octdn":  if (P.scale) { P.scale.octave(-1); } break;
-			case "live":   if (P.liveRec) { hide(); P.liveRec(); } break;
 			case "motion": if (P.motion) { target.textContent = P.motion.toggle() ? "disarm motion rec" : "arm motion rec"; } break;
 			case "metro":  if (P.metro) { P.metro.toggle(); } break;
 			case "haptic": if (P.haptics) { P.haptics.toggle(); } break;
 			case "unmute": if (P.channels) { P.channels.clearAll(); } break;
-			case "undo":   if (P.undo) { P.undo.undo(); } break;
-			case "redo":   if (P.undo) { P.undo.redo(); } break;
-			case "proj":   hide(); if (P.projects) { P.projects.show(); } break;
 			case "clrPat": if (P.clearPattern) { P.clearPattern(); } break;
 			case "clrLock":if (P.locks) { P.locks.clearAll(); } break;
 			case "clrAll": if (P.clearAll) { P.clearAll(target); } break;
@@ -136,7 +107,7 @@
 			var a = e.target.getAttribute("data-uv");
 			if (a) { e.stopPropagation(); act(a, e.target); }
 		});
-		// the LFO + scale selects are wired by their own modules via delegation
+		// the scale selects are wired by scale.js via delegation
 		return true;
 	}
 

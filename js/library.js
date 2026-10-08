@@ -40,8 +40,15 @@
 				var csH = window.channelSettingsArr[s - 1];
 				pad = (csH.lastPad != null ? csH.lastPad : csH.notePitch % 16) + 1;
 			} catch (e) {}
+			var kits = "";
+			var dk = window.PO33 && PO33.drumkit;
+			if (dk) {
+				kits = "<span class=\"libKits\">built-in kit " + dk.names().map(function (k) {
+					return "<button class=\"libFill\" data-builtin=\"" + k + "\" title=\"" + dk.blurb(k) + "\">" + k + "</button>";
+				}).join("") + "</span>";
+			}
 			els.target.innerHTML = "click a sample &rarr; <b>SOUND " + s + "</b> pad <b>" + pad +
-				"</b> · <button class=\"libFill\" id=\"libKit\">whole kit</button>";
+				"</b> · <button class=\"libFill\" id=\"libKit\">whole kit</button>" + kits;
 		}
 	}
 
@@ -105,6 +112,7 @@
 					pad = (csD.lastPad != null ? csD.lastPad : csD.notePitch % 16);
 				} catch (e) {}
 				drumArr[di].add(noteArray[pad], url);
+				delete drumArr[di].__empty;
 				drumPadIds[idx] = drumPadIds[idx] || {};
 				drumPadIds[idx][pad] = sample.id;
 				msg = "SOUND " + slot1to16 + " · pad " + (pad + 1) + "  ←  " + sample.id;
@@ -187,10 +195,110 @@
 		rerender();
 	}
 
-	function clearSlot(slot1to16) {
-		slotSampleIds[slot1to16 - 1] = null;
+	/* ---------- delete / copy a whole slot (RECORD + SOUND, WRITE + SOUND + pad) ---------- */
+
+	function rawCtx() {
+		return (window.Tone && Tone.context && (Tone.context._context || Tone.context)) || null;
+	}
+
+	// Engine code assumes every slot has a buffer behind every pad, so a
+	// deleted slot holds a few samples of silence rather than nothing at all.
+	// "empty" is a sentinel id: restoreSlots() re-empties it and fillDefaults()
+	// leaves it alone, so a deleted sound stays deleted across reloads.
+	function deleteSlot(slot1to16, quiet) {
+		var ctx = rawCtx();
+		if (!ctx || !window.Tone) { return false; }
+		var idx = slot1to16 - 1;
+		var silent = ctx.createBuffer(1, 64, ctx.sampleRate);
+		try {
+			if (slot1to16 <= 8) {
+				if (typeof melodicFilterArr[idx] === "undefined") {
+					melodicFilterArr[idx] = new Tone.Filter(20, "highpass");
+					melodicFilterArr[idx].chain(meter, Tone.Master);
+				}
+				try { melodicArr[idx] && melodicArr[idx].dispose(); } catch (e) {}
+				melodicArr[idx] = new Tone.Sampler({ "C#4": silent });
+				melodicArr[idx].connect(melodicFilterArr[idx]);
+				melodicArr[idx].__empty = true;
+			} else {
+				var di = idx - 8;
+				if (!drumArr[di] && window.PO33 && PO33.slice && PO33.slice.ensureSlot) { PO33.slice.ensureSlot(di); }
+				if (!drumArr[di]) { return false; }
+				for (var k = 0; k < noteArray.length; k++) { drumArr[di].add(noteArray[k], silent); }
+				drumArr[di].__empty = true;
+			}
+		} catch (e) { return false; }
+		try { if (window.PO33 && PO33.chops && PO33.chops.isChopped(slot1to16)) { PO33.chops.clearSlot(slot1to16); } } catch (e) {}
+		slotSampleIds[idx] = "empty";
+		drumPadIds[idx] = {};
 		saveSlots();
 		rerender();
+		if (!quiet) {
+			toast("SOUND " + slot1to16 + " deleted");
+			if (window.PO33 && PO33.flash) { PO33.flash("SOUND " + slot1to16 + " deleted", "warn"); }
+		}
+		return true;
+	}
+
+	function bufferOf(node, note) {
+		try {
+			var b = note == null ? (node._buffers || node.buffers).get(61) : node.get(note).buffer;
+			return b && b.get ? b.get() : b;
+		} catch (e) { return null; }
+	}
+
+	// A slot that holds a plain library sample is copied by reference, so it
+	// restores like any other slot. Anything else (a chop, a kit, a recording
+	// on a drum slot) is copied buffer by buffer.
+	function copySlot(from, to) {
+		if (from === to) { return false; }
+		var id = slotSampleIds[from - 1];
+		var perPad = drumPadIds[from - 1] && Object.keys(drumPadIds[from - 1]).length;
+		var chopped = window.PO33 && PO33.chops && PO33.chops.isChopped(from);
+		var smp = id && id !== "empty" && id !== "chopped" && !perPad && !chopped ? findSample(id) : null;
+		var msg = "SOUND " + from + " copied to " + to;
+		if (smp) {
+			assign(to, smp, true, "kit");
+			toast(msg);
+			if (window.PO33 && PO33.flash) { PO33.flash(msg, "warn"); }
+			return true;
+		}
+		var bufs = [];
+		if (from <= 8) {
+			var one = melodicArr[from - 1] && bufferOf(melodicArr[from - 1]);
+			for (var i = 0; i < 16; i++) { bufs.push(one); }
+		} else {
+			var src = drumArr[from - 9];
+			for (var j = 0; j < 16; j++) { bufs.push(src ? bufferOf(src, noteArray[j]) : null); }
+		}
+		if (!bufs[0]) { toast("nothing to copy on SOUND " + from); return false; }
+		if (to <= 8) {
+			var tIdx = to - 1;
+			if (typeof melodicFilterArr[tIdx] === "undefined") {
+				melodicFilterArr[tIdx] = new Tone.Filter(20, "highpass");
+				melodicFilterArr[tIdx].chain(meter, Tone.Master);
+			}
+			try { melodicArr[tIdx] && melodicArr[tIdx].dispose(); } catch (e) {}
+			melodicArr[tIdx] = new Tone.Sampler({ "C#4": bufs[0] });
+			melodicArr[tIdx].connect(melodicFilterArr[tIdx]);
+			slotSampleIds[tIdx] = id === "empty" ? "empty" : null;
+			msg += " (this copy lasts until reload)";
+		} else {
+			var di = to - 9;
+			if (!drumArr[di] && window.PO33 && PO33.slice && PO33.slice.ensureSlot) { PO33.slice.ensureSlot(di); }
+			if (!drumArr[di]) { return false; }
+			bufs.forEach(function (b, pad) { if (b) { drumArr[di].add(noteArray[pad], b); } });
+			delete drumArr[di].__empty;
+			// same IndexedDB store chops and kits use, so the copy survives a reload
+			try { PO33.chops.saveSlot(to, bufs); } catch (e) {}
+			slotSampleIds[to - 1] = "chopped";
+		}
+		drumPadIds[to - 1] = {};
+		saveSlots();
+		rerender();
+		toast(msg);
+		if (window.PO33 && PO33.flash) { PO33.flash(msg, "warn"); }
+		return true;
 	}
 
 	function saveSlots() {
@@ -247,6 +355,7 @@
 			try { saved = JSON.parse(raw); } catch (e) { saved = null; }
 			if (saved) {
 				saved.forEach(function (id, idx) {
+					if (id === "empty") { deleteSlot(idx + 1, true); return; }
 					if (window.PO33 && PO33.chops && PO33.chops.isChopped(idx + 1)) { return; }
 					var smp = id && findSample(id);
 					if (smp) { assign(idx + 1, smp, true, "kit"); }
@@ -364,18 +473,19 @@
 				role.className = "role";
 				role.textContent = slot <= 8 ? "melodic" : "drum";
 
+				var gone = !id || id === "empty";
 				var val = document.createElement("span");
-				val.className = "val" + (id ? "" : " empty");
-				val.textContent = id || "—";
+				val.className = "val" + (gone ? " empty" : "");
+				val.textContent = gone ? "—" : id;
 
 				var clr = document.createElement("button");
 				clr.className = "clr";
 				clr.textContent = "×";
-				clr.title = "clear slot";
-				clr.onclick = function () { clearSlot(slot); };
+				clr.title = "delete this sound";
+				clr.onclick = function () { deleteSlot(slot); };
 
 				row.append(play, i, role, val);
-				if (id) { row.append(clr); }
+				if (!gone) { row.append(clr); }
 				list.appendChild(row);
 			})(n);
 		}
@@ -442,6 +552,14 @@
 		});
 		// "whole kit" button is re-rendered in the target line — delegate
 		aside.addEventListener("click", function (e) {
+			var bi = e.target.closest && e.target.closest("[data-builtin]");
+			if (bi && window.PO33 && PO33.drumkit) {
+				bi.disabled = true;
+				PO33.drumkit.load(currentSlot(), bi.getAttribute("data-builtin")).then(function () {
+					bi.disabled = false;
+				});
+				return;
+			}
 			if (e.target.id === "libKit") {
 				var smp = lastSample;
 				if (!smp) { toast("preview or tap a sample first"); return; }
@@ -493,6 +611,8 @@
 		slotName: function (slot1to16) { return slotSampleIds[slot1to16 - 1] || null; },
 		slotIds: function () { return slotSampleIds.slice(); },
 		restoreSlots: function () { restoreSlots(); },
+		deleteSlot: function (slot) { return deleteSlot(slot); },
+		copySlot: copySlot,
 		markChopped: markChopped,
 		ready: function () { return ready; },
 		toast: toast

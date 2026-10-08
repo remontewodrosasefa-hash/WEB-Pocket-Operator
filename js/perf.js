@@ -3,9 +3,8 @@
  * The 16 pads are double-booked: in WRITE mode they're steps, so you can't play
  * while you sequence. This strip is the second surface that fixes that.
  *
- *   XY    a drag surface with three jobs, switched by the chip in its corner:
+ *   XY    a drag surface with two jobs, switched by the chip in its corner:
  *           TONE   muffled <-> bright, the classic filter sweep
- *           SYNTH  play a lead over the beat; left-right picks the note
  *           SPACE  throw echo and reverb on whatever is playing
  *   MUTE  one cell per sound, tap to drop a part and bring it back
  *   FX    the punch-ins as one-thumb buttons instead of hold-FX + reach
@@ -21,18 +20,18 @@
 
 	/* What the XY pad is wired to.
 	 *
-	 * Each of the three can be LOCKED independently. A locked mode keeps
+	 * Each mode can be LOCKED independently. A locked mode keeps
 	 * running at the last spot you left it, so you can lock a filter setting,
 	 * switch to SPACE, and now have both going at once — the effects stack
 	 * instead of replacing each other. The pad always drives whichever mode is
 	 * selected; locking is what keeps the others alive behind it.
 	 */
-	var XY_MODES = ["tone", "synth", "space"];
-	var XY_TITLE = { tone: "TONE", synth: "SYNTH", space: "SPACE" };
-	var XY_REST = { tone: "muffled \u2194 bright", synth: "play a lead", space: "echo + reverb" };
+	var XY_MODES = ["tone", "space"];
+	var XY_TITLE = { tone: "TONE", space: "SPACE" };
+	var XY_REST = { tone: "muffled \u2194 bright", space: "echo + reverb" };
 	var xyMode = "tone";
-	var xyLock = { tone: false, synth: false, space: false };
-	var xyPos = { tone: { x: 0.5, y: 0.2 }, synth: { x: 0.5, y: 0.6 }, space: { x: 0.4, y: 0.4 } };
+	var xyLock = { tone: false, space: false };
+	var xyPos = { tone: { x: 0.5, y: 0.2 }, space: { x: 0.4, y: 0.4 } };
 	var xyLockBtn;
 
 	function g(n, d) { return (typeof window[n] !== "undefined") ? window[n] : d; }
@@ -72,16 +71,6 @@
 			// the centre column is "no filter" — the neutral place to rest
 			xyCtx.strokeStyle = "rgba(255,122,26,0.3)";
 			xyCtx.beginPath(); xyCtx.moveTo(W / 2, 0); xyCtx.lineTo(W / 2, H); xyCtx.stroke();
-		} else if (xyMode === "synth") {
-			// one tick per playable note, so you can see where the notes are
-			xyCtx.strokeStyle = "rgba(255,122,26,0.22)";
-			for (var n = 0; n < 16; n++) {
-				var nx = (n / 15) * W;
-				xyCtx.beginPath();
-				xyCtx.moveTo(nx, H - (n % 5 === 0 ? 12 : 6));
-				xyCtx.lineTo(nx, H);
-				xyCtx.stroke();
-			}
 		}
 
 		// ghost markers for anything locked in another mode
@@ -105,9 +94,7 @@
 
 	// drive one named engine
 	function xyDrive(mode, x, y, on) {
-		if (mode === "synth") {
-			if (window.PO33.keys) { PO33.keys.xy(x, y, on); }
-		} else if (mode === "space") {
+		if (mode === "space") {
 			if (window.PO33.fx && PO33.fx.space) { PO33.fx.space(x, y, on); }
 		} else if (window.PO33.fx) {
 			PO33.fx.xy(x, y, on);
@@ -172,22 +159,13 @@
 
 	function xyReadout() {
 		if (!xyLabel) { return; }
-		// tell the user when the synth is being written into the pattern —
-		// there is no way to tell from the pad itself otherwise
-		if (xyEl) {
-			var rec = xyMode === "synth" && window.PO33.keys && PO33.keys.armed();
-			xyEl.classList.toggle("recording", !!rec);
-		}
 		// name anything still running in the background so a locked effect is
 		// never a mystery
 		var also = XY_MODES.filter(function (m) { return xyLock[m] && m !== xyMode; })
 			.map(function (m) { return XY_TITLE[m].toLowerCase(); });
 		var tail = also.length ? "   +" + also.join(" +") : "";
 		if (!xyOn && !xyLock[xyMode]) { xyLabel.textContent = XY_REST[xyMode] + tail; return; }
-		if (xyMode === "synth") {
-			var n = window.PO33.keys ? PO33.keys.note(Math.round(xyX * 15)) : "";
-			xyLabel.textContent = n + "  \u00b7  tone " + Math.round(xyY * 100) + "%" + tail;
-		} else if (xyMode === "space") {
+		if (xyMode === "space") {
 			xyLabel.textContent = "echo " + Math.round(xyX * 100) +
 				"%  \u00b7  reverb " + Math.round(xyY * 100) + "%" + tail;
 		} else {
@@ -244,7 +222,7 @@
 		xyCv.addEventListener("pointerup", up);
 		xyCv.addEventListener("pointercancel", up);
 
-		// all three modes sit side by side — no hunting through a cycle
+		// both modes sit side by side — no hunting through a cycle
 		xyChip = document.getElementById("xyModes");
 		if (xyChip) {
 			xyChip.addEventListener("click", function (e) {
@@ -281,7 +259,9 @@
 		}
 		setXyMode(xyMode);
 
-		setInterval(function () { if (xyEl && !xyOn) { xyReadout(); } }, 400);
+		setInterval(function () {
+			if (xyEl && !xyOn && tab === "xy" && !collapsed()) { xyReadout(); }
+		}, 400);
 		xyResize();
 		if (window.ResizeObserver) { new ResizeObserver(xyResize).observe(xyEl); }
 		window.addEventListener("resize", xyResize);
@@ -420,15 +400,6 @@
 			h += '<button class="keysVoice' + (v === cur ? " on" : "") +
 				'" data-keysvoice="' + v + '">' + v + '</button>';
 		});
-		h += '</div><div class="keysBar keysBar3">';
-		var dk = window.PO33.drumkit;
-		if (dk) {
-			h += '<span class="keysScale kitLabel">drum kit →</span>';
-			dk.names().forEach(function (k) {
-				h += '<button class="keysKit" data-kit="' + k + '" title="' + dk.blurb(k) +
-					'">' + k + '</button>';
-			});
-		}
 		h += '</div><div class="keysBar keysBar2">' +
 			'<button class="keysFit' + (K.fit() ? " on" : "") + '" data-keysfit="1">in time</button>' +
 			'<button class="keysRec' + (K.armed() ? " on" : "") + '" data-keysrec="1">rec</button>' +
@@ -467,10 +438,20 @@
 		var tabs = document.querySelectorAll(".perfTabs button");
 		if (!panel || !tabs.length) { return false; }
 
+		/* The strip starts collapsed so the pads get the room. Tapping a tab
+		 * opens it on that tab; tapping the open tab again folds it away. */
+		setCollapsed(true);
+
 		Array.prototype.forEach.call(tabs, function (b) {
 			b.addEventListener("click", function () {
-				tab = b.getAttribute("data-perf");
-				Array.prototype.forEach.call(tabs, function (o) { o.classList.toggle("on", o === b); });
+				var t = b.getAttribute("data-perf");
+				if (t === tab && !collapsed()) { setCollapsed(true); return; }
+				tab = t;
+				document.body.classList.remove("perfCollapsed");
+				Array.prototype.forEach.call(tabs, function (o) {
+					o.classList.toggle("on", o === b);
+					o.setAttribute("aria-expanded", "true");
+				});
 				// CSS needs to know which tab is up: the fx grid is 4 rows deep
 				// and only fits on a phone if the screen gives a little height
 				// back while it is showing.
@@ -565,16 +546,6 @@
 			if (e.target.closest("[data-keysfit]")) { K.toggleFit(); renderKeys(); return; }
 			if (e.target.closest("[data-keysrec]")) { K.toggleArm(); renderKeys(); return; }
 			if (e.target.closest("[data-keysclear]")) { K.clearTrack(); renderKeys(); return; }
-			var kit = e.target.closest("[data-kit]");
-			if (kit && window.PO33.drumkit) {
-				// drop it on the selected slot if that's a drum slot, else 9
-				var sel = g("selectedChannel", 0) + 1;
-				var target = sel >= 9 ? sel : 9;
-				kit.disabled = true;
-				PO33.drumkit.load(target, kit.getAttribute("data-kit")).then(function () {
-					renderKeys();
-				});
-			}
 		});
 
 		// fx lane rec / clear
@@ -646,8 +617,28 @@
 		return true;
 	}
 
+	function collapsed() { return document.body.classList.contains("perfCollapsed"); }
+	function setCollapsed(on) {
+		document.body.classList.toggle("perfCollapsed", !!on);
+		var tabs = document.querySelectorAll(".perfTabs button");
+		Array.prototype.forEach.call(tabs, function (o) {
+			o.classList.toggle("on", !on && o.getAttribute("data-perf") === tab);
+			o.setAttribute("aria-expanded", on ? "false" : "true");
+		});
+		if (!on) { render(); }
+	}
+
 	window.PO33 = window.PO33 || {};
-	window.PO33.perf = { render: render, tab: function () { return tab; } };
+	window.PO33.perf = {
+		render: render,
+		tab: function () { return tab; },
+		collapsed: collapsed,
+		open: function (t) {
+			if (t) { tab = t; }
+			setCollapsed(false);
+		},
+		close: function () { setCollapsed(true); }
+	};
 
 	function boot() {
 		var tries = 0;

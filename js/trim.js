@@ -52,6 +52,7 @@
 		wrap.innerHTML =
 			'<div class="tvHead"><span id="tvLabel">TRIM</span>' +
 				'<span><button type="button" data-tv="prev">&#9654; preview</button>' +
+				'<button type="button" data-tv="auto" title="cut the silence off both ends and work out the tempo">auto</button>' +
 				'<button type="button" data-tv="all" title="steps already placed in this pattern keep the OLD trim until you press this">apply to steps</button></span></div>' +
 			'<div id="tvWave">' +
 				'<canvas id="tvCanvas"></canvas>' +
@@ -111,6 +112,7 @@
 			else if (a === "more") { setCount(count + 1); }
 			else if (a === "go") { doSlice(count); }
 			else if (a === "setbpm") { applyBpm(); }
+			else if (a === "auto") { autoTrim(); }
 		});
 		return true;
 	}
@@ -242,8 +244,44 @@
 			Tone.Transport.bpm.value = bpm;
 			if (window.PO33 && PO33.session) { PO33.session.save(); }
 		} catch (e) {}
-		say(bpm + " BPM — the trimmed sample now fills exactly one bar");
+		say(bpm + " BPM — the loop now lines up with the bar");
 		layout();
+	}
+
+	/* ---------- auto: measure, then trim ----------
+	 * Silence before the first hit is the usual reason a pad feels late, and
+	 * finding it by eye on a phone-sized waveform is fiddly. The numbers come
+	 * from listen.js; the tempo uses the trimmed length, which may be 1, 2, 4
+	 * or 8 bars — not just one, which is all the plain BPM match assumes.
+	 */
+	function autoTrim() {
+		var buf = selectedBuffer();
+		var L = window.PO33 && PO33.listen;
+		if (!buf || !L) { say("nothing to measure on this sound"); return; }
+		var a = L.analyseBuffer(buf);
+		if (!a || a.silent) { say("this sound is silent"); return; }
+		var cs = window.channelSettingsArr && window.channelSettingsArr[g("selectedChannel", 0)];
+		if (!cs) { return; }
+		var start = Math.max(0, a.leadIn - 0.004);            // keep a hair of the attack
+		var end = Math.min(a.seconds, Math.max(start + 0.05, a.seconds - a.tail + 0.01));
+		cs.fxTrim = Math.round(start / a.seconds * 1000);
+		cs.fxLength = Math.max(1, Math.min(1000 - cs.fxTrim, Math.round((end - start) / a.seconds * 1000)));
+		try { if (window.PO33.session) { PO33.session.save(); } } catch (e) {}
+		layout();
+		var cut = Math.round(start * 1000);
+		var msg = cut > 5 ? ("cut " + cut + "ms of silence at the front") : "no dead air at the front";
+		var t = L.tempoForLength && L.tempoForLength(end - start);
+		if (t && bpmRow && bpmText) {
+			var bpm = Math.round(t.bpm);
+			bpmRow.hidden = false;
+			bpmRow.dataset.bpm = bpm;
+			bpmText.textContent = "\u2192 " + bpm + " BPM (" + t.bars + " bar" + (t.bars > 1 ? "s" : "") + ")" +
+				(g("tempo", 120) === bpm ? " \u2713" : "");
+			var btn = wrap.querySelector("#tvBpmBtn");
+			if (btn) { btn.disabled = g("tempo", 120) === bpm; btn.textContent = btn.disabled ? "already set" : "set BPM"; }
+			msg += " \u00b7 " + t.bars + " bar" + (t.bars > 1 ? "s" : "") + " \u2248 " + bpm + " BPM";
+		}
+		say(msg, true);
 	}
 
 	/* ---------- feedback ---------- */

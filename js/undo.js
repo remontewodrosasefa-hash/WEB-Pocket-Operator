@@ -25,6 +25,12 @@
 
 	/* ---------- snapshots ---------- */
 
+	// the effects lane lives outside newChannelArr, so it rides along explicitly
+	function fxGet(idx) { try { return PO33.fxRec.getPattern(idx); } catch (e) { return null; } }
+	function fxSet(idx, v) { try { PO33.fxRec.setPattern(idx, v); } catch (e) {} }
+	function fxAll() { try { return PO33.fxRec.snapshot(); } catch (e) { return null; } }
+	function fxLoad(v) { try { PO33.fxRec.load(v || {}); } catch (e) {} }
+
 	function snapPattern(idx) {
 		var out = [];
 		try {
@@ -32,10 +38,10 @@
 				out.push(JSON.parse(JSON.stringify(window.newChannelArr[c][idx])));
 			}
 		} catch (e) { return null; }
-		return { kind: "pattern", idx: idx, data: out };
+		return { kind: "pattern", idx: idx, data: out, fx: fxGet(idx) };
 	}
 	function snapAll() {
-		try { return { kind: "all", data: JSON.parse(JSON.stringify(window.newChannelArr)) }; }
+		try { return { kind: "all", data: JSON.parse(JSON.stringify(window.newChannelArr)), fx: fxAll() }; }
 		catch (e) { return null; }
 	}
 	function snapChain() {
@@ -63,7 +69,8 @@
 			chain: (window.patternChain || []).slice(),
 			cur: g("currentPattern", 0),
 			count: g("patternCount", 0),
-			keys: keys
+			keys: keys,
+			fx: fxAll()
 		};
 	}
 
@@ -83,16 +90,19 @@
 				window.currentPattern = s.cur;
 				window.patternCount = Math.min(s.count, Math.max(0, s.chain.length - 1));
 				if (s.keys) { try { PO33.keys.restore(s.keys); } catch (e) {} }
+				fxLoad(s.fx);
 				persist();
 				if (window.updateDisplay) { window.updateDisplay(); }
 				return;
 			}
 			if (s.kind === "all") {
 				window.newChannelArr = JSON.parse(JSON.stringify(s.data));
+				fxLoad(s.fx);
 			} else {
 				for (var c = 0; c < 16; c++) {
 					window.newChannelArr[c][s.idx] = JSON.parse(JSON.stringify(s.data[c]));
 				}
+				fxSet(s.idx, s.fx);
 			}
 			persist();
 			if (window.updateDisplay) { window.updateDisplay(); }

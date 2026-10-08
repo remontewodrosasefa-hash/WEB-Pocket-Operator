@@ -28,13 +28,8 @@
 
 	// short "what this does" text, shown briefly when a control is used
 	var BTN_INFO = {
-		btnSound: "SOUND — pick the active sound slot, then a pad",
-		btnPattern: "PATTERN — hold to select / chain patterns",
-		btnBPM: "BPM — sliders set swing & tempo · double-tap = presets",
-		btnFX: "FX — hold for the 16 punch-in effects; tap to cycle slider target",
-		btnPlay: "PLAY — start / stop the sequencer",
-		btnWrite: "WRITE — edit steps · hold 3s while playing = live record",
-		btnRecord: "RECORD — sample the mic / a browser tab onto this slot"
+		btnFX: "FX — hold + a pad = punch-in effect · tap = slider target",
+		btnPlay: "PLAY — start / stop the sequencer"
 	};
 
 	function g(name, dflt) {
@@ -292,7 +287,11 @@
 		});
 	}
 
+	// assigning textContent forces style + layout even when the text is the same
+	function setText(el, t) { if (el && el.textContent !== t) { el.textContent = t; } }
+
 	function tick() {
+		if (document.hidden) { return; }
 		var modeEl = E.mode;
 		if (!modeEl) { return; }
 		// an overlay covers the LCD — don't churn behind it
@@ -313,7 +312,7 @@
 		var mainEl = E.main;
 		var subEl = E.sub;
 
-		modeEl.textContent = MODE_NAMES[effState] || ("MODE " + effState);
+		setText(modeEl, MODE_NAMES[effState] || ("MODE " + effState));
 
 		var slot = sel + 1;
 		var kind = slot <= 8 ? "melodic" : "drum";
@@ -322,25 +321,25 @@
 		var soundLine = "SOUND " + slot + " · " + kind + (name ? "  " + shortName(name) : "  (default)") + sc;
 
 		if (state === 4) {
-			mainEl.textContent = tempo + " BPM";
-			subEl.textContent = "swing " + Math.round(swing / 10) + "%   ·   vol " + vol + "/16";
+			setText(mainEl, tempo + " BPM");
+			setText(subEl, "swing " + Math.round(swing / 10) + "%   ·   vol " + (vol + 1) + "/16");
 		} else if (state === 3 || state === 33 || state === 34) {
-			mainEl.textContent = "PATTERN " + (pat + 1);
-			subEl.textContent = "chain: " + (g("patternChain", [0]).map(function (n) { return n + 1; }).join(" ")) ;
+			setText(mainEl, "PATTERN " + (pat + 1));
+			setText(subEl, "chain: " + (g("patternChain", [0]).map(function (n) { return n + 1; }).join(" ")) );
 		} else if (state === 2) {
-			mainEl.textContent = soundLine;
-			subEl.textContent = "press a pad to pick · Library click loads here";
+			setText(mainEl, soundLine);
+			setText(subEl, "press a pad to pick · Library click loads here");
 		} else if (mode === 1) {
-			mainEl.textContent = "WRITE → " + soundLine;
-			subEl.textContent = "press pads 1-16 to place steps";
+			setText(mainEl, "WRITE → " + soundLine);
+			setText(subEl, "press pads 1-16 to place steps");
 		} else if (mode === 11) {
-			mainEl.textContent = "● LIVE REC → " + soundLine;
-			subEl.textContent = "playing pads records into pattern " + (pat + 1);
+			setText(mainEl, "● LIVE REC → " + soundLine);
+			setText(subEl, "playing pads records into pattern " + (pat + 1));
 		} else {
-			mainEl.textContent = soundLine;
-			subEl.textContent = play ? ("playing · pattern " + (pat + 1)) : "stopped · press PLAY";
+			setText(mainEl, soundLine);
+			setText(subEl, play ? ("playing · pattern " + (pat + 1)) : "stopped · press PLAY");
 			if (view === 0 && fxMode) {
-				subEl.textContent += "   · FX " + (FX_NAMES[fxMode] || fxMode);
+				setText(subEl, (play ? ("playing · pattern " + (pat + 1)) : "stopped · press PLAY") + "   · FX " + (FX_NAMES[fxMode] || fxMode));
 			}
 		}
 
@@ -409,14 +408,14 @@
 
 	function nextHint(state, mode, play, haveSample, sel, pat) {
 		if (state === 2) { return "tap a pad to pick the slot, or click a Library sample"; }
-		if (state === 4) { return "drag the sliders for swing & tempo"; }
-		if (state === 3) { return "tap pads to pick / chain patterns, PATTERN to exit"; }
+		if (state === 4) { return "sliders: swing & tempo · pads: volume"; }
+		if (state === 3) { return "pads pick / chain patterns"; }
 		if (mode === 1) {
 			return patternHasSteps(pat) ? "PLAY to hear it, or WRITE to exit" : "tap pads 1-16 to add steps";
 		}
 		if (!haveSample && sel < 8) { return "open LIBRARY to load a sound onto this slot"; }
 		if (!play && patternHasSteps(pat)) { return "press PLAY"; }
-		if (!play) { return "SOUND + a pad to choose a sound, then WRITE to sequence"; }
+		if (!play) { return "hold SOUND + a pad to choose a sound, then WRITE"; }
 		return "hold FX + any pad = punch-in effect";
 	}
 
@@ -512,14 +511,9 @@
 			try { wob.start(); } catch (e) {}
 			var trem   = new Tone.Tremolo(13, 0);
 			try { trem.start(); } catch (e) {}
-			// a dedicated, always-in-chain filter driven by an LFO (off by default)
-			var lfoFilt = new Tone.Filter(20000, "lowpass");
-			var lfo     = new Tone.LFO(4, 400, 6000);
-			lfo.type = "sine";
-			try { lfo.connect(lfoFilt.frequency); } catch (e) {}
 			var kill   = new Tone.Gain(1);
 
-			hp.chain(lp, dist, chorus, phaser, delay, pong, pitch, verb, wob, trem, lfoFilt, kill, M);
+			hp.chain(lp, dist, chorus, phaser, delay, pong, pitch, verb, wob, trem, kill, M);
 
 			var rerouted = false;
 			try {
@@ -531,7 +525,7 @@
 			}
 			if (!rerouted) { return; }
 
-			fxNodes = { hp: hp, lp: lp, dist: dist, chorus: chorus, phaser: phaser, lfoFilt: lfoFilt, lfo: lfo,
+			fxNodes = { hp: hp, lp: lp, dist: dist, chorus: chorus, phaser: phaser,
 				delay: delay, pong: pong, pitch: pitch, verb: verb, wob: wob,
 				trem: trem, kill: kill };
 		} catch (e) {
@@ -539,47 +533,6 @@
 		}
 	}
 
-	/* ---- persistent LFO -> master filter ---- */
-	var lfoOn = false;
-	function setLfo(opts) {
-		opts = opts || {};
-		var toggled = opts.on != null;
-		if (toggled) { lfoOn = !!opts.on; }
-		if (lfoOn) { buildFxChain(); }
-		if (!fxNodes || !fxNodes.lfo) { return lfoState(); }
-		var f = fxNodes;
-		try {
-			if (opts.rate != null) { f.lfo.frequency.value = Math.max(0.05, +opts.rate); }
-			if (opts.wave) { f.lfo.type = opts.wave; }
-			if (opts.depth != null) {
-				var d = Math.max(0, Math.min(1, +opts.depth));   // 0..1
-				var floor = 8000 - d * 7800;                      // deeper = lower floor
-				f.lfo.min = 20 + floor * 0.05;
-				f.lfo.max = Math.max(f.lfo.min + 50, 8000);
-			}
-			if (lfoOn) { f.lfo.start(); }
-			else { f.lfo.stop(); ramp(f.lfoFilt.frequency, 20000, 0.15); }
-		} catch (e) {}
-		persistLfo();
-		if (toggled) { flash("LFO " + (lfoOn ? "on" : "off"), lfoOn ? "warn" : "tip"); }
-		return lfoState();
-	}
-	function lfoState() {
-		var f = fxNodes;
-		return {
-			on: lfoOn,
-			rate: f && f.lfo ? Math.round(f.lfo.frequency.value * 100) / 100 : 4,
-			wave: f && f.lfo ? f.lfo.type : "sine"
-		};
-	}
-	function persistLfo() {
-		try { localStorage.setItem("po33.lfo", JSON.stringify(lfoState())); } catch (e) {}
-	}
-	function restoreLfo() {
-		var v;
-		try { v = JSON.parse(localStorage.getItem("po33.lfo") || "null"); } catch (e) {}
-		if (v && v.on) { setLfo({ on: true, rate: v.rate, wave: v.wave, depth: 0.6 }); }
-	}
 	/* ---- hooks for the performance strip ---- */
 
 	// XY pad: x = filter cutoff (low->high), y = resonance
@@ -635,34 +588,11 @@
 	}
 
 	window.PO33.fx = {
-		lfo: setLfo, lfoState: lfoState, buildChain: buildFxChain,
+		buildChain: buildFxChain,
 		xy: xy, space: space, punch: punch,
 		labels: function () { return FX_LABELS; },
 		help: function () { return FX_HELP; }
 	};
-
-	// LFO controls may live in the info drawer or the UTIL panel — listen globally
-	document.addEventListener("click", function (e) {
-		if (e.target && e.target.id === "lfoBtn") {
-			var st = lfoState();
-			var r = document.getElementById("lfoRate"), d = document.getElementById("lfoDepth"),
-				w = document.getElementById("lfoWave");
-			var now = setLfo({ on: !st.on,
-				rate: r ? (+r.value) / 100 : 4,
-				depth: d ? (+d.value) / 100 : 0.6,
-				wave: w ? w.value : "sine" });
-			e.target.textContent = now.on ? "LFO on" : "LFO off";
-		}
-	});
-	document.addEventListener("input", function (e) {
-		var id = e.target && e.target.id;
-		if (id !== "lfoRate" && id !== "lfoDepth") { return; }
-		var r = document.getElementById("lfoRate"), d = document.getElementById("lfoDepth");
-		setLfo({ rate: r ? (+r.value) / 100 : 4, depth: d ? (+d.value) / 100 : 0.6 });
-	});
-	document.addEventListener("change", function (e) {
-		if (e.target && e.target.id === "lfoWave") { setLfo({ wave: e.target.value }); }
-	});
 
 	/* ============================================================
 	 * The sixteen punch-in effects, matched to the real PO-33 KO II.
@@ -840,6 +770,7 @@
 					e.stopImmediatePropagation();
 					e.preventDefault();
 					el.dataset.fxFired = "1";
+					if (n === 16 && window.PO33.fxRec && PO33.fxRec.info().steps) { PO33.fxRec.clear(); }
 					fxOn(n);
 					var end = function () {
 						fxOff();
@@ -896,8 +827,18 @@
 		if (s) { s.textContent = msg || ""; }
 	}
 
+	var recStarting = false;
+	var forcedTarget = null;    // RECORD + pad names its slot up front: the finger may lift during a mic prompt
+	var recSlices = false;      // RECORD + a drum pad: slice across the 16 pads, as the hardware does
+
 	async function toggleRec() {
 		if (mediaRec && mediaRec.state === "recording") { stopRec(); return; }
+		if (recStarting) { return; }
+		recStarting = true;
+		try { await startRec(); } finally { recStarting = false; forcedTarget = null; }
+	}
+
+	async function startRec() {
 		var src = document.getElementById("recSource").value;
 		try {
 			if (src === "tab") {
@@ -927,7 +868,9 @@
 		mediaRec.ondataavailable = function (ev) { if (ev.data.size) { chunks.push(ev.data); } };
 		mediaRec.onstop = onRecStop;
 		// lock in whichever pad is held right now — the hardware behaviour
-		recTargetSlot = (window.PO33 && PO33.heldPad && PO33.heldPad()) || null;
+		recTargetSlot = forcedTarget || (window.PO33 && PO33.heldPad && PO33.heldPad()) || null;
+		recSlices = !!forcedTarget && forcedTarget >= 9;
+		forcedTarget = null;
 		mediaRec.start();
 		recStart = Date.now();
 		document.getElementById("recBtn").textContent = "■ stop";
@@ -943,6 +886,20 @@
 		if (mediaRec && mediaRec.state === "recording") { mediaRec.stop(); }
 	}
 
+	// RECORD + pad (js/hold.js): sample while the pad is held
+	window.PO33.rec = {
+		start: function (slot) {
+			if (isRecording() || recStarting) { return; }
+			forcedTarget = slot || null;
+			toggleRec();
+		},
+		stop: stopRec,
+		isRecording: isRecording,
+		isStarting: function () { return recStarting; },
+		toggle: toggleRec
+	};
+	function isRecording() { return !!(mediaRec && mediaRec.state === "recording"); }
+
 	/* ---- export the mix as MP3 (records the master bus, encodes with lamejs) ---- */
 
 	var expRec = null, expChunks = [], expDest = null;
@@ -951,7 +908,7 @@
 		return new Promise(function (res, rej) {
 			if (window.lamejs) { return res(); }
 			var s = document.createElement("script");
-			s.src = "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js";
+			s.src = "js/lame.min.js";
 			s.onload = res; s.onerror = rej;
 			document.head.appendChild(s);
 		});
@@ -983,7 +940,7 @@
 			b.textContent = "■ stop & save";
 			b.classList.add("recording");
 			flash("recording the mix — press stop to save MP3", "tip");
-		}).catch(function () { status("could not load MP3 encoder (offline?)"); });
+		}).catch(function () { status("could not load the MP3 encoder"); });
 	}
 
 	async function finishExport() {
@@ -1091,10 +1048,18 @@
 		var name = "rec-" + new Date().toISOString().slice(11, 19).replace(/:/g, "");
 
 		var slot = recTargetSlot || (window.PO33 && PO33.targetSlot ? PO33.targetSlot() : PO33Lib.currentSlot());
+		var slices = recSlices;
 		recTargetSlot = null;
+		recSlices = false;
 		if (window.PO33Lib) {
 			PO33Lib.addUserSample(name, url, secs);
-			PO33Lib.assignUrl(slot, url, "recordings/" + name, secs);
+			// On the PO-33 a drum slot holds a sample's 16 slices, one per pad;
+			// a melodic slot holds the whole sound, played at 16 pitches.
+			if (slices && window.PO33 && PO33.slice && PO33.slice.toSlot) {
+				PO33.slice.toSlot(audioBuf, slot, 16, { layout: false, matchTempo: false });
+			} else {
+				PO33Lib.assignUrl(slot, url, "recordings/" + name, secs);
+			}
 		}
 		idbPut(name, wavBlob, secs); // persist across reloads
 
@@ -1236,6 +1201,7 @@
 		// cleared alongside it or a "cleared" pattern still plays synth notes
 		try { if (window.PO33.keys && PO33.keys.clearPattern) { PO33.keys.clearPattern(); } } catch (e) {}
 		var p = g("currentPattern", 0);
+		try { if (window.PO33.fxRec) { PO33.fxRec.setPattern(p, null); } } catch (e) {}
 		try {
 			for (var c = 0; c < 16; c++) {
 				for (var b = 0; b < 16; b++) { window.newChannelArr[c][p][b].noteOn = 0; }
@@ -1362,51 +1328,12 @@
 			var pct = +el.value;                 // 0..100
 			var db = pct === 0 ? -60 : (pct / 100) * 40 - 40;  // -40..0 dB
 			try { if (window.Tone) { Tone.Master.volume.value = db; } } catch (e) {}
-			window.volume = Math.round(pct / 100 * 16);
+			window.volume = Math.max(0, Math.round(pct / 100 * 16) - 1);   // 0-15, the LED scale
 			window.mainVolume = db;
 			if (announce) { flash("master volume " + pct + "%", "info"); }
 		};
 		el.addEventListener("input", function () { apply(true); });
 		apply(false);
-	}
-
-	function wireRecordPad() {
-		var pad = document.getElementById("btnRecord");
-		var btn = document.getElementById("recBtn");
-		if (!pad || !btn || pad.dataset.rec) { return; }
-		pad.dataset.rec = "1";
-		pad.addEventListener("click", function () { btn.click(); });
-	}
-
-	// touch shim: WRITE long-press (po33.js only listens for mousedown/mouseup),
-	// and BPM double-tap (only listens for dblclick).
-	function wireTouchShims() {
-		var w = document.getElementById("btnWrite");
-		if (w && !w.dataset.touch) {
-			w.dataset.touch = "1";
-			w.addEventListener("touchstart", function (e) {
-				e.preventDefault();
-				window.btnWriteHold = false;
-				clearTimeout(window.btnWriteMouseUpTimer);
-				window.btnWriteMouseUpTimer = setTimeout(function () { window.btnWriteHold = true; }, 3000);
-			}, { passive: false });
-			w.addEventListener("touchend", function (e) {
-				e.preventDefault();
-				clearTimeout(window.btnWriteMouseUpTimer);
-				try { window.writeButtonFunction(); } catch (err) {}
-			});
-		}
-
-		var bpm = document.getElementById("btnBPM");
-		if (bpm && !bpm.dataset.touch && window.jQuery) {
-			bpm.dataset.touch = "1";
-			var last = 0;
-			bpm.addEventListener("touchend", function () {
-				var now = Date.now();
-				if (now - last < 320) { jQuery(bpm).trigger("dblclick"); }
-				last = now;
-			});
-		}
 	}
 
 	/* ============================================================
@@ -1419,18 +1346,16 @@
 		wireSlider(2);
 		wireVolume();
 		wireSliderExpand();
-		wireTouchShims();
 		wireFxPads();
 		// FX chain is built lazily on the first FX hold — nothing to do here
 		var tries = 0;
 		var iv = setInterval(function () {
 			var haveRec = buildRecorder();
-			if (haveRec) { wireRecordPad(); wireExport(); }
+			if (haveRec) { wireExport(); }
 			if (haveRec || ++tries > 60) { clearInterval(iv); }
 		}, 250);
 		setTimeout(idbRestore, 1800);
 		setTimeout(function () { if (metroOn()) { setMetro(true); } }, 1200);
-		setTimeout(restoreLfo, 1400);
 	}
 
 	if (document.readyState === "loading") {

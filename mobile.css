@@ -296,22 +296,6 @@ body.drawer-lib #infoDrawer { transform: translateX(-102%); }
 	#infoBody .fxGrid b { color: #ffb060; margin-right: 3px; }
 }
 
-/* LFO controls in the info drawer */
-@media (max-width: 720px), (pointer: coarse) {
-	#lfoRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 6px; }
-	#lfoRow label { display: flex; align-items: center; gap: 6px; font-size: 12px; flex: 1 1 130px; }
-	#lfoRow label input[type="range"] { flex: 1; height: 26px; }
-	#lfoBtn {
-		font: inherit; font-size: 13px; padding: 9px 14px; border-radius: 8px;
-		background: #232329; color: #9ad0a0; border: 1px solid #375040;
-	}
-	#lfoBtn:active { background: #2c2c33; }
-	#lfoWave {
-		font: inherit; font-size: 12px; padding: 6px 8px; border-radius: 6px;
-		background: #26262b; color: #e2e2e2; border: 1px solid #3a3a40;
-	}
-}
-
 /* info-drawer tab nav */
 @media (max-width: 720px), (pointer: coarse) {
 	#infoNav {
@@ -591,14 +575,14 @@ body.drawer-lib #infoDrawer { transform: translateX(-102%); }
 	 * while the fx tab happened to be selected left the panel squeezed into
 	 * 148px instead of filling the screen. Any new full-screen panel class
 	 * has to be added here too. */
-	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen):not(.aiOpen) .lcd {
+	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) .lcd {
 		max-height: 18vh;
 	}
 	/* the scene has a 72px floor so it never gets squashed to nothing.
 	 * At this height that floor pushes the sound name and the hint off
 	 * the top of the screen, so on this tab the scene yields first —
 	 * the words matter more than the picture. */
-	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen):not(.aiOpen) #hudArt {
+	body[data-perftab="fx"]:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) #hudArt {
 		min-height: 24px;
 	}
 	.perfCells.mute button {
@@ -851,10 +835,123 @@ body.drawer-lib #infoDrawer { transform: translateX(-102%); }
 	.drawerHead { margin: 0 0 8px; padding: 12px 14px; }
 }
 
-/* the assistant takes the screen over on a phone, like util and proj */
+
+/* ================================================================
+ * Hardware feel + touch targets
+ *
+ * 1. The perform strip starts collapsed (perf.js toggles .perfCollapsed):
+ *    only its tab row shows, the pads get bigger and the screen taller.
+ *    The .lcd rule carries the same :not() guard chain as the fx-tab rule
+ *    above, for the same reason — without it, it would beat every
+ *    full-screen panel's `max-height: none`.
+ * 2. A lit pad lights the whole key, not just a 5px dot, so steps, loaded
+ *    slots and the chain read at arm's length.
+ * 3. Everything you tap is at least ~44px tall to the finger, even where
+ *    it has to stay small to the eye.
+ * ================================================================ */
+body.perfCollapsed #perfPanel { display: none; }
+
 @media (max-width: 720px), (pointer: coarse) {
-	body.aiOpen .controlStrip,
-	body.aiOpen .gridArea,
-	body.aiOpen .perfStrip { display: none; }
-	body.aiOpen .lcd { flex: 1 1 auto; max-height: none; min-height: 0; }
+	/* the screen soaks up the height the strip gave back, up to a cap; past
+	 * that the tab row sits at the bottom edge, under the thumb */
+	body.perfCollapsed:not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) .lcd {
+		max-height: 34vh;
+	}
+	body.perfCollapsed .perfStrip { flex: 0 0 auto; margin-top: auto; padding-top: 8px; }
+	/* pads scale with the phone's height: ~58px rows on a 667px phone, 76px
+	 * on a tall one. The key art inside scales off the same number. */
+	body.perfCollapsed .buttonGrid { --padRow: clamp(62px, 9vh, 76px); --padKey: calc(var(--padRow) - 20px); row-gap: 4px; }
+	body.perfCollapsed .buttonGrid .buttonGridItem { height: var(--padRow); width: calc(var(--padKey) + 6px); }
+	body.perfCollapsed .buttonGrid .btnNumber > .buttonBG {
+		width: var(--padKey); height: var(--padKey); margin-left: calc(var(--padKey) / -2); top: 0;
+	}
+	body.perfCollapsed .buttonGrid .btnNumber > .buttonBG > .square {
+		width: calc(var(--padKey) * 0.63); height: calc(var(--padKey) * 0.63);
+		margin: calc(var(--padKey) * -0.315) 0 0 calc(var(--padKey) * -0.315);
+	}
+	body.perfCollapsed .buttonGrid .btnNumber > .buttonBG > .square > .circle {
+		width: calc(var(--padKey) * 0.33); height: calc(var(--padKey) * 0.33);
+		margin: calc(var(--padKey) * -0.165) 0 0 calc(var(--padKey) * -0.165);
+	}
+	body.perfCollapsed .buttonGrid .btnNumber > .gridHover { width: calc(var(--padKey) + 4px); height: calc(var(--padKey) + 4px); }
+	body.perfCollapsed .buttonGrid .btnNumber > .btnText { top: calc(var(--padKey) + 2px); }
+	.perfTabs button { min-height: 44px; padding: 0; font-size: 12px; }
+}
+
+/* lit pads */
+.btnNumber > .buttonBG { transition: box-shadow 60ms linear; }
+.btnNumber:has(.ledOnHalf) > .buttonBG {
+	box-shadow: inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.45),
+		0 0 0 3px rgba(255, 85, 85, 0.55);
+}
+.btnNumber:has(.ledOnFull) > .buttonBG {
+	box-shadow: inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.45),
+		0 0 0 3px #ff4444, 0 0 12px 2px rgba(255, 40, 40, 0.6);
+}
+.btnNumber:has(.ledFlash) > .buttonBG { animation: padBlink 0.66s step-start infinite; }
+@keyframes padBlink {
+	50% { box-shadow: inset 0 1px 1px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.45),
+		0 0 0 3px #ff4444, 0 0 12px 2px rgba(255, 40, 40, 0.6); }
+}
+
+/* a function key you are holding looks held */
+.buttonGridItem.held > .buttonBG { transform: scale(0.93); filter: brightness(0.9); }
+
+/* no text selection, magnifier or callout while a key is held */
+.buttonGridItem, .perfStrip, .controlStrip {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+/* the three hardware mode keys, then the app's own three, set apart */
+.modeRow #btnTrim { margin-left: 12px; position: relative; }
+.modeRow #btnTrim::before {
+	content: "";
+	position: absolute;
+	left: -9px; top: 8px; bottom: 18px;
+	width: 1px;
+	background: rgba(255, 255, 255, 0.14);
+}
+.modeRow #btnTrim > .btnText,
+.modeRow #btnUtil > .btnText,
+.modeRow #btnLive > .btnText { opacity: 0.8; }
+
+/* small screen buttons keep their size to the eye, grow to the finger */
+#undoBtn, #redoBtn, #projBtn, #hudView { position: relative; min-width: 30px; }
+#undoBtn::after, #redoBtn::after, #projBtn::after, #hudView::after {
+	content: "";
+	position: absolute;
+	inset: -12px -3px;
+}
+.topLink { position: relative; }
+.topLink::after { content: ""; position: absolute; inset: -6px -4px; }
+#xyModes button { min-height: 32px; }
+#powerBtn { min-height: 48px; }
+#infoNav button { min-height: 36px; }
+
+/* keys tab: eight voices in two rows of four instead of scrolling off the edge */
+.keysBar:not(.keysBar2) { flex-wrap: wrap; overflow: visible; }
+.keysBar:not(.keysBar2) .keysVoice { flex: 1 1 calc(25% - 4px); min-width: 0; min-height: 30px; }
+
+/* with the strip open the screen is shorter; the scene gives way before the
+ * words do (same guard chain as every other .lcd / #hudArt height rule) */
+@media (max-width: 720px), (pointer: coarse) {
+	body:not(.perfCollapsed):not(.lib-lcd):not(.buildOpen):not(.trimOpen):not(.projOpen):not(.utilOpen) #hudArt {
+		min-height: 24px;
+	}
+}
+
+/* built-in kits in the library's target line */
+.libKits { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; white-space: nowrap; }
+.libKits button, #libKit { min-height: 36px; min-width: 44px; }
+
+/* The fx and mix grids were `height: 100%` of the panel with a bar on top
+ * of them, so they always overflowed by the bar's height. The panel is a
+ * column now and the grid takes whatever the bar leaves. */
+@media (max-width: 720px), (pointer: coarse) {
+	#perfViews:not([hidden]) { display: flex; flex-direction: column; height: 100%; }
+	#perfViews .perfCells.fx, #perfViews .perfCells.mute { height: auto; flex: 1 1 auto; min-height: 0; }
+	.perfCells.fx button { min-height: 34px; }
+	.keysBar2 { margin-top: 0; }
 }

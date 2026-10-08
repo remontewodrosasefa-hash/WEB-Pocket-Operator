@@ -2,7 +2,7 @@
 // Modern browsers (incl. Safari/Chrome on macOS) start the AudioContext
 // suspended until a user gesture. This unlocks it once, up front.
 (function () {
-	var APP_VERSION = "79";   // keep in sync with sw.js VERSION (po33-v<n>)
+	var APP_VERSION = "80";   // keep in sync with sw.js VERSION (po33-v<n>)
 
 	// small always-on version chip at the very top; doubles as the update button
 	function versionTag() {
@@ -34,6 +34,27 @@
 		try { if (typeof allowSound === "function") { allowSound(); } } catch (e) { /* ignore */ }
 	}
 
+	// Safari deletes localStorage + IndexedDB (projects, recordings, chops) for
+	// sites that weren't opened in 7 days, unless the site is installed to the
+	// home screen or granted persistent storage. Ask for it, and if it's refused
+	// in a plain browser tab, say how to keep the work safe.
+	function keepStorage() {
+		var standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+		if (!navigator.storage || !navigator.storage.persist) { return; }
+		navigator.storage.persist().then(function (granted) {
+			if (granted || standalone) { return; }
+			var last = 0;
+			try { last = +localStorage.getItem("po33.persistHint") || 0; } catch (e) {}
+			if (Date.now() - last < 7 * 864e5) { return; }
+			try { localStorage.setItem("po33.persistHint", String(Date.now())); } catch (e) {}
+			setTimeout(function () {
+				if (window.PO33 && PO33.flash) {
+					PO33.flash("add to home screen (or export) — browsers can clear unused sites", "warn");
+				}
+			}, 2500);
+		}).catch(function () {});
+	}
+
 	function ready() {
 		var overlay = document.getElementById("powerOverlay");
 		var btn = document.getElementById("powerBtn");
@@ -42,6 +63,7 @@
 		btn.addEventListener("click", function () {
 			unlockAudio();
 			overlay.classList.add("hidden");
+			keepStorage();
 		});
 
 		// Safety net: any first click/keypress on the page also unlocks audio.

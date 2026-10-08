@@ -282,9 +282,14 @@
 		ctx.restore();
 	}
 
+	// Pixel sprites step a few frames a second; 30fps is plenty, and drawing
+	// at the display's full 60-120Hz cost a phone real battery for nothing.
+	var FRAME_MS = 1000 / 30;
 	function frame(now) {
 		requestAnimationFrame(frame);
 		if (!ctx || !W) { return; }
+		if (now - last < FRAME_MS) { return; }
+		if (document.hidden || !cv || cv.offsetParent === null) { last = now; return; }
 		var dt = Math.min(50, now - last); last = now;
 		if (excited > 0) { excited -= dt; }
 		listen(dt);

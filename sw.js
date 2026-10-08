@@ -2,9 +2,11 @@
  * App shell is precached; wav / sample files are cached on first use so the
  * whole 500-file pack isn't downloaded up front.
  */
-var VERSION = "po33-v79";
+var VERSION = "po33-v80";
 var SHELL = VERSION + "-shell";
-var MEDIA = VERSION + "-media";
+// Not versioned: samples don't change between app versions, and a versioned
+// name made every update delete the cache and re-download every sample.
+var MEDIA = "po33-media";
 
 var SHELL_FILES = [
 	"./",
@@ -17,7 +19,9 @@ var SHELL_FILES = [
 	"./mobile.css",
 	"./js/jquery.min.js",
 	"./js/Tone.min.js",
-	"./js/tone_sampler_extended.js",
+	"./js/lame.min.js",
+	"./fonts/alegreya-sans-100.woff2",
+	"./fonts/delius-unicase-700.woff2",
 	"./js/po33.js",
 	"./js/scale.js",
 	"./js/boot.js",
@@ -46,18 +50,15 @@ var SHELL_FILES = [
 	"./js/build.js",
 	"./js/perf.js",
 	"./js/listen.js",
-	"./js/aiapply.js",
-	"./js/ai.js",
 	"./js/guide.js",
 	"./js/mobile.js",
 	"./js/ux.js",
+	"./js/hold.js",
 	"./samples.json",
 	"./manifest.webmanifest",
 	"./icon.svg",
 	"./icon-192.png",
-	"./icon-512.png",
-	"./TeenageEngineering3.svg",
-	"./mic.svg"
+	"./icon-512.png"
 ];
 
 self.addEventListener("message", function (e) {

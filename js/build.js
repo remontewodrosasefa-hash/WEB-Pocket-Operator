@@ -711,26 +711,6 @@
 			"adds the jobs that are empty. <b>replace what's here</b> wipes this bar first. " +
 			"if a slot is busy it uses the next free one.</p></div>";
 
-		/* The assistant, when it is available.
-		 *
-		 * These two do different jobs and neither replaces the other. The
-		 * buttons above roll a beat from rules — instant, free, offline, and
-		 * it never surprises you. The assistant reasons about the bar you
-		 * actually have and can answer "why does this sound empty". Use the
-		 * rules to get something playing, the assistant to work out what is
-		 * wrong with it. */
-		if (window.PO33.ai && PO33.ai.unlocked && PO33.ai.unlocked() && PO33.ai.hasKey()) {
-			s += '<div class="uvSec"><h4>or ask the assistant</h4><div class="uvRow">' +
-				'<button type="button" data-bd="aiFix">what is wrong with this bar?</button>' +
-				"</div><div class='uvRow'>" +
-				'<button type="button" data-bd="aiWrite">write me the missing part</button>' +
-				'<button type="button" data-bd="aiStyle">make it more ' + styleName + '</button>' +
-				"</div>" +
-				'<p class="bdNote">the buttons above roll a beat from rules &mdash; instant and ' +
-				"offline. the assistant reads the bar you actually have, and what it proposes " +
-				"is shown to you before anything changes.</p></div>";
-		}
-
 		if (log.length) {
 			s += '<div class="uvSec bdLog"><h4>what just happened</h4><ul>' +
 				log.map(function (l) { return "<li>" + l + "</li>"; }).join("") +
@@ -761,21 +741,6 @@
 				flash(styleName + " · " + applyFeel(STYLES[styleName]) + " BPM", "tip");
 				paint();
 				break;
-			case "aiFix":
-			case "aiWrite":
-			case "aiStyle": {
-				// hand over to the assistant with the question already asked
-				var q = a === "aiFix"
-					? "Look at this bar. What is wrong with it, and what is the single most " +
-					  "useful thing to change? Be specific about slots and steps."
-					: a === "aiWrite"
-					? "Write the part this bar is missing. One sentence on the idea, then the json block."
-					: "Make this bar sound more like " + styleName + ". Adjust what is here and " +
-					  "add what the style needs. One sentence on the idea, then the json block.";
-				hide();
-				try { PO33.ai.show(); PO33.ai.ask(q); } catch (e) {}
-				break;
-			}
 			case "whole":   buildWholeBeat(); break;
 			case "gaps":    fillGaps(false); break;
 			case "replace": fillGaps(true); break;
