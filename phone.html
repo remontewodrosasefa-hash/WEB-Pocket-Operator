@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#0d0d0f">
+	<link rel="icon" href="icon.svg" type="image/svg+xml">
+	<title>PO-33 Knock Out! · phone preview</title>
+	<script>
+		// On a real phone the frame is just in the way: go straight to the app.
+		if (matchMedia("(max-width: 720px), (pointer: coarse)").matches) location.replace("./index.html");
+	</script>
+	<style>
+		/* The app runs in an iframe at a real iPhone 14 Pro viewport (393x852),
+		   so mobile.css's max-width:720px rules apply exactly as on the phone.
+		   phone-frame.svg is 213.5x430 units; its screen is the rounded rect
+		   at (12.41, 10.23), 189x409.36, radius 24.05. */
+		:root { --k: 1; --u: calc(393px / 189 * var(--k)); }
+		html, body { height: 100%; margin: 0; }
+		body {
+			background: radial-gradient(ellipse at 50% 40%, #1d1d22 0%, #0d0d0f 70%);
+			display: flex; align-items: center; justify-content: center;
+			overflow: hidden;
+		}
+		.device {
+			position: relative;
+			width: calc(213.5 * var(--u));
+			height: calc(430 * var(--u));
+			filter: drop-shadow(0 calc(18 * var(--u)) calc(22 * var(--u)) rgba(0, 0, 0, .55));
+		}
+		.screen {
+			position: absolute;
+			left: calc(12.41 * var(--u));
+			top: calc(10.23 * var(--u));
+			width: calc(189 * var(--u));
+			height: calc(409.36 * var(--u));
+			border-radius: calc(24.05 * var(--u));
+			overflow: hidden;
+			background: #0d0d0f;
+		}
+		/* status bar under the dynamic island and home-indicator strip,
+		   like the installed app's safe areas */
+		.screen iframe {
+			position: absolute; left: 0; top: calc(59px * var(--k));
+			width: 393px; height: 759px;
+			border: 0;
+			transform: scale(var(--k)); transform-origin: 0 0;
+			background: #0d0d0f;
+		}
+		.screen::after {
+			content: ""; position: absolute; left: 50%; bottom: calc(8px * var(--k));
+			width: calc(134px * var(--k)); height: calc(5px * var(--k));
+			margin-left: calc(-67px * var(--k));
+			border-radius: 3px; background: rgba(255, 255, 255, .55);
+		}
+		.frame {
+			position: absolute; inset: 0; width: 100%; height: 100%;
+			pointer-events: none;
+		}
+	</style>
+</head>
+<body>
+	<div class="device">
+		<div class="screen"><iframe src="./index.html" title="PO-33 Knock Out!" allow="microphone; autoplay"></iframe></div>
+		<img class="frame" src="phone-frame.svg" alt="">
+	</div>
+	<script>
+		// scale the 393x852 phone down to fit the window (never up)
+		function fit() {
+			var u = 393 / 189, pad = 32;
+			var k = Math.min(1, (innerHeight - pad) / (430 * u), (innerWidth - pad) / (213.5 * u));
+			document.documentElement.style.setProperty("--k", k);
+		}
+		fit();
+		addEventListener("resize", fit);
+	</script>
+</body>
+</html>

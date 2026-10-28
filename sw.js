@@ -2,7 +2,7 @@
  * App shell is precached; wav / sample files are cached on first use so the
  * whole 500-file pack isn't downloaded up front.
  */
-var VERSION = "po33-v80";
+var VERSION = "po33-v81";
 var SHELL = VERSION + "-shell";
 // Not versioned: samples don't change between app versions, and a versioned
 // name made every update delete the cache and re-download every sample.

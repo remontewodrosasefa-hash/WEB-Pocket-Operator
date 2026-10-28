@@ -49,6 +49,12 @@ project lives at
   on a `setInterval` at boot rather than assuming load order beyond the
   `<script>` tag sequence in `index.html`.
 
+- **`phone.html`** is a desktop showcase: the app in an iframe at a real
+  393×852 iPhone viewport (so mobile.css applies as on a phone), drawn inside
+  `phone-frame.svg` (converted from a stock iPhone 14 EPS mockup, backdrop,
+  floor shadow and white screen removed). Phones are redirected to
+  `index.html`.
+
 ## Persistence — what lives where
 
 **localStorage** (`po33.*`, all synchronous, all small):
